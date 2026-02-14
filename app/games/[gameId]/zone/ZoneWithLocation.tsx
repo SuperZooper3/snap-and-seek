@@ -120,8 +120,8 @@ export function ZoneWithLocation({
     if (!canVibrate) return;
 
     const vibrateInterval = setInterval(() => {
-      navigator.vibrate([200, 100, 200]);
-    }, 2500);
+      navigator.vibrate([400, 50, 400, 50, 400]);
+    }, 1200);
 
     return () => {
       clearInterval(vibrateInterval);
