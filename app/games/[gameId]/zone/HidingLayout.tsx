@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useState, useCallback } from "react";
 import { ZoneWithLocation } from "./ZoneWithLocation";
 import { HidingTimeRemaining } from "./HidingTimeRemaining";
-import { StartSeekingTestLink } from "./StartSeekingTestLink";
-
 type Zone = {
   center_lat: number;
   center_lng: number;
@@ -87,7 +85,6 @@ export function HidingLayout({
         >
           Go to photo capture
         </Link>
-        <StartSeekingTestLink gameId={gameId} />
       </footer>
 
       {/* Popup when time hits 0 */}
