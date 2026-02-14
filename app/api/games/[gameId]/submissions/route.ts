@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { distanceMeters } from "@/lib/geo";
+
+const VALIDATION_RADIUS_METERS = 10;
 
 /**
  * GET /api/games/[gameId]/submissions
@@ -87,7 +90,7 @@ export async function POST(
     );
   }
 
-  // Insert submission — default status 'success'
+  // Insert submission as pending; we'll set success/fail from photo vs target location
   const { data: submission, error: insertError } = await supabase
     .from("submissions")
     .insert({
@@ -95,7 +98,7 @@ export async function POST(
       seeker_id: seekerId,
       hider_id: hiderId,
       ...(photoId ? { photo_id: photoId } : {}),
-      status: "success",
+      status: "pending",
     })
     .select()
     .single();
@@ -107,7 +110,59 @@ export async function POST(
     );
   }
 
-  // --- Win check ---
+  // Resolve status from coordinates: submission photo vs hider's hiding spot photo
+  // Designed so this can be moved to async (e.g. AI) later; for now we do it inline for fast UI
+  let resolvedStatus: "success" | "fail" = "fail";
+  if (photoId) {
+    const { data: submissionPhoto } = await supabase
+      .from("photos")
+      .select("latitude, longitude")
+      .eq("id", photoId)
+      .single();
+
+    const { data: hider } = await supabase
+      .from("players")
+      .select("hiding_photo")
+      .eq("id", hiderId)
+      .single();
+
+    const hidingPhotoId = (hider as { hiding_photo: number | null } | null)?.hiding_photo ?? null;
+    if (hidingPhotoId != null) {
+      const { data: targetPhoto } = await supabase
+        .from("photos")
+        .select("latitude, longitude")
+        .eq("id", hidingPhotoId)
+        .single();
+
+      const subLat = (submissionPhoto as { latitude: number | null } | null)?.latitude;
+      const subLng = (submissionPhoto as { longitude: number | null } | null)?.longitude;
+      const tgtLat = (targetPhoto as { latitude: number | null } | null)?.latitude;
+      const tgtLng = (targetPhoto as { longitude: number | null } | null)?.longitude;
+
+      if (
+        subLat != null &&
+        subLng != null &&
+        !Number.isNaN(subLat) &&
+        !Number.isNaN(subLng) &&
+        tgtLat != null &&
+        tgtLng != null &&
+        !Number.isNaN(tgtLat) &&
+        !Number.isNaN(tgtLng)
+      ) {
+        const meters = distanceMeters(subLat, subLng, tgtLat, tgtLng);
+        resolvedStatus = meters <= VALIDATION_RADIUS_METERS ? "success" : "fail";
+      }
+    }
+  }
+
+  await supabase
+    .from("submissions")
+    .update({ status: resolvedStatus })
+    .eq("id", submission.id);
+
+  const submissionWithStatus = { ...submission, status: resolvedStatus };
+
+  // --- Win check: only when this submission is success and seeker has all success ---
   // Count distinct hiders this seeker has successfully found
   const { data: successfulSubmissions, error: countError } = await supabase
     .from("submissions")
@@ -117,8 +172,7 @@ export async function POST(
     .eq("status", "success");
 
   if (countError) {
-    // Submission succeeded but win check failed — return submission anyway
-    return NextResponse.json({ submission, isWinner: false });
+    return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
   }
 
   const distinctHiders = new Set(
@@ -132,7 +186,10 @@ export async function POST(
     .eq("game_id", gameId);
 
   const neededFinds = (totalPlayers ?? 0) - 1; // everyone except yourself
-  const isWinner = neededFinds > 0 && distinctHiders.size >= neededFinds;
+  const isWinner =
+    resolvedStatus === "success" &&
+    neededFinds > 0 &&
+    distinctHiders.size >= neededFinds;
 
   if (isWinner) {
     // Atomic: only set winner if no winner already exists (WHERE winner_id IS NULL).
@@ -152,16 +209,15 @@ export async function POST(
     const updated = updateResult.data;
     const updateError = updateResult.error;
     if (updateError && (updateError.message?.includes("winner_id") || updateError.message?.includes("does not exist"))) {
-      // Columns missing; winner still counts for this response so client shows win modal
-      return NextResponse.json({ submission, isWinner: true });
+      return NextResponse.json({ submission: submissionWithStatus, isWinner: true });
     }
     if (updateError) {
-      return NextResponse.json({ submission, isWinner: false });
+      return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
     }
     if (!updated || updated.winner_id !== seekerId) {
-      return NextResponse.json({ submission, isWinner: false });
+      return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
     }
   }
 
-  return NextResponse.json({ submission, isWinner });
+  return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
 }

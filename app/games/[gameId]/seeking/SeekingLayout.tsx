@@ -129,11 +129,22 @@ export function SeekingLayout({
 
   const selectedTarget = targets[selectedIndex];
 
-  // Determine which targets have been found by the current player
+  // Determine which targets have been found by the current player (success only)
   const foundHiderIds = new Set(
     submissions
       .filter((s) => s.seeker_id === playerId && s.status === "success")
       .map((s) => s.hider_id)
+  );
+
+  // Targets this seeker has tried but failed (no success for that hider yet)
+  const failedAttemptHiderIds = new Set(
+    submissions
+      .filter((s) => s.seeker_id === playerId && s.status === "fail")
+      .map((s) => s.hider_id)
+  );
+  // Only "failed attempt" if they don't have a success for that hider
+  const triedButNotFoundHiderIds = new Set(
+    [...failedAttemptHiderIds].filter((hiderId) => !foundHiderIds.has(hiderId))
   );
 
   // Get the submission photo URL for a specific hider (from current player's submissions)
@@ -223,9 +234,10 @@ export function SeekingLayout({
         }
 
         const submitData = await submitRes.json();
+        const sub = submitData.submission as Submission;
 
-        // Update local state immediately
-        setSubmissions((prev) => [...prev, submitData.submission]);
+        // Update local state immediately (backend returns resolved status: success | fail)
+        setSubmissions((prev) => [...prev, sub]);
         if (photoId && photoUrl) {
           setSubmissionPhotoUrls((prev) => ({ ...prev, [photoId]: photoUrl }));
         }
@@ -234,8 +246,10 @@ export function SeekingLayout({
           setWinnerId(playerId);
           setWinnerName(playerName);
           setSubmitStatus("You found everyone! You win!");
-        } else {
+        } else if (sub.status === "success") {
           setSubmitStatus("Found!");
+        } else {
+          setSubmitStatus("Not close enough.");
         }
       } catch {
         setSubmitStatus("Something went wrong!");
@@ -427,6 +441,7 @@ export function SeekingLayout({
               <span className="text-sm font-medium text-sky-700 dark:text-sky-300 shrink-0">Targets:</span>
               {targets.map((t, i) => {
                 const isFound = foundHiderIds.has(t.playerId);
+                const triedButNotFound = triedButNotFoundHiderIds.has(t.playerId);
                 const isSelected = selectedIndex === i;
                 let pillClass: string;
                 if (isFound && isSelected) {
@@ -434,6 +449,11 @@ export function SeekingLayout({
                 } else if (isFound) {
                   pillClass =
                     "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-800/50";
+                } else if (triedButNotFound && isSelected) {
+                  pillClass = "bg-amber-500 text-white dark:bg-amber-600";
+                } else if (triedButNotFound) {
+                  pillClass =
+                    "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-800/50";
                 } else if (isSelected) {
                   pillClass = "bg-sky-600 text-white dark:bg-sky-500";
                 } else {
@@ -578,7 +598,9 @@ export function SeekingLayout({
                   className={`text-center py-3 font-medium ${
                     submitStatus === "Found!" || submitStatus.includes("win")
                       ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-600 dark:text-red-400"
+                      : submitStatus === "Not close enough."
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-red-600 dark:text-red-400"
                   }`}
                 >
                   {submitStatus}
@@ -588,7 +610,11 @@ export function SeekingLayout({
                 <button
                   type="button"
                   onClick={() => handleOpenCamera(selectedTarget.playerId)}
-                  className="touch-manipulation block w-full rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+                  className={`touch-manipulation block w-full rounded-xl text-white font-semibold px-6 py-3.5 text-center transition-colors ${
+                    triedButNotFoundHiderIds.has(selectedTarget.playerId)
+                      ? "bg-amber-500 hover:bg-amber-600"
+                      : "bg-sky-600 hover:bg-sky-700"
+                  }`}
                 >
                   I found {selectedTarget.name}!
                 </button>
