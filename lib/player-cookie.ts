@@ -50,3 +50,17 @@ export function setPlayerInCookie(
   const maxAge = MAX_AGE_DAYS * 24 * 60 * 60;
   document.cookie = `${PLAYER_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(merged))}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
+
+/** Call from client only: removes your identity for this game (release). */
+export function clearPlayerForGame(gameId: string): void {
+  if (typeof document === "undefined") return;
+  const raw = document.cookie
+    .split("; ")
+    .find((c) => c.startsWith(`${PLAYER_COOKIE_NAME}=`))
+    ?.split("=")[1];
+  const decoded = raw ? decodeURIComponent(raw) : undefined;
+  const existing = parsePlayersCookie(decoded);
+  const { [gameId]: _removed, ...rest } = existing;
+  const maxAge = MAX_AGE_DAYS * 24 * 60 * 60;
+  document.cookie = `${PLAYER_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(rest))}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}

@@ -10,15 +10,18 @@ type GameZone = {
   radius_meters: number;
 } | null;
 
+type PlayerIdentity = { id: number; name: string } | null;
+
 type Props = {
   gameId: string;
   status: string | null;
   joinUrl: string;
   playerCount: number;
   zone: GameZone;
+  currentPlayer: PlayerIdentity;
 };
 
-export function GameActions({ gameId, status, joinUrl, playerCount, zone }: Props) {
+export function GameActions({ gameId, status, joinUrl, playerCount, zone, currentPlayer }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -121,12 +124,18 @@ export function GameActions({ gameId, status, joinUrl, playerCount, zone }: Prop
           <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
             Status: <strong>{status}</strong>
           </p>
-          <a
-            href={`/games/${gameId}/zone`}
-            className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 text-center transition-colors"
-          >
-            Start hiding
-          </a>
+          {currentPlayer ? (
+            <a
+              href={`/games/${gameId}/zone`}
+              className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 text-center transition-colors"
+            >
+              Start hiding
+            </a>
+          ) : (
+            <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+              Join as a player below (tap a name) to start hiding.
+            </p>
+          )}
         </div>
       )}
     </div>

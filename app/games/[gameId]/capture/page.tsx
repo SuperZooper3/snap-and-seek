@@ -1,11 +1,20 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 
 type Props = { params: Promise<{ gameId: string }> };
 
 export default async function CapturePage({ params }: Props) {
   const { gameId } = await params;
+
+  const cookieStore = await cookies();
+  const playersCookie = cookieStore.get(PLAYER_COOKIE_NAME)?.value;
+  const decoded = playersCookie ? decodeURIComponent(playersCookie) : undefined;
+  if (!getPlayerForGame(decoded, gameId)) {
+    redirect(`/games/${gameId}`);
+  }
 
   const { data: game, error } = await supabase
     .from("games")
