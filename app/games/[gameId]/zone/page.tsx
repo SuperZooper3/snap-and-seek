@@ -1,11 +1,8 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
-import { ZoneWithLocation } from "./ZoneWithLocation";
-import { HidingTimeRemaining } from "./HidingTimeRemaining";
-import { StartSeekingTestLink } from "./StartSeekingTestLink";
+import { HidingLayout } from "./HidingLayout";
 
 type Props = { params: Promise<{ gameId: string }> };
 
@@ -46,43 +43,12 @@ export default async function GameZonePage({ params }: Props) {
   };
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
-      <header className="shrink-0 border-b border-amber-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top">
-        <Link
-          href={`/games/${gameId}`}
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
-        >
-          <span aria-hidden>←</span>
-          Back to game
-        </Link>
-        <h1 className="mt-1.5 text-lg font-bold text-amber-900 dark:text-amber-100">
-          Game zone
-        </h1>
-        <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
-          {(game as { name: string | null }).name || "Unnamed game"} · Stay inside the circle
-        </p>
-      </header>
-
-      <main className="relative flex min-h-0 flex-1 flex-col w-full">
-        <HidingTimeRemaining
-          hidingStartedAt={(game as { hiding_started_at: string | null }).hiding_started_at}
-          hidingDurationSeconds={(game as { hiding_duration_seconds: number | null }).hiding_duration_seconds ?? 600}
-        />
-        <ZoneWithLocation zone={zone} gameId={gameId} playerId={currentPlayer.id} />
-      </main>
-
-      <footer className="shrink-0 border-t border-amber-200/50 dark:border-zinc-700 px-4 py-3 pb-safe space-y-2 bg-amber-50/80 dark:bg-zinc-900/80">
-        <p className="text-xs text-amber-700 dark:text-amber-300">
-          Play area: inside the circle ({Math.round(zone.radius_meters)} m). Red = out of bounds.
-        </p>
-        <Link
-          href={`/games/${gameId}/capture`}
-          className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
-        >
-          Go to photo capture
-        </Link>
-        <StartSeekingTestLink gameId={gameId} />
-      </footer>
-    </div>
+    <HidingLayout
+      gameId={gameId}
+      zone={zone}
+      playerId={currentPlayer.id}
+      hidingStartedAt={(game as { hiding_started_at: string | null }).hiding_started_at}
+      hidingDurationSeconds={(game as { hiding_duration_seconds: number | null }).hiding_duration_seconds ?? 600}
+    />
   );
 }
