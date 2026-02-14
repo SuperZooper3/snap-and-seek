@@ -12,9 +12,10 @@
 ### Game management & zone (implemented)
 - **Games list** (`/games`), **create game** (`/games/new`), **game page** (`/games/[gameId]`): join link, players list, Set/Edit game zone button, Start game (requires zone + ≥2 players).
 - **Set game zone modal:** Current location, slider 50m–1km, map with red shaded outside (polygon with hole), single red zone circle (empty inside), blue pin + light blue accuracy circle. Refresh location; save zone via PATCH. Map fills modal; fitBounds to zone (~90% fill). Zone required before start.
-- **Start game:** PATCH status to `hiding`; redirects to `/games/[gameId]/zone`. Lobby shows "Start hiding" button (was "View game zone") linking to zone.
-- **Zone view** (`/games/[gameId]/zone`): Full-screen map (mobile), zone polygon + circle. Live location every 10s with countdown "Next refresh in Xs", "Blue is where you are". Single blue pin (Marker) + single blue accuracy circle (imperative `google.maps.Circle` ref, no stacking). Warning when entirely outside zone (`distance > zoneRadius + userAccuracy`). "Go to photo capture" → `/games/[gameId]/capture`.
-- **Photo capture** (`/games/[gameId]/capture`): Placeholder page "Photo capture — coming soon", back to zone.
+- **Start game:** PATCH status to `hiding`; redirects to `/games/[gameId]/zone`. Lobby shows "Start hiding" button linking to zone.
+- **Player identity:** Cookie `sas_players` stores per-game `{ id, name }`. Join form sets cookie after POST. **Start hiding** only shown when `currentPlayer` is set; else message "Join as a player below (tap a name) to start hiding." **PlayerList** (game page): if !currentPlayer, tap a player row to assume identity (`setPlayerInCookie`); if currentPlayer, "You are: X" + "Release my identity" (`clearPlayerForGame`). Zone and capture pages redirect to game page if !currentPlayer.
+- **Zone view** (`/games/[gameId]/zone`): Protected (redirect if !currentPlayer). Full-screen map (mobile), zone polygon + circle. Live location every 10s with countdown "Next refresh in Xs", "Blue is where you are". Single blue pin (Marker) + single blue accuracy circle (imperative `google.maps.Circle` ref, no stacking). Warning when entirely outside zone. "Go to photo capture" → `/games/[gameId]/capture`.
+- **Photo capture** (`/games/[gameId]/capture`): Protected (redirect if !currentPlayer). Placeholder "Photo capture — coming soon", back to zone.
 - **API:** PATCH `/api/games/[gameId]` accepts zone fields and/or `status: 'hiding'`; validates zone set + ≥2 players before start.
 - **DB:** Run `docs/supabase-game-zone.sql` in Supabase to add zone columns.
 
@@ -34,3 +35,4 @@
 - Photo upload: started as file-input picker → replaced with in-app camera viewfinder + geolocation tagging + reverse geocoding + location display in photo grid.
 - Game management: added games/players, join link, Set game zone modal (geolocation + slider + map with red outside/zone circle, no green fill). Zone stored on games; required before start. Start game → redirect to zone view.
 - Zone view: full-screen map, live location 10s refresh, countdown, single blue pin + single accuracy circle (imperative Circle to avoid library stacking), outside-zone warning, "Go to photo capture" → placeholder capture page.
+- Player identity: only active players (cookie) can use "Start hiding"; game page PlayerList allows assume (tap player when not in) and release ("Release my identity"); zone and capture routes redirect to game page if not a player. `lib/player-cookie.ts`: `clearPlayerForGame(gameId)` added.
