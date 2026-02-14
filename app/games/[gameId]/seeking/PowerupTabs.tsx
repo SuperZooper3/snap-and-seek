@@ -5,7 +5,8 @@ import { CastingTimer } from "./CastingTimer";
 import { RadarPowerup } from "./RadarPowerup";
 import { ThermometerPowerup } from "./ThermometerPowerup";
 import { PhotoPowerup } from "./PhotoPowerup";
-import type { Hint, SeekingTarget } from "@/lib/types";
+import type { Hint } from "@/lib/types";
+import type { SeekingTarget } from "./SeekingLayout";
 
 interface Props {
   gameId: string;
@@ -60,7 +61,7 @@ export function PowerupTabs({
     return () => clearInterval(interval);
   }, [gameId, playerId, selectedTarget]);
 
-  const handleStartHint = async (type: 'radar' | 'thermometer' | 'photo', initialData?: any) => {
+  const handleStartHint = async (type: 'radar' | 'thermometer' | 'photo', initialData?: Record<string, unknown>) => {
     if (!selectedTarget || loading) return;
 
     setLoading(true);
@@ -89,7 +90,7 @@ export function PowerupTabs({
     }
   };
 
-  const handleCompleteHint = async (hintId: string, resultData?: any) => {
+  const handleCompleteHint = async (hintId: string, resultData?: Record<string, unknown>) => {
     try {
       const response = await fetch(`/api/games/${gameId}/hints/${hintId}`, {
         method: 'PATCH',

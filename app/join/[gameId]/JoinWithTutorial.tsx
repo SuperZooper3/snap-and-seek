@@ -15,6 +15,7 @@ export function JoinWithTutorial({ gameId }: Props) {
 
   useEffect(() => {
     const skip = getTutorialSkipCookie();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync cookie to state on mount
     setSkipTutorial(skip);
     setDontShowAgain(skip);
     if (skip) setStep(2);

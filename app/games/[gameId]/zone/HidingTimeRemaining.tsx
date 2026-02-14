@@ -29,6 +29,7 @@ export function HidingTimeRemaining({
 
   useEffect(() => {
     if (!hidingStartedAt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync null when no start time
       setRemainingSeconds(null);
       return;
     }

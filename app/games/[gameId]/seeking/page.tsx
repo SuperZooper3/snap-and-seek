@@ -57,7 +57,7 @@ export default async function SeekingPage({ params }: Props) {
     .filter((id): id is number => id != null);
   const photoIdSet = [...new Set(photoIds)];
 
-  let photoUrlById: Record<number, string> = {};
+  const photoUrlById: Record<number, string> = {};
   if (photoIdSet.length > 0) {
     const { data: photos } = await supabase
       .from("photos")
@@ -98,7 +98,7 @@ export default async function SeekingPage({ params }: Props) {
     .map((s) => s.photo_id as number);
   const submissionPhotoIdSet = [...new Set(submissionPhotoIds)];
 
-  let submissionPhotoUrlById: Record<number, string> = {};
+  const submissionPhotoUrlById: Record<number, string> = {};
   if (submissionPhotoIdSet.length > 0) {
     const { data: subPhotos } = await supabase
       .from("photos")

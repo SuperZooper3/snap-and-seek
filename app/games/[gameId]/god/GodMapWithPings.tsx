@@ -80,6 +80,7 @@ export function GodMapWithPings({ gameId, zone, playerPhotos = [] }: Props) {
   }, [gameId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch + interval subscription
     fetchLatest();
     const id = setInterval(fetchLatest, REFRESH_MS);
     return () => clearInterval(id);

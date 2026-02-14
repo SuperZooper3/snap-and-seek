@@ -16,6 +16,7 @@ export function CastingTimer({ hint, onComplete, onCancel, className = "" }: Pro
 
   useEffect(() => {
     if (hint.status !== "casting") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync completed state from hint prop
       setIsCompleted(true);
       return;
     }

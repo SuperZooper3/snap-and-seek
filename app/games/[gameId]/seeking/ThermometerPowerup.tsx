@@ -14,12 +14,12 @@ interface SeekingTarget {
 interface Props {
   gameId: string;
   targetPlayer: SeekingTarget;
-  onStartHint: (type: 'thermometer', initialData: any) => void;
+  onStartHint: (type: 'thermometer', initialData: Record<string, unknown>) => void;
   disabled: boolean;
   activeHint: Hint | undefined;
   powerupCastingSeconds: number;
   isCompleted: boolean;
-  completedHint?: any;
+  completedHint?: { note: string | null };
 }
 
 export function ThermometerPowerup({ 
@@ -172,7 +172,7 @@ export function ThermometerPowerup({
           </div>
           {resultData.result && (
             <div className="text-lg font-semibold text-orange-600">
-              You're getting {resultData.result}! 🌡️
+              You&apos;re getting {resultData.result}! 🌡️
             </div>
           )}
           {resultData.thresholdMeters && (
@@ -191,7 +191,7 @@ export function ThermometerPowerup({
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-600 text-center">
-        Set a starting point, move away, then get "hotter/colder" feedback
+        Set a starting point, move away, then get &quot;hotter/colder&quot; feedback
       </div>
 
       {/* Step 1: Set starting point */}
@@ -291,7 +291,7 @@ export function ThermometerPowerup({
       {thermometerResult && (
         <div className="text-center p-3 bg-orange-100 border border-orange-200 rounded-lg">
           <div className="text-lg font-bold text-orange-700">
-            You're getting {thermometerResult}! 🌡️
+            You&apos;re getting {thermometerResult}! 🌡️
           </div>
         </div>
       )}

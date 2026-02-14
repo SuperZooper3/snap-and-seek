@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getPowerupCastingSeconds } from "@/lib/game-config";
-import type { Hint, RadarHintNote, ThermometerHintNote, PhotoHintNote } from "@/lib/types";
+import type { RadarHintNote, ThermometerHintNote, PhotoHintNote } from "@/lib/types";
 
 /**
  * POST /api/games/[gameId]/hints
@@ -18,7 +18,7 @@ export async function POST(
     seekerId?: number;
     hiderId?: number;
     type?: 'radar' | 'thermometer' | 'photo';
-    initialData?: any;
+    initialData?: Record<string, unknown>;
   };
   try {
     body = await request.json();

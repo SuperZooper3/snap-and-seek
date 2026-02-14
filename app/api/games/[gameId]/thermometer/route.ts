@@ -56,7 +56,7 @@ export async function POST(
   }
 
   // Parse the thermometer note data
-  let noteData: any = {};
+  let noteData: Record<string, unknown> = {};
   try {
     noteData = hint.note ? JSON.parse(hint.note) : {};
   } catch {
@@ -105,18 +105,21 @@ export async function POST(
     );
   }
 
+  const photoLat = Number(photo.latitude);
+  const photoLng = Number(photo.longitude);
+
   // Calculate distances
   const distanceFromStart = distanceMeters(currentLat, currentLng, startLat, startLng);
-  const distanceToTarget = distanceMeters(currentLat, currentLng, photo.latitude, photo.longitude);
+  const distanceToTarget = distanceMeters(currentLat, currentLng, photoLat, photoLng);
   
   // Check if user is far enough from start to complete thermometer
   const canComplete = distanceFromStart >= thresholdMeters;
 
   let result: 'hotter' | 'colder' | 'same' | null = null;
   
-  if (lastLat != null && lastLng != null && canComplete) {
+  if (typeof lastLat === 'number' && typeof lastLng === 'number' && canComplete) {
     // Compare current distance to target vs last distance to target
-    const lastDistanceToTarget = distanceMeters(lastLat, lastLng, photo.latitude, photo.longitude);
+    const lastDistanceToTarget = distanceMeters(lastLat, lastLng, photoLat, photoLng);
     const threshold = 2; // 2 meter threshold for "same"
     
     if (Math.abs(distanceToTarget - lastDistanceToTarget) <= threshold) {

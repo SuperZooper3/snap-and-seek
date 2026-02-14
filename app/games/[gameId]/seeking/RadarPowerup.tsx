@@ -13,11 +13,11 @@ interface SeekingTarget {
 interface Props {
   gameId: string;
   targetPlayer: SeekingTarget;
-  onStartHint: (type: 'radar', initialData: any) => void;
+  onStartHint: (type: 'radar', initialData: Record<string, unknown>) => void;
   disabled: boolean;
   powerupCastingSeconds: number;
   isCompleted: boolean;
-  completedHint?: any;
+  completedHint?: { note: string | null };
 }
 
 export function RadarPowerup({ 
@@ -102,7 +102,7 @@ export function RadarPowerup({
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-600 text-center">
-        Check if you're within a certain distance of {targetPlayer.name}'s hiding spot
+        Check if you&apos;re within a certain distance of {targetPlayer.name}&apos;s hiding spot
       </div>
 
       {/* Distance stepper */}

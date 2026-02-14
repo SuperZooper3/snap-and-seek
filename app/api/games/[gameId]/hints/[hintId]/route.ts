@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { distanceMeters } from "@/lib/map-utils";
+import { distanceMeters as distanceMetersFn } from "@/lib/map-utils";
 import type { RadarHintNote, ThermometerHintNote, PhotoHintNote } from "@/lib/types";
 
 /**
@@ -16,7 +16,7 @@ export async function PATCH(
 
   let body: {
     status?: 'completed' | 'cancelled';
-    resultData?: any;
+    resultData?: Record<string, unknown>;
   };
   try {
     body = await request.json();
@@ -55,7 +55,7 @@ export async function PATCH(
 
   // If completing, process the result based on hint type
   if (status === "completed" && resultData) {
-    let noteData: any = {};
+    let noteData: Record<string, unknown> = {};
     try {
       noteData = hint.note ? JSON.parse(hint.note) : {};
     } catch {
@@ -80,7 +80,7 @@ export async function PATCH(
             .single();
 
           if (!photoError && photo?.latitude != null && photo?.longitude != null) {
-            const actualDistance = distanceMeters(lat, lng, photo.latitude, photo.longitude);
+            const actualDistance = distanceMetersFn(lat, lng, photo.latitude, photo.longitude);
             const radarNote: RadarHintNote = {
               ...noteData,
               distanceMeters,
@@ -95,20 +95,14 @@ export async function PATCH(
       }
     } else if (hint.type === "thermometer") {
       const { result } = resultData;
-      if (['hotter', 'colder', 'same'].includes(result)) {
-        const thermoNote: ThermometerHintNote = {
-          ...noteData,
-          result
-        };
+      if (typeof result === 'string' && ['hotter', 'colder', 'same'].includes(result)) {
+        const thermoNote: ThermometerHintNote = { ...noteData, result: result as 'hotter' | 'colder' | 'same' } as ThermometerHintNote;
         updatedNote = JSON.stringify(thermoNote);
       }
     } else if (hint.type === "photo") {
       const { unlocked } = resultData;
       if (typeof unlocked === "boolean") {
-        const photoNote: PhotoHintNote = {
-          ...noteData,
-          unlocked
-        };
+        const photoNote = { ...noteData, unlocked } as PhotoHintNote;
         updatedNote = JSON.stringify(photoNote);
       }
     }

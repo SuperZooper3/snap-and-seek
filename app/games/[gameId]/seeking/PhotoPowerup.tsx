@@ -25,10 +25,10 @@ interface UnlockedPhoto {
 interface Props {
   gameId: string;
   targetPlayer: SeekingTarget;
-  onStartHint: (type: 'photo', initialData: any) => void;
+  onStartHint: (type: 'photo', initialData: Record<string, unknown>) => void;
   disabled: boolean;
   powerupCastingSeconds: number;
-  completedHints: any[];
+  completedHints: { note: string | null }[];
 }
 
 const PHOTO_TYPE_LABELS = {

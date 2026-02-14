@@ -29,6 +29,7 @@ export function GodPhotoTray({ playerPhotos }: Props) {
   const didDragRef = useRef(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- measure DOM on mount and subscribe to resize
     setExpandedHeightPx(getExpandedHeightPx());
     const onResize = () => setExpandedHeightPx(getExpandedHeightPx());
     window.visualViewport?.addEventListener("resize", onResize);
