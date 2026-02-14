@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default async function Home() {
@@ -46,7 +47,10 @@ export default async function Home() {
         </section>
 
         <footer className="mt-12 text-center text-sm text-amber-800/60 dark:text-amber-200/60">
-          Snap and Seek — hackathon edition
+          Snap and Seek — hackathon edition ·{" "}
+          <Link href="/location-test" className="hover:underline">
+            Location test
+          </Link>
         </footer>
       </main>
     </div>
