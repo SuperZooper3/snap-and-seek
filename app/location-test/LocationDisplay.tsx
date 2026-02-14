@@ -1,7 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+
+const MapDisplay = dynamic(
+  () => import("./MapDisplay").then((mod) => ({ default: mod.MapDisplay })),
+  { ssr: false }
+);
+
+export type LocationPoint = {
+  lat: number;
+  lng: number;
+  timestamp: number;
+};
 
 type LocationState =
   | { status: "idle" }
@@ -9,8 +21,43 @@ type LocationState =
   | { status: "success"; coords: { latitude: number; longitude: number; accuracy: number } }
   | { status: "error"; message: string };
 
+const POLL_INTERVAL_MS = 10_000;
+
 export function LocationDisplay() {
   const [location, setLocation] = useState<LocationState>({ status: "idle" });
+  const [locationHistory, setLocationHistory] = useState<LocationPoint[]>([]);
+  const [secondsUntilNextPing, setSecondsUntilNextPing] = useState<number | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function handlePosition(position: GeolocationPosition) {
+    const point: LocationPoint = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+      timestamp: Date.now(),
+    };
+    setLocation({
+      status: "success",
+      coords: {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy ?? 0,
+      },
+    });
+    setLocationHistory((prev) => [...prev, point]);
+    setSecondsUntilNextPing(10);
+  }
+
+  function pollLocation() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      handlePosition,
+      (err) => {
+        if (err.code === 1) setLocation({ status: "error", message: "Permission denied." });
+        // Don't clear history or stop polling on temporary errors (2, 3)
+      },
+      { enableHighAccuracy: true }
+    );
+  }
 
   function getLocation() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -22,17 +69,13 @@ export function LocationDisplay() {
     }
 
     setLocation({ status: "loading" });
+    setLocationHistory([]);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
-          status: "success",
-          coords: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy ?? 0,
-          },
-        });
+        handlePosition(position);
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = setInterval(pollLocation, POLL_INTERVAL_MS);
       },
       (err) => {
         let message = err.message;
@@ -44,6 +87,20 @@ export function LocationDisplay() {
       { enableHighAccuracy: true }
     );
   }
+
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (location.status !== "success") return;
+    const tick = setInterval(() => {
+      setSecondsUntilNextPing((prev) => (prev === null ? null : Math.max(0, prev - 1)));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [location.status]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
@@ -84,14 +141,34 @@ export function LocationDisplay() {
                     ±{location.coords.accuracy.toFixed(0)} m
                   </p>
                 </div>
-                <a
-                  href={`https://www.google.com/maps?q=${location.coords.latitude},${location.coords.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors"
-                >
-                  Show on Google Maps →
-                </a>
+                <div className="w-full">
+                  <MapDisplay
+                    locations={locationHistory}
+                    countdownSeconds={secondsUntilNextPing}
+                  />
+                </div>
+                {locationHistory.length > 0 && (
+                  <div className="rounded-lg bg-amber-50/80 dark:bg-zinc-700/80 p-4 border border-amber-100 dark:border-zinc-600">
+                    <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                      Points
+                    </h3>
+                    <ul className="space-y-1.5 font-mono text-sm text-amber-800 dark:text-amber-200 max-h-40 overflow-y-auto">
+                      {locationHistory.map((point, i) => (
+                        <li key={`${i}-${point.timestamp}`} className="flex items-center gap-2">
+                          <span className="text-amber-600 dark:text-amber-400 w-5">
+                            {i + 1}.
+                          </span>
+                          <span>
+                            {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
+                          </span>
+                          <span className="text-amber-600/80 dark:text-amber-400/80 text-xs">
+                            {new Date(point.timestamp).toLocaleTimeString()}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 
