@@ -11,11 +11,15 @@ interface SeekingTarget {
 
 interface AvailablePhoto {
   type: 'tree' | 'building' | 'path';
-  photoId: number;
+  photoId?: number;
+  unavailable?: boolean;
 }
 
-interface UnlockedPhoto extends AvailablePhoto {
-  photoUrl: string;
+interface UnlockedPhoto {
+  type: 'tree' | 'building' | 'path';
+  photoId?: number;
+  photoUrl?: string;
+  unavailable?: boolean;
 }
 
 interface Props {
@@ -37,6 +41,12 @@ const PHOTO_TYPE_DESCRIPTIONS = {
   tree: 'A tree or natural landmark near the hiding spot',
   building: 'A building or structure near the hiding spot',
   path: 'A path, road, or walkway near the hiding spot'
+};
+
+const UNAVAILABLE_HINT_MESSAGE: Record<'tree' | 'building' | 'path', string> = {
+  tree: "This player has no tree or similar landmark near their spot.",
+  building: "This player has no building or structure near their spot.",
+  path: "This player has no path or road near their spot."
 };
 
 export function PhotoPowerup({ 
@@ -95,10 +105,10 @@ export function PhotoPowerup({
     setLoading(true);
 
     try {
-      // Start the hint casting
+      const entry = availablePhotos.find(p => p.type === photoType);
       await onStartHint('photo', {
         photoType,
-        photoId: availablePhotos.find(p => p.type === photoType)?.photoId,
+        photoId: entry && 'photoId' in entry ? entry.photoId : undefined,
       });
     } catch (error) {
       console.error('Failed to start photo unlock:', error);
@@ -109,10 +119,7 @@ export function PhotoPowerup({
   };
 
   const handleRevealPhoto = async (photoType: 'tree' | 'building' | 'path') => {
-    // Prevent duplicate reveals
-    if (unlockedPhotos.some(u => u.type === photoType)) {
-      return;
-    }
+    if (unlockedPhotos.some(u => u.type === photoType)) return;
 
     try {
       const response = await fetch(`/api/games/${gameId}/photo-unlock`, {
@@ -125,17 +132,23 @@ export function PhotoPowerup({
       });
 
       const data = await response.json();
-      if (response.ok && data.photoUrl) {
+      if (!response.ok) return;
+
+      if (data.unavailable) {
+        setUnlockedPhotos(prev => {
+          if (prev.some(u => u.type === photoType)) return prev;
+          return [...prev, { type: photoType, unavailable: true }];
+        });
+        return;
+      }
+      if (data.photoUrl) {
         const newUnlockedPhoto: UnlockedPhoto = {
           type: photoType,
           photoId: data.photoId,
           photoUrl: data.photoUrl,
         };
         setUnlockedPhotos(prev => {
-          // Double-check to prevent duplicates
-          if (prev.some(u => u.type === photoType)) {
-            return prev;
-          }
+          if (prev.some(u => u.type === photoType)) return prev;
           return [...prev, newUnlockedPhoto];
         });
       }
@@ -155,12 +168,13 @@ export function PhotoPowerup({
     });
   }, [completedHints.length, unlockedPhotos.length]);
 
-  if (availablePhotos.length === 0) {
+  const hasAnyHint = availablePhotos.length > 0;
+  if (!hasAnyHint) {
     return (
       <div className="text-center text-gray-500 py-8">
         <div className="text-lg mb-2">📸</div>
         <div>No hint photos available</div>
-        <div className="text-sm">{targetPlayer.name} didn't take any extra photos</div>
+        <div className="text-sm">{targetPlayer.name} didn&apos;t set any photo hints</div>
       </div>
     );
   }
@@ -168,27 +182,32 @@ export function PhotoPowerup({
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-600 text-center">
-        Unlock hint photos that {targetPlayer.name} took during hiding
+        Unlock hints about {targetPlayer.name}&apos;s spot — photos or that they have no such object nearby
       </div>
 
-      {/* Available photos to unlock */}
+      {/* Available photos to unlock, or upfront "no such object" hints */}
       <div className="space-y-3">
         {availablePhotos.map((photo) => {
+          const isUnavailableUpfront = photo.unavailable === true;
           const isUnlocked = unlockedPhotos.some(u => u.type === photo.type) || unlockedPhotoTypes.has(photo.type);
           const isCurrentlyUnlocking = loadingPhotoType === photo.type;
           const alreadyCompleted = unlockedPhotoTypes.has(photo.type);
-          
+          const unlockedEntry = unlockedPhotos.find(u => u.type === photo.type);
+
           return (
             <div key={photo.type} className="border border-gray-200 rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="font-medium">{PHOTO_TYPE_LABELS[photo.type]}</div>
                   <div className="text-sm text-gray-600">
-                    {PHOTO_TYPE_DESCRIPTIONS[photo.type]}
+                    {isUnavailableUpfront
+                      ? 'No such object near their spot'
+                      : PHOTO_TYPE_DESCRIPTIONS[photo.type]}
                   </div>
                 </div>
-                
-                {!isUnlocked && !isCurrentlyUnlocking && !alreadyCompleted && (
+
+                {/* Unavailable types: no Unlock button — message is shown below. */}
+                {!isUnavailableUpfront && !isUnlocked && !isCurrentlyUnlocking && !alreadyCompleted && (
                   <button
                     onClick={() => handleUnlockPhoto(photo.type)}
                     disabled={disabled}
@@ -197,36 +216,38 @@ export function PhotoPowerup({
                     Unlock ({powerupCastingSeconds}s)
                   </button>
                 )}
-                
-                {isCurrentlyUnlocking && (
+
+                {!isUnavailableUpfront && isCurrentlyUnlocking && (
                   <div className="px-4 py-2 bg-purple-100 text-purple-700 text-sm rounded-md">
                     Unlocking...
                   </div>
                 )}
-                
-                {alreadyCompleted && (
+
+                {!isUnavailableUpfront && alreadyCompleted && (
                   <div className="px-4 py-2 bg-green-100 text-green-700 text-sm rounded-md font-medium">
                     ✓ Unlocked
                   </div>
                 )}
               </div>
-              
-              {/* Show unlocked photo */}
-              {isUnlocked && (
+
+              {/* Unavailable upfront: show hint message immediately (no casting). */}
+              {isUnavailableUpfront && (
+                <div className="mt-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-900 dark:text-amber-100">
+                  {UNAVAILABLE_HINT_MESSAGE[photo.type]}
+                </div>
+              )}
+
+              {/* Show unlocked photo (only for types that had a photo to unlock). */}
+              {!isUnavailableUpfront && isUnlocked && unlockedEntry && unlockedEntry.photoUrl && (
                 <div className="mt-3">
-                  {unlockedPhotos
-                    .filter(u => u.type === photo.type)
-                    .map(unlockedPhoto => (
-                      <div key={`${photo.type}-${unlockedPhoto.photoId}`} className="relative h-48 w-full rounded-md overflow-hidden">
-                        <Image
-                          src={unlockedPhoto.photoUrl}
-                          alt={`${photo.type} hint photo`}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    ))
-                  }
+                  <div className="relative h-48 w-full rounded-md overflow-hidden">
+                    <Image
+                      src={unlockedEntry.photoUrl}
+                      alt={`${photo.type} hint photo`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
                 </div>
               )}
             </div>

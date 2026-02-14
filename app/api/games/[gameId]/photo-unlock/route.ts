@@ -32,10 +32,10 @@ export async function POST(
     );
   }
 
-  // Get the target player's hint photos
+  // Get the target player's hint photos and unavailable types
   const { data: player, error: playerError } = await supabase
     .from("players")
-    .select("tree_photo, building_photo, path_photo")
+    .select("tree_photo, building_photo, path_photo, unavailable_hint_photo_types")
     .eq("id", hiderId)
     .eq("game_id", gameId)
     .single();
@@ -47,12 +47,16 @@ export async function POST(
     );
   }
 
-  // If no specific photo type requested, return available photos
+  // If no specific photo type requested, return available photos (with photo) and unavailable-as-hint types
   if (!photoType) {
-    const availablePhotos = [];
+    const availablePhotos: { type: 'tree' | 'building' | 'path'; photoId?: number; unavailable?: boolean }[] = [];
     if (player.tree_photo) availablePhotos.push({ type: 'tree', photoId: player.tree_photo });
     if (player.building_photo) availablePhotos.push({ type: 'building', photoId: player.building_photo });
     if (player.path_photo) availablePhotos.push({ type: 'path', photoId: player.path_photo });
+    const unavailable = (player.unavailable_hint_photo_types as string[] | null) ?? [];
+    if (unavailable.includes('tree') && !availablePhotos.some(p => p.type === 'tree')) availablePhotos.push({ type: 'tree', unavailable: true });
+    if (unavailable.includes('building') && !availablePhotos.some(p => p.type === 'building')) availablePhotos.push({ type: 'building', unavailable: true });
+    if (unavailable.includes('path') && !availablePhotos.some(p => p.type === 'path')) availablePhotos.push({ type: 'path', unavailable: true });
 
     return NextResponse.json({ availablePhotos });
   }
@@ -67,6 +71,12 @@ export async function POST(
 
   const photoIdKey = `${photoType}_photo` as keyof typeof player;
   const photoId = player[photoIdKey];
+  const unavailable = (player.unavailable_hint_photo_types as string[] | null) ?? [];
+
+  // If this type is marked unavailable, return that as the hint (no photo)
+  if (unavailable.includes(photoType)) {
+    return NextResponse.json({ photoType, unavailable: true });
+  }
 
   if (!photoId) {
     return NextResponse.json(

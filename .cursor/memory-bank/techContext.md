@@ -17,9 +17,9 @@
 - `app/games/page.tsx` — game management list. Status badges: lobby (gray), hiding (amber), seeking (sky), completed (green).
 - `app/games/new/page.tsx` — create game form → POST `/api/games` → redirect to game page.
 - `app/games/[gameId]/page.tsx` — server: game + players, join URL, zone, currentPlayer (from cookie); renders `GameActions` + `PlayerList` + `GamePageRefresh`. Auto-redirects to seeking/zone if game active (bypass with `?manage=1`).
-- `app/games/[gameId]/GameActions.tsx` — client: copy join link, Set/Edit zone, hiding duration picker, Start game. Status badge + navigation. Completed → link to summary.
+- `app/games/[gameId]/GameActions.tsx` — client: copy join link, Hiding period dropdown, **Time to Cast** dropdown (power-up duration; PATCH `powerup_casting_duration_seconds`), Set/Edit zone button, Start game. Status badge + navigation. Completed → link to summary.
 - `app/games/[gameId]/GamePageRefresh.tsx` — client: auto-refreshes game page every 3s for real-time player updates.
-- `app/games/[gameId]/GameZoneModal.tsx` — client: full-screen modal, geolocation, slider 50m–1km, map with zone overlays, **Time to Cast** (power-up duration) radio buttons 10s–5m, save zone + powerup_casting_duration_seconds via PATCH.
+- `app/games/[gameId]/GameZoneModal.tsx` — client: full-screen modal, geolocation, slider 50m–1km, map with zone overlays. Saves zone only (center + radius) via PATCH; Time to Cast is on lobby page.
 - `app/games/[gameId]/PlayerList.tsx` — client: player list with assume/release identity.
 - `app/debug/page.tsx` — debug mode page. Renders `DebugModeClient` (client).
 - `app/debug/DebugModeClient.tsx` — client: Start debug (uses getLocation), map click-to-set, End debug. Cookie-based location override.
@@ -30,7 +30,7 @@
 - `app/games/[gameId]/zone/HidingTimeRemaining.tsx` — client: countdown timer based on `hiding_started_at` + `hiding_duration_seconds`.
 - `app/games/[gameId]/zone/StartSeekingTestLink.tsx` — client: button to PATCH status to "seeking" and navigate to seeking page.
 - `app/games/[gameId]/setup/page.tsx` — server: cookie check + game fetch → `SetupClient`.
-- `app/games/[gameId]/setup/SetupClient.tsx` — client: main photo slot, 3 hardcoded "Visible from" items (Tree, Building, Path), CameraModal, per-item upload callbacks, "Next" button.
+- `app/games/[gameId]/setup/SetupClient.tsx` — client: main photo slot, 3 "Visible from" items (Tree, Building, Path) with per-item "I don't have this option" checkbox (disabled when photo uploaded). Next enabled when main + all three satisfied (photo or checkbox). Lock-in sends `unavailable_photo_types`. CameraModal, per-item upload callbacks.
 - `app/games/[gameId]/seeking/page.tsx` — server: cookie check, game fetch (incl. `seeking_started_at`, `winner_id` with graceful fallback), loads players + hiding photos + submissions, renders `SeekingLayout`.
 - `app/games/[gameId]/seeking/SeekingLayout.tsx` — client: map + pull-up tray with target pills, **PowerupTabs** (Radar/Thermometer/Photo), "I found [Name]!" + camera + submission flow, 5s game-status polling, win modal, **HintHistory**.
 - `app/games/[gameId]/seeking/PowerupTabs.tsx` — client: folder-style tabs; CastingTimer when active; RadarPowerup, ThermometerPowerup, PhotoPowerup. Polls hints every 2s; on completion adds hint to completedHints so unlock state persists.
@@ -61,7 +61,7 @@
 - `app/api/games/[gameId]/hints/route.ts` — POST: create hint (seekerId, hiderId, type, initialData). GET: list hints for game (optional seekerId, status).
 - `app/api/games/[gameId]/hints/[hintId]/route.ts` — PATCH: complete or cancel hint (status, resultData). GET: single hint.
 - `app/api/games/[gameId]/thermometer/route.ts` — POST: hotter/colder check (hintId, currentLat, currentLng). Returns distanceFromStart, canComplete, result.
-- `app/api/games/[gameId]/photo-unlock/route.ts` — POST: list available photos (hiderId) or get photo URL (hiderId, photoType).
+- `app/api/games/[gameId]/photo-unlock/route.ts` — POST: list available photos (hiderId; includes types with `unavailable: true`) or get photo URL (hiderId, photoType; returns `unavailable: true` for opted-out types).
 - `app/api/games/[gameId]/photo-locations/route.ts` — GET: returns `{ player_id, name, lat, lng }[]` for all players whose hiding photo has GPS coordinates. Used by god mode.
 - `app/api/games/[gameId]/submissions/route.ts` — POST: create submission (default `'success'`), win check. GET: all submissions for game. Atomic winner update with `WHERE winner_id IS NULL`. Rejects submissions for completed games (409).
 - `app/api/games/[gameId]/game-status/route.ts` — GET: game status + winner info + all submissions (used by 5s poll).
@@ -80,6 +80,7 @@
 - `docs/supabase-pings.sql` — CREATE player_pings table.
 - `docs/supabase-submissions.sql` — CREATE submissions table + ALTER games add winner_id/finished_at.
 - `docs/supabase-hints-table.sql` — CREATE hints table (partial unique index for one casting hint per pair) + ALTER games add powerup_casting_duration_seconds. Use `docs/supabase-hints-table-fix.sql` if hints already exists with wrong UNIQUE.
+- `docs/supabase-unavailable-hint-photos.sql` — ALTER players add unavailable_hint_photo_types (text[]).
 - `supabase-games-seeking-migration.sql` — ALTER games add hiding/seeking timestamp columns.
 - `docs/google-maps-in-app.md` — setup and cost notes for embedding Google Map.
 

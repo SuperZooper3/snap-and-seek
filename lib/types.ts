@@ -76,6 +76,8 @@ export interface Player {
   building_photo: number | null;
   /** bigint FK to photos.id — optional path photo */
   path_photo: number | null;
+  /** Hint photo types the player had no option for; shown to seekers as "No X near this spot" */
+  unavailable_hint_photo_types?: ('tree' | 'building' | 'path')[];
 }
 
 /**

@@ -4,11 +4,11 @@
 - Home page: hero, games from Supabase, footer link to Location test.
 - Photo upload (`/test-upload`): in-app camera viewfinder (`getUserMedia`, rear camera), shutter/preview/retake flow, geolocation tagging at capture, reverse geocoding to human-readable address, photo grid with location display (pin icon + address or coords).
 - Game creation + join flow: create game on home page → game lobby (`/games/[gameId]`) → share join link → join with name (`/join/[gameId]`) → cookie-based identity.
-- **Photo setup page** (`/games/[gameId]/setup`): main hiding-spot photo + 3 optional "Visible from" items (Tree, Building, Path). Full-screen camera modal. Photos upload immediately; locked in to player row on "Next" via `/api/games/[gameId]/lock-in`.
+- **Photo setup page** (`/games/[gameId]/setup`): main hiding-spot photo + 3 optional "Visible from" items (Tree, Building, Path). Per-item checkbox "I don't have this option"; Next enabled only when main photo + all three items satisfied (photo or checkbox). Lock-in sends `unavailable_photo_types`. Full-screen camera modal; photos upload immediately; locked in via `/api/games/[gameId]/lock-in`.
 - **Waiting page** (`/games/[gameId]/waiting`): polls readiness every 5s with countdown. Ready = `players.hiding_photo IS NOT NULL`. Blue "Start seeking!" button when all ready.
 - **Shared components:** `CameraCapture`, `CameraModal`, `ItemBar`.
 - `photos` table: `id` (bigint), `url`, `storage_path`, `created_at`, `latitude`, `longitude`, `location_name`, `game_id`, `player_id`.
-- `players` table: now has `hiding_photo`, `tree_photo`, `building_photo`, `path_photo` (bigint FK to photos.id).
+- `players` table: now has `hiding_photo`, `tree_photo`, `building_photo`, `path_photo` (bigint FK to photos.id), and `unavailable_hint_photo_types` (text[]) for hint types the player had no option for (migration: `docs/supabase-unavailable-hint-photos.sql`).
 - Upload API: file + optional lat/lng + game_id/player_id → Supabase Storage + reverse geocode → DB insert. Returns `{ id, url }`.
 - Photos API: returns all photos with location fields via `select("*")`.
 - Supabase: `games` table (with zone columns + hiding/seeking timestamps), `players` table, `photos` table, `player_pings` table, server client with service role, no RLS.
@@ -16,7 +16,7 @@
 ### Game management & zone (implemented)
 - **Games list** (`/games`), **create game** (`/games/new`), **game page** (`/games/[gameId]`): join link, players list (with assume/release identity), Set/Edit game zone button, Start game (requires zone + 2+ players).
 - **GamePageRefresh:** Auto-refreshes game page every 3s so new players stream in without manual refresh.
-- **Set game zone modal:** Current location, slider 50m–1km, map with red shaded outside (polygon with hole), single red zone circle (empty inside), blue pin + light blue accuracy circle. Refresh location; save zone via PATCH. Map fills modal; fitBounds to zone (~90% fill). Zone required before start.
+- **Set game zone modal:** Current location, slider 50m–1km, map with red shaded outside (polygon with hole), single red zone circle (empty inside), blue pin + light blue accuracy circle. Refresh location; save zone via PATCH (zone only; no Time to Cast). Map fills modal; fitBounds to zone (~90% fill). Zone required before start.
 - **Start game:** PATCH status to `hiding` (sets `hiding_started_at`); redirects to `/games/[gameId]/zone`. Lobby shows "Start hiding" button linking to zone.
 - **Player identity:** Cookie `sas_players` stores per-game `{ id, name }`. "Start hiding" only shown when `currentPlayer` is set. PlayerList: tap player to assume identity; "Release my identity" to clear. Zone/capture pages redirect if !currentPlayer.
 - **Zone view** (`/games/[gameId]/zone`): Protected (redirect if !currentPlayer). Full-screen map (mobile), zone polygon + circle. Live location every 5s with countdown. Single blue pin + imperative accuracy circle (no stacking). Outside-zone warning (red banner). **Photo capture blocked** when outside zone (button disabled + vibration on mobile). Hiding time remaining countdown. "Go to photo capture" → `/games/[gameId]/setup` (only when inside zone). "Start seeking (test)" link.
@@ -36,9 +36,9 @@
 
 ### Power-ups (hints) system (implemented)
 - **Hints table:** `hints` with game_id, seeker_id, hider_id, type (radar/thermometer/photo), note (JSON), casting_duration_seconds, status (casting/completed/cancelled), created_at, completed_at. Partial unique index: only one row with status='casting' per (game_id, seeker_id, hider_id). Migrations: `docs/supabase-hints-table.sql`, fix script `docs/supabase-hints-table-fix.sql`.
-- **Games:** `powerup_casting_duration_seconds` (default 60). Configured in **Set game zone** modal (Time to Cast: radio buttons 10s–5m), not on game create. PATCH `/api/games/[gameId]` accepts `powerup_casting_duration_seconds`.
-- **Seeking power-ups:** Folder-style tabs (Radar, Thermometer, Photo). CastingTimer shows progress; only one active hint per target; other tabs disabled while casting. Completed state persists (optimistic add to completedHints on completion). Radar: distance stepper → cast → result. Thermometer: set start, move away, stop → hotter/colder. Photo: unlock tree/building/path hint photos; Supabase image URLs allowed via `next.config.ts` remotePatterns for `*.supabase.co`.
-- **APIs:** POST/GET hints, PATCH/GET hint by id; POST thermometer (hotter/colder); POST photo-unlock (list or get URL). Hint completion: add returned hint to local completedHints so "✓ Unlocked" doesn’t revert before poll.
+- **Games:** `powerup_casting_duration_seconds` (default 60). Configured on **lobby page** (GameActions): "Time to Cast" dropdown alongside Hiding period and Edit game zone (not inside Set game zone modal). PATCH `/api/games/[gameId]` accepts `powerup_casting_duration_seconds`.
+- **Seeking power-ups:** Folder-style tabs (Radar, Thermometer, Photo). CastingTimer shows progress; only one active hint per target; other tabs disabled while casting. Completed state persists (optimistic add to completedHints on completion). Radar: distance stepper → cast → result. Thermometer: set start, move away, stop → hotter/colder. Photo: unlock tree/building/path hint photos when available; types where hider chose "I don't have this option" show the absence message upfront (no Unlock button, no casting). Supabase image URLs via `next.config.ts` remotePatterns for `*.supabase.co`.
+- **APIs:** POST/GET hints, PATCH/GET hint by id; POST thermometer (hotter/colder); POST photo-unlock (list or get URL; list includes types with `unavailable: true`). Lock-in PATCH accepts `unavailable_photo_types`. Hint completion: add returned hint to local completedHints so "✓ Unlocked" doesn’t revert before poll.
 
 ### Debug mode (implemented)
 - **`/debug` page:** Start debug mode (uses current GPS), click map to set fake location, End debug mode (clears cookie). Link in home footer.
@@ -47,7 +47,7 @@
 - **Vibration API:** When outside zone, `navigator.vibrate([200, 100, 200])` every 2.5s until back inside.
 
 ## What's left
-- **DB migrations:** Run `docs/supabase-submissions.sql` for submissions + winner columns. Run `docs/supabase-hints-table.sql` (or `docs/supabase-hints-table-fix.sql` if hints table already exists with wrong constraint) for hints table + games.powerup_casting_duration_seconds.
+- **DB migrations:** Run `docs/supabase-submissions.sql` for submissions + winner columns. Run `docs/supabase-hints-table.sql` (or `docs/supabase-hints-table-fix.sql` if hints table already exists with wrong constraint) for hints table + games.powerup_casting_duration_seconds. Run `docs/supabase-unavailable-hint-photos.sql` for `players.unavailable_hint_photo_types`.
 - GPS proximity check for submissions (compare seeker GPS vs. hider photo GPS) — currently all submissions default to `'success'`.
 - Claude image recognition for visual similarity — deferred.
 - Google Geocoding API must be enabled in Cloud Console for reverse geocoding to work.
@@ -71,4 +71,4 @@
 - Setup page: wireframe-driven design (from hand-drawn mockups). Main photo + optional "visible from" items with per-item camera modal + upload callbacks. Grew from 2 items (Tree, Rock) to 3 (Tree, Building, Path).
 - Seeking phase: seeking page with map + elapsed timer, god mode for spectators, player pings for location tracking. Added radar proximity search (hand-built), submissions + win detection + summary page (AI-built).
 - God mode: started as simple map with pings → enhanced with photo location markers, color-coded player icons, draggable photo tray.
-- Power-ups: hints table with casting duration; Radar/Thermometer/Photo as three tabbed power-ups with CastingTimer. Casting duration moved from create form to Set game zone modal. Schema fix: partial unique index for one casting hint per pair (not full UNIQUE on status). Photo unlock state fixed by optimistically adding completed hint to completedHints on PATCH response. Next.js images config for Supabase storage URLs.
+- Power-ups: hints table with casting duration; Radar/Thermometer/Photo as three tabbed power-ups with CastingTimer. **Time to Cast** moved to lobby page (GameActions, alongside Hiding period and Edit game zone), not in Set game zone modal. Schema fix: partial unique index for one casting hint per pair (not full UNIQUE on status). Photo unlock state fixed by optimistically adding completed hint to completedHints on PATCH response. Next.js images config for Supabase storage URLs. Optional hint photos: Setup enforces Tree/Building/Path (photo or "I don't have this option"); lock-in sends unavailable_photo_types; players.unavailable_hint_photo_types; photo-unlock returns unavailable types; PhotoPowerup shows absence message upfront for those (no Unlock button).

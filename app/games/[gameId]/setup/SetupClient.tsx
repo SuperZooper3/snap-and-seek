@@ -41,8 +41,24 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
   // Which slot the camera modal is open for: "main", an item id, or null (closed)
   const [cameraTarget, setCameraTarget] = useState<string | null>(null);
 
+  // "I don't have this option" per visible-from item — allows progressing without a photo
+  const [unavailableItems, setUnavailableItems] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(VISIBLE_FROM_ITEMS.map((item) => [item.id, false]))
+  );
+
   // Lock-in state
   const [lockingIn, setLockingIn] = useState(false);
+
+  // Per-item satisfied: has photo OR checkbox "I don't have this option" checked
+  const isItemSatisfied = useCallback(
+    (itemId: string) => {
+      const slot = itemPhotos[itemId];
+      return (slot?.photoId != null) || unavailableItems[itemId] === true;
+    },
+    [itemPhotos, unavailableItems]
+  );
+
+  const allItemsSatisfied = VISIBLE_FROM_ITEMS.every((item) => isItemSatisfied(item.id));
 
   // ------- Upload helper (gets current position and saves to photo row for Radar) -------
   const uploadPhoto = useCallback(
@@ -154,6 +170,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
           tree_photo: itemPhotos["tree"]?.photoId ?? null,
           building_photo: itemPhotos["building"]?.photoId ?? null,
           path_photo: itemPhotos["path"]?.photoId ?? null,
+          unavailable_photo_types: VISIBLE_FROM_ITEMS.filter((item) => unavailableItems[item.id]).map((item) => item.id),
         }),
       });
 
@@ -305,15 +322,34 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
           <div className="space-y-3">
             {VISIBLE_FROM_ITEMS.map((item) => {
               const slot = itemPhotos[item.id] ?? { uploading: false };
+              const hasPhoto = slot.photoId != null;
               return (
-                <ItemBar
-                  key={item.id}
-                  label={item.label}
-                  photoUrl={slot.uploadedUrl ?? slot.previewUrl}
-                  uploading={slot.uploading}
-                  uploaded={!!slot.uploadedUrl}
-                  onClick={() => setCameraTarget(item.id)}
-                />
+                <div key={item.id} className="space-y-1.5">
+                  <ItemBar
+                    label={item.label}
+                    photoUrl={slot.uploadedUrl ?? slot.previewUrl}
+                    uploading={slot.uploading}
+                    uploaded={!!slot.uploadedUrl}
+                    onClick={() => setCameraTarget(item.id)}
+                  />
+                  <label className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={unavailableItems[item.id] ?? false}
+                      disabled={hasPhoto}
+                      onChange={(e) =>
+                        setUnavailableItems((prev) => ({
+                          ...prev,
+                          [item.id]: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-amber-400 text-amber-600 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <span className={hasPhoto ? "opacity-70" : undefined}>
+                      I don&apos;t have this option
+                    </span>
+                  </label>
+                </div>
               );
             })}
           </div>
@@ -324,7 +360,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
           <div className="mx-auto max-w-lg">
             <button
               type="button"
-              disabled={!mainPhoto.photoId || anyUploading || lockingIn}
+              disabled={!mainPhoto.photoId || !allItemsSatisfied || anyUploading || lockingIn}
               onClick={handleLockIn}
               className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-3.5 transition-colors shadow-lg text-base"
             >
