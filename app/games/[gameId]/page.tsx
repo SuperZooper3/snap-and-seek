@@ -7,6 +7,7 @@ import type { Game, Player } from "@/lib/types";
 import { getHidingDurationSeconds } from "@/lib/game-config";
 import { GameActions } from "./GameActions";
 import { PlayerList } from "./PlayerList";
+import { GamePageRefresh } from "./GamePageRefresh";
 
 type Props = { params: Promise<{ gameId: string }> };
 
@@ -58,6 +59,7 @@ export default async function GamePage({ params }: Props) {
 
   return (
     <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+      <GamePageRefresh />
       <main className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-16 pb-safe">
         <header className="mb-10">
           <Link

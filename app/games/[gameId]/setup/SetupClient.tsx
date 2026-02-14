@@ -42,13 +42,38 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
   // Lock-in state
   const [lockingIn, setLockingIn] = useState(false);
 
-  // ------- Upload helper -------
+  // ------- Upload helper (gets current position and saves to photo row for Radar) -------
   const uploadPhoto = useCallback(
     async (blob: Blob): Promise<{ url: string; id: number } | null> => {
       const formData = new FormData();
       formData.append("file", blob, `capture-${Date.now()}.jpg`);
       formData.append("game_id", gameId);
       formData.append("player_id", String(playerId));
+
+      // Get current position so we save lat/lng to the photos table (used by Radar).
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        try {
+          const coords = await new Promise<{ latitude: number; longitude: number } | null>(
+            (resolve) => {
+              navigator.geolocation.getCurrentPosition(
+                (pos) =>
+                  resolve({
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                  }),
+                () => resolve(null),
+                { enableHighAccuracy: true }
+              );
+            }
+          );
+          if (coords) {
+            formData.append("latitude", String(coords.latitude));
+            formData.append("longitude", String(coords.longitude));
+          }
+        } catch {
+          // Proceed without location
+        }
+      }
 
       try {
         const res = await fetch("/api/upload", {
