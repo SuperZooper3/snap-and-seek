@@ -62,7 +62,18 @@ export async function PATCH(
   }
   if (isStartSeeking) {
     updates.status = "seeking";
-    updates.seeking_started_at = new Date().toISOString();
+    // Only set seeking_started_at when starting seeking for the first time (don't reset if already seeking).
+    const { data: currentGame } = await supabase
+      .from("games")
+      .select("status, seeking_started_at")
+      .eq("id", gameId)
+      .single();
+    const alreadySeeking =
+      (currentGame as { status: string | null } | null)?.status === "seeking" &&
+      (currentGame as { seeking_started_at: string | null })?.seeking_started_at != null;
+    if (!alreadySeeking) {
+      updates.seeking_started_at = new Date().toISOString();
+    }
   }
 
   if (isStartHiding) {

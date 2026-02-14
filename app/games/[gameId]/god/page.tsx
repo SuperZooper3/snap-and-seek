@@ -42,6 +42,38 @@ export default async function GodModePage({ params }: Props) {
     radius_meters: game.zone_radius_meters as number,
   };
 
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, name, hiding_photo")
+    .eq("game_id", gameId)
+    .order("created_at", { ascending: true });
+
+  const photoIds = (players ?? [])
+    .map((p) => (p as { hiding_photo: number | null }).hiding_photo)
+    .filter((id): id is number => id != null);
+  const photoIdSet = [...new Set(photoIds)];
+  let photoUrlById: Record<number, string> = {};
+  if (photoIdSet.length > 0) {
+    const { data: photos } = await supabase
+      .from("photos")
+      .select("id, url")
+      .in("id", photoIdSet);
+    if (photos) {
+      for (const p of photos) {
+        photoUrlById[p.id as number] = (p as { url: string }).url;
+      }
+    }
+  }
+
+  const playerPhotos = (players ?? []).map((p) => {
+    const hidingPhoto = (p as { hiding_photo: number | null }).hiding_photo;
+    return {
+      playerId: p.id as number,
+      name: (p as { name: string }).name ?? "Unknown",
+      photoUrl: hidingPhoto != null ? photoUrlById[hidingPhoto] ?? null : null,
+    };
+  });
+
   return (
     <div className="flex min-h-screen min-h-[100dvh] w-full max-w-[100vw] flex-col overflow-x-hidden bg-zinc-900 font-sans">
       <header className="shrink-0 border-b border-white/10 bg-zinc-900 px-3 py-2 safe-area-inset-top">
@@ -57,7 +89,7 @@ export default async function GodModePage({ params }: Props) {
         </p>
       </header>
       <main className="flex min-h-0 min-w-0 flex-1 flex-col w-full overflow-hidden">
-        <GodMapWithPings gameId={gameId} zone={zone} />
+        <GodMapWithPings gameId={gameId} zone={zone} playerPhotos={playerPhotos} />
       </main>
     </div>
   );

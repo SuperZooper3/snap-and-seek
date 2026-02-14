@@ -272,64 +272,53 @@ export function SeekingLayout({
               <p className="text-sm text-sky-600 dark:text-sky-400 py-4">No target photo</p>
             )}
 
-            {/* Radar power-up: check if target's photo location is within distance */}
-            <section className="mt-6 pt-4 border-t border-sky-200/60 dark:border-zinc-600" aria-label="Radar">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-sky-800 dark:text-sky-200 mb-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50" aria-hidden>
-                  <svg className="h-4 w-4 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            {/* Radar: one compact line — icon, label, stepper, Search, Yes/No */}
+            <section className="mt-4 pt-3 border-t border-sky-200/60 dark:border-zinc-600 flex flex-wrap items-center gap-2" aria-label="Radar">
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-sky-800 dark:text-sky-200 shrink-0">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50" aria-hidden>
+                  <svg className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </span>
                 Radar
-              </h3>
-              <p className="text-xs text-sky-600 dark:text-sky-400 mb-3">Check if {selectedTarget.name}&apos;s spot is within:</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="inline-flex items-center rounded-xl bg-sky-50 dark:bg-zinc-700/80 border border-sky-200/60 dark:border-zinc-600">
-                  <button
-                    type="button"
-                    disabled={radarDistanceIndex === 0 || radarLoading}
-                    onClick={() => setRadarDistanceIndex((i) => Math.max(0, i - 1))}
-                    className="flex h-10 w-10 items-center justify-center rounded-l-xl text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-zinc-600 disabled:opacity-40 disabled:pointer-events-none touch-manipulation font-medium text-lg"
-                    aria-label="Decrease distance"
-                  >
-                    −
-                  </button>
-                  <span className="min-w-[3rem] text-center font-semibold tabular-nums text-sky-900 dark:text-sky-100">
-                    {radarDistanceMeters}
-                  </span>
-                  <span className="pr-2 text-sm text-sky-600 dark:text-sky-400">m</span>
-                  <button
-                    type="button"
-                    disabled={radarDistanceIndex === RADAR_DISTANCES.length - 1 || radarLoading}
-                    onClick={() => setRadarDistanceIndex((i) => Math.min(RADAR_DISTANCES.length - 1, i + 1))}
-                    className="flex h-10 w-10 items-center justify-center rounded-r-xl text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-zinc-600 disabled:opacity-40 disabled:pointer-events-none touch-manipulation font-medium text-lg"
-                    aria-label="Increase distance"
-                  >
-                    +
-                  </button>
-                </div>
+              </span>
+              <span className="text-xs text-sky-600 dark:text-sky-400 shrink-0">within</span>
+              <div className="inline-flex items-center rounded-lg bg-sky-50 dark:bg-zinc-700/80 border border-sky-200/60 dark:border-zinc-600 shrink-0">
                 <button
                   type="button"
-                  onClick={handleRadarSearch}
-                  disabled={radarLoading}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white font-medium px-4 py-2.5 text-sm touch-manipulation transition-colors"
+                  disabled={radarDistanceIndex === 0 || radarLoading}
+                  onClick={() => setRadarDistanceIndex((i) => Math.max(0, i - 1))}
+                  className="flex h-8 w-8 items-center justify-center rounded-l-lg text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-zinc-600 disabled:opacity-40 disabled:pointer-events-none touch-manipulation font-medium"
+                  aria-label="Decrease distance"
                 >
-                  {radarLoading ? (
-                    "Checking…"
-                  ) : (
-                    <>
-                      Search
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </>
-                  )}
+                  −
+                </button>
+                <span className="min-w-[2.25rem] text-center text-sm font-semibold tabular-nums text-sky-900 dark:text-sky-100">
+                  {radarDistanceMeters}
+                </span>
+                <span className="pr-1.5 text-xs text-sky-600 dark:text-sky-400">m</span>
+                <button
+                  type="button"
+                  disabled={radarDistanceIndex === RADAR_DISTANCES.length - 1 || radarLoading}
+                  onClick={() => setRadarDistanceIndex((i) => Math.min(RADAR_DISTANCES.length - 1, i + 1))}
+                  className="flex h-8 w-8 items-center justify-center rounded-r-lg text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-zinc-600 disabled:opacity-40 disabled:pointer-events-none touch-manipulation font-medium"
+                  aria-label="Increase distance"
+                >
+                  +
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={handleRadarSearch}
+                disabled={radarLoading}
+                className="inline-flex items-center gap-1 rounded-lg bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white font-medium px-3 py-1.5 text-sm touch-manipulation transition-colors shrink-0"
+              >
+                {radarLoading ? "…" : <>Search <span aria-hidden>→</span></>}
+              </button>
               {radarResult && (
-                <div
-                  className={`mt-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
+                <span
+                  className={`inline-flex items-center rounded-lg px-2.5 py-1 text-sm font-medium shrink-0 ${
                     radarResult.error && radarResult.distanceMeters == null
                       ? "bg-amber-100/80 dark:bg-zinc-600/80 text-amber-800 dark:text-amber-200"
                       : radarResult.withinDistance
@@ -337,12 +326,8 @@ export function SeekingLayout({
                         : "bg-sky-100/80 dark:bg-zinc-600/80 text-sky-800 dark:text-sky-200"
                   }`}
                 >
-                  {radarResult.error && radarResult.distanceMeters == null
-                    ? radarResult.error
-                    : radarResult.withinDistance
-                      ? `Yes — within ${radarResult.distanceMeters ?? "?"} m`
-                      : `No — ${radarResult.distanceMeters ?? "?"} m away`}
-                </div>
+                  {radarResult.error && radarResult.distanceMeters == null ? radarResult.error : radarResult.withinDistance ? "Yes" : "No"}
+                </span>
               )}
             </section>
           </div>

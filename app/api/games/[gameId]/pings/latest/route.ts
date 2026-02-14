@@ -54,13 +54,15 @@ export async function GET(
     (players ?? []).map((r) => [r.id as number, (r.name as string) ?? ""])
   );
 
-  const result = [...latestByPlayer.values()].map((p) => ({
-    player_id: p.player_id,
-    name: nameById.get(p.player_id) ?? "Unknown",
-    lat: p.lat,
-    lng: p.lng,
-    created_at: p.created_at,
-  }));
+  const result = [...latestByPlayer.values()]
+    .map((p) => ({
+      player_id: p.player_id,
+      name: nameById.get(p.player_id) ?? "Unknown",
+      lat: p.lat,
+      lng: p.lng,
+      created_at: p.created_at,
+    }))
+    .sort((a, b) => a.player_id - b.player_id);
 
   return NextResponse.json(result);
 }
