@@ -31,6 +31,12 @@ export interface Game {
   zone_center_lat: number | null;
   zone_center_lng: number | null;
   zone_radius_meters: number | null;
+  /** Hiding phase duration in seconds (default 600 = 10 min, min 30) */
+  hiding_duration_seconds: number | null;
+  /** Set when status becomes 'hiding' */
+  hiding_started_at: string | null;
+  /** Set when status becomes 'seeking' */
+  seeking_started_at: string | null;
 }
 
 /**

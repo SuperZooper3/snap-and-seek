@@ -12,17 +12,33 @@ export async function PATCH(
   const zoneCenterLat = body?.zone_center_lat;
   const zoneCenterLng = body?.zone_center_lng;
   const zoneRadiusMeters = body?.zone_radius_meters;
+  const hidingDurationSeconds = body?.hiding_duration_seconds;
 
   const isZoneUpdate =
     typeof zoneCenterLat === "number" &&
     typeof zoneCenterLng === "number" &&
     typeof zoneRadiusMeters === "number";
 
-  const isStartGame = status === "hiding";
+  const isStartHiding = status === "hiding";
+  const isStartSeeking = status === "seeking";
+  const isHidingDurationUpdate =
+    typeof hidingDurationSeconds === "number" &&
+    hidingDurationSeconds >= 30 &&
+    hidingDurationSeconds <= 86400;
 
-  if (!isZoneUpdate && !isStartGame) {
+  const validUpdate =
+    isZoneUpdate ||
+    isStartHiding ||
+    isStartSeeking ||
+    isHidingDurationUpdate;
+
+  if (!validUpdate) {
     return NextResponse.json(
-      { error: "Send zone (zone_center_lat, zone_center_lng, zone_radius_meters) or status: 'hiding'" },
+      {
+        error:
+          "Send zone (zone_center_lat, zone_center_lng, zone_radius_meters), " +
+          "status: 'hiding' | 'seeking', or hiding_duration_seconds (30–86400)",
+      },
       { status: 400 }
     );
   }
@@ -33,11 +49,19 @@ export async function PATCH(
     updates.zone_center_lng = zoneCenterLng;
     updates.zone_radius_meters = zoneRadiusMeters;
   }
-  if (isStartGame) {
+  if (isHidingDurationUpdate) {
+    updates.hiding_duration_seconds = hidingDurationSeconds;
+  }
+  if (isStartHiding) {
     updates.status = "hiding";
+    updates.hiding_started_at = new Date().toISOString();
+  }
+  if (isStartSeeking) {
+    updates.status = "seeking";
+    updates.seeking_started_at = new Date().toISOString();
   }
 
-  if (isStartGame) {
+  if (isStartHiding) {
     const { data: game, error: fetchError } = await supabase
       .from("games")
       .select("id, status, zone_center_lat, zone_center_lng, zone_radius_meters")

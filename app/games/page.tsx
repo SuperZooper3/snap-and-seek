@@ -53,7 +53,9 @@ export default async function GamesPage() {
                       className={
                         (game as Game).status === "hiding"
                           ? "ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-200/90 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100"
-                          : "ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-amber-200/80 dark:bg-amber-800/50 text-amber-800 dark:text-amber-200"
+                          : (game as Game).status === "seeking"
+                            ? "ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-sky-200/90 dark:bg-sky-800/50 text-sky-900 dark:text-sky-100"
+                            : "ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-amber-200/80 dark:bg-amber-800/50 text-amber-800 dark:text-amber-200"
                       }
                     >
                       {(game as Game).status ?? "lobby"}

@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import { ZoneWithLocation } from "./ZoneWithLocation";
+import { HidingTimeRemaining } from "./HidingTimeRemaining";
+import { StartSeekingTestLink } from "./StartSeekingTestLink";
 
 type Props = { params: Promise<{ gameId: string }> };
 
@@ -20,7 +22,7 @@ export default async function GameZonePage({ params }: Props) {
 
   const { data: game, error } = await supabase
     .from("games")
-    .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters")
+    .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, hiding_started_at, hiding_duration_seconds")
     .eq("id", gameId)
     .single();
 
@@ -62,6 +64,10 @@ export default async function GameZonePage({ params }: Props) {
       </header>
 
       <main className="relative flex min-h-0 flex-1 flex-col w-full">
+        <HidingTimeRemaining
+          hidingStartedAt={(game as { hiding_started_at: string | null }).hiding_started_at}
+          hidingDurationSeconds={(game as { hiding_duration_seconds: number | null }).hiding_duration_seconds ?? 600}
+        />
         <ZoneWithLocation zone={zone} gameId={gameId} playerId={currentPlayer.id} />
       </main>
 
@@ -75,6 +81,7 @@ export default async function GameZonePage({ params }: Props) {
         >
           Go to photo capture
         </Link>
+        <StartSeekingTestLink gameId={gameId} />
       </footer>
     </div>
   );
