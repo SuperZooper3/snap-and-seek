@@ -9,6 +9,10 @@ export interface Photo {
   latitude: number | null;
   longitude: number | null;
   location_name: string | null;
+  game_id: string | null;
+  player_id: number | null;
+  label: string | null;
+  is_main: boolean;
 }
 
 /**

@@ -70,6 +70,14 @@ export async function POST(request: NextRequest) {
       !isNaN(latitude) &&
       !isNaN(longitude);
 
+    // Parse optional game/player/item fields (used by the setup page)
+    const gameId = (formData.get("game_id") as string | null) || null;
+    const playerIdStr = formData.get("player_id") as string | null;
+    const playerId = playerIdStr ? parseInt(playerIdStr, 10) : null;
+    const label = (formData.get("label") as string | null) || null;
+    const isMainStr = formData.get("is_main") as string | null;
+    const isMain = isMainStr === "true";
+
     // Reverse geocode if we have coordinates
     let locationName: string | null = null;
     if (hasLocation) {
@@ -108,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     const publicUrl = urlData.publicUrl;
 
-    // Insert record into photos table (with location if available)
+    // Insert record into photos table (with location + game context if available)
     const { data: photoRecord, error: dbError } = await supabase
       .from("photos")
       .insert({
@@ -119,6 +127,10 @@ export async function POST(request: NextRequest) {
           longitude,
           location_name: locationName,
         }),
+        ...(gameId && { game_id: gameId }),
+        ...(playerId && { player_id: playerId }),
+        ...(label && { label }),
+        is_main: isMain,
       })
       .select()
       .single();
