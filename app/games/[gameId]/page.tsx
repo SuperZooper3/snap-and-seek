@@ -1,0 +1,88 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { supabase } from "@/lib/supabase";
+import type { Game, Player } from "@/lib/types";
+import { GameActions } from "./GameActions";
+
+type Props = { params: Promise<{ gameId: string }> };
+
+async function getBaseUrl() {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+  if (url) return url.replace(/\/$/, "");
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  return host ? `${proto}://${host}` : "http://localhost:3000";
+}
+
+export default async function GamePage({ params }: Props) {
+  const { gameId } = await params;
+
+  const { data: game, error: gameError } = await supabase
+    .from("games")
+    .select("*")
+    .eq("id", gameId)
+    .single();
+
+  if (gameError || !game) {
+    notFound();
+  }
+
+  const { data: players } = await supabase
+    .from("players")
+    .select("*")
+    .eq("game_id", gameId)
+    .order("created_at", { ascending: true });
+
+  const joinUrl = `${await getBaseUrl()}/join/${gameId}`;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+      <main className="mx-auto max-w-2xl px-6 py-16">
+        <header className="mb-10">
+          <Link
+            href="/"
+            className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+          >
+            ← Create game
+          </Link>
+          <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">
+            {(game as Game).name || "Unnamed game"}
+          </h1>
+        </header>
+
+        <section className="rounded-2xl bg-white/80 dark:bg-zinc-800/80 shadow-lg border border-amber-200/50 dark:border-zinc-700 p-6 space-y-6">
+          <GameActions
+            gameId={gameId}
+            status={(game as Game).status}
+            joinUrl={joinUrl}
+          />
+
+          <div>
+            <h2 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-3">
+              Players ({((players as Player[]) ?? []).length})
+            </h2>
+            {(!players || players.length === 0) && (
+              <p className="text-amber-800/70 dark:text-amber-200/70 text-sm">
+                No players yet. Share the link above so others can join.
+              </p>
+            )}
+            {players && players.length > 0 && (
+              <ul className="space-y-2">
+                {(players as Player[]).map((p) => (
+                  <li
+                    key={p.id}
+                    className="rounded-lg bg-amber-50/80 dark:bg-zinc-700/80 px-4 py-2 text-amber-900 dark:text-amber-100"
+                  >
+                    {p.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

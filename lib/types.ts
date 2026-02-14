@@ -10,3 +10,23 @@ export interface Photo {
   longitude: number | null;
   location_name: string | null;
 }
+
+/**
+ * Game record from the database
+ */
+export interface Game {
+  id: string;
+  name: string | null;
+  status: string | null;
+  created_at: string | null;
+}
+
+/**
+ * Player record from the database
+ */
+export interface Player {
+  id: number;
+  created_at: string;
+  name: string;
+  game_id: string;
+}
