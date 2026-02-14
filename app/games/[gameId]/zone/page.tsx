@@ -61,7 +61,7 @@ export default async function GameZonePage({ params }: Props) {
       </header>
 
       <main className="relative flex min-h-0 flex-1 flex-col w-full">
-        <ZoneWithLocation zone={zone} />
+        <ZoneWithLocation zone={zone} gameId={gameId} playerId={currentPlayer.id} />
       </main>
 
       <footer className="shrink-0 border-t border-amber-200/50 dark:border-zinc-700 px-4 py-3 pb-safe space-y-2 bg-amber-50/80 dark:bg-zinc-900/80">

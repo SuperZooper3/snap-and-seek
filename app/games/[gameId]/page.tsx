@@ -80,6 +80,15 @@ export default async function GamePage({ params }: Props) {
             currentPlayer={currentPlayer}
           />
 
+          {zone && !currentPlayer && (
+          <Link
+            href={`/games/${gameId}/god`}
+            className="touch-manipulation block w-full rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold px-6 py-3 text-center transition-colors"
+          >
+            God mode — view all positions on map
+          </Link>
+        )}
+
           <PlayerList
             gameId={gameId}
             players={(players as Player[]) ?? []}

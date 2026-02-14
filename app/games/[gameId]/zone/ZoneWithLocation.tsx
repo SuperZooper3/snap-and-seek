@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ZoneMapView } from "./ZoneMapView";
 import { isEntirelyOutsideZone } from "@/lib/map-utils";
 
-const REFRESH_INTERVAL_MS = 10_000;
+const MIN_PING_INTERVAL_MS = 8_000;
 
 type Zone = {
   center_lat: number;
@@ -14,6 +14,8 @@ type Zone = {
 
 type Props = {
   zone: Zone;
+  gameId: string;
+  playerId: number;
 };
 
 type UserPosition = {
@@ -22,10 +24,25 @@ type UserPosition = {
   accuracy: number;
 } | null;
 
-export function ZoneWithLocation({ zone }: Props) {
+export function ZoneWithLocation({ zone, gameId, playerId }: Props) {
   const [userPosition, setUserPosition] = useState<UserPosition>(null);
   const [countdown, setCountdown] = useState(10);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const lastPingAtRef = useRef<number>(0);
+
+  const uploadPing = useCallback(
+    (lat: number, lng: number) => {
+      const now = Date.now();
+      if (now - lastPingAtRef.current < MIN_PING_INTERVAL_MS) return;
+      lastPingAtRef.current = now;
+      fetch(`/api/games/${gameId}/pings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player_id: playerId, lat, lng }),
+      }).catch(() => {});
+    },
+    [gameId, playerId]
+  );
 
   const refreshLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -35,12 +52,15 @@ export function ZoneWithLocation({ zone }: Props) {
     setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
         setUserPosition({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lat,
+          lng,
           accuracy: position.coords.accuracy ?? 30,
         });
         setCountdown(10);
+        uploadPing(lat, lng);
       },
       () => {
         setLocationError("Could not get location");
@@ -48,7 +68,7 @@ export function ZoneWithLocation({ zone }: Props) {
       },
       { enableHighAccuracy: true }
     );
-  }, []);
+  }, [uploadPing]);
 
   useEffect(() => {
     refreshLocation();
