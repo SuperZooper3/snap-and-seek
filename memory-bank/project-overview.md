@@ -16,4 +16,19 @@ Hide-and-seek meets scavenger hunt. Teams photograph hidden spots, then race to 
 
 ## Current State
 - ✅ Next.js + Supabase starter
-- 📋 Everything else TBD
+- ✅ Photo upload backend (API routes for upload/fetch)
+- ✅ Photo display test page (`/test-upload`)
+- ✅ Supabase Storage integration (`snap-and-seek-image` bucket)
+- 📋 Game lobby system - TBD
+- 📋 GPS tracking - TBD
+- 📋 Proximity questions - TBD
+- 📋 Main game UI - TBD
+
+## Implementation Progress
+
+### Phase 1: Photo Infrastructure (COMPLETED)
+- ✅ Database schema: `photos` table with minimal fields
+- ✅ Storage bucket: `snap-and-seek-image` (public)
+- ✅ API routes: `/api/upload` and `/api/photos`
+- ✅ Test page: `/test-upload` for validating upload/display
+- ✅ TypeScript types: Photo interface in `lib/types.ts`
