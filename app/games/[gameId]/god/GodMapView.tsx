@@ -27,16 +27,12 @@ type Props = {
   photoMarkers?: PlayerMarker[];
 };
 
-/** Pin-shaped marker with letter; anchor at tip of pin. */
-function makePinIconUrl(hexColor: string, letter: string): string {
-  const w = 32;
-  const h = 40;
-  const cx = w / 2;
-  const circleR = 11;
-  const circleCy = 13;
-  const tipY = h - 2;
+/** Circle marker with letter for live player positions. */
+function makeCircleIconUrl(hexColor: string, letter: string): string {
+  const size = 36;
+  const r = size / 2;
   const safeLetter = letter.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><circle cx="${cx}" cy="${circleCy}" r="${circleR}" fill="${hexColor}" stroke="white" stroke-width="1.5"/><path fill="${hexColor}" stroke="white" stroke-width="1.5" d="M ${cx - 7} ${circleCy + 5} L ${cx} ${tipY} L ${cx + 7} ${circleCy + 5} Z"/><text x="${cx}" y="${circleCy + 4}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="bold" font-family="system-ui,sans-serif">${safeLetter}</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${r}" cy="${r}" r="${r - 2}" fill="${hexColor}" stroke="white" stroke-width="2"/><text x="${r}" y="${r + 4}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-weight="bold" font-family="system-ui,sans-serif">${safeLetter}</text></svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
@@ -137,10 +133,11 @@ export function GodMapView({ zone, playerMarkers, photoMarkers = [] }: Props) {
           <Marker
             key={`photo-${p.player_id}`}
             position={{ lat: p.lat, lng: p.lng }}
-            icon={{
-              url: makePinIconUrl(p.color, p.name.length > 0 ? p.name.charAt(0).toUpperCase() : "?"),
-              scaledSize: new google.maps.Size(32, 40),
-              anchor: new google.maps.Point(16, 38),
+            label={{
+              text: p.name,
+              color: "#1f2937",
+              fontWeight: "600",
+              fontSize: "12px",
             }}
             title={`${p.name}'s photo`}
           />
@@ -150,9 +147,16 @@ export function GodMapView({ zone, playerMarkers, photoMarkers = [] }: Props) {
             key={`live-${p.player_id}`}
             position={{ lat: p.lat, lng: p.lng }}
             icon={{
-              url: makePinIconUrl(p.color, p.name.length > 0 ? p.name.charAt(0).toUpperCase() : "?"),
-              scaledSize: new google.maps.Size(32, 40),
-              anchor: new google.maps.Point(16, 38),
+              url: makeCircleIconUrl(p.color, p.name.length > 0 ? p.name.charAt(0).toUpperCase() : "?"),
+              scaledSize: new google.maps.Size(36, 36),
+              anchor: new google.maps.Point(18, 18),
+              labelOrigin: new google.maps.Point(18, 42),
+            }}
+            label={{
+              text: p.name,
+              color: "#1f2937",
+              fontWeight: "600",
+              fontSize: "11px",
             }}
             title={p.name}
           />

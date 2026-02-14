@@ -107,22 +107,22 @@ export function GodPhotoTray({ playerPhotos }: Props) {
         <span className="w-10 h-1 rounded-full bg-white/40" aria-hidden />
       </button>
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        <p className="shrink-0 text-xs text-white/70 px-4 pb-2">Everyone&apos;s photos</p>
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden overscroll-x-contain">
-          <div className="inline-flex gap-4 px-4 pb-4 h-full">
+        <p className="shrink-0 text-xs text-white/70 px-4 pb-1.5">Everyone&apos;s photos</p>
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto overscroll-x-contain">
+          <div className="inline-flex gap-3 px-4 pb-4 items-end">
             {playerPhotos.map((p) => (
               <div
                 key={p.playerId}
-                className="flex flex-col shrink-0 w-[min(180px,40vw)] h-full min-h-[140px]"
+                className="flex flex-col shrink-0 w-[min(280px,75vw)]"
               >
-                <div className="rounded-lg overflow-hidden bg-zinc-700/80 flex-1 min-h-0 relative aspect-[4/3] max-h-[200px]">
+                <div className="rounded-lg overflow-hidden bg-zinc-700/80 relative w-full aspect-[4/3]">
                   {p.photoUrl ? (
                     <Image
                       src={p.photoUrl}
                       alt={`${p.name}'s hiding spot`}
                       fill
-                      className="object-cover"
-                      sizes="180px"
+                      className="object-contain"
+                      sizes="280px"
                       unoptimized
                     />
                   ) : (
@@ -131,7 +131,7 @@ export function GodPhotoTray({ playerPhotos }: Props) {
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-white mt-1.5 truncate text-center">
+                <p className="text-sm font-medium text-white mt-1.5 truncate text-center shrink-0">
                   {p.name}
                 </p>
               </div>
