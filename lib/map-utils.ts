@@ -26,6 +26,27 @@ export function circleToPolygonPoints(
 }
 
 /**
+ * Bounding box (degrees) that contains the circle. Use with map.fitBounds().
+ */
+export function getBoundsForCircle(
+  centerLat: number,
+  centerLng: number,
+  radiusMeters: number
+): { north: number; south: number; east: number; west: number } {
+  const latRad = (centerLat * Math.PI) / 180;
+  const metersPerDegLat = 111320;
+  const metersPerDegLng = 111320 * Math.cos(latRad);
+  const dLat = radiusMeters / metersPerDegLat;
+  const dLng = radiusMeters / metersPerDegLng;
+  return {
+    north: centerLat + dLat,
+    south: centerLat - dLat,
+    east: centerLng + dLng,
+    west: centerLng - dLng,
+  };
+}
+
+/**
  * Large rectangle in lat/lng that covers a wide area (for "outside zone" overlay).
  * Centered on (centerLat, centerLng), halfSideDeg is half the side in degrees.
  */

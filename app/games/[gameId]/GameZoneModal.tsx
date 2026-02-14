@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -8,19 +8,17 @@ import {
   Circle,
   Polygon,
 } from "@react-google-maps/api";
-import { circleToPolygonPoints, outerBounds } from "@/lib/map-utils";
+import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
-const mapContainerStyle = {
-  width: "100%",
-  minHeight: "280px",
-};
+const ZONE_FIT_PADDING_PX = 16;
+
 
 const BLUE_DOT_ICON_URL =
   "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
 
-const RADIUS_MIN_M = 100;
-const RADIUS_MAX_M = 2000;
-const RADIUS_STEP_M = 50;
+const RADIUS_MIN_M = 50;
+const RADIUS_MAX_M = 1000;
+const RADIUS_STEP_M = 25;
 
 type LocationState =
   | { status: "idle" }
@@ -61,9 +59,10 @@ export function GameZoneModal({
         }
       : { status: "idle" as const }
   );
-  const [radiusMeters, setRadiusMeters] = useState(
-    initialZone?.radius_meters ?? 500
-  );
+  const [radiusMeters, setRadiusMeters] = useState(() => {
+    const r = initialZone?.radius_meters ?? 500;
+    return Math.min(RADIUS_MAX_M, Math.max(RADIUS_MIN_M, r));
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -72,6 +71,8 @@ export function GameZoneModal({
     googleMapsApiKey: apiKey,
   });
 
+  const mapRef = useRef<google.maps.Map | null>(null);
+
   const center = useMemo(() => {
     if (location.status !== "success") return { lat: 0, lng: 0 };
     return {
@@ -79,6 +80,16 @@ export function GameZoneModal({
       lng: location.coords.longitude,
     };
   }, [location]);
+
+  const fitMapToZone = useCallback((map: google.maps.Map) => {
+    if (center.lat === 0 && center.lng === 0) return;
+    const b = getBoundsForCircle(center.lat, center.lng, radiusMeters);
+    const bounds = new google.maps.LatLngBounds(
+      { lat: b.south, lng: b.west },
+      { lat: b.north, lng: b.east }
+    );
+    map.fitBounds(bounds, ZONE_FIT_PADDING_PX);
+  }, [center.lat, center.lng, radiusMeters]);
 
   const getLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -174,9 +185,14 @@ export function GameZoneModal({
   const canSave = location.status === "success";
   const showMap = isLoaded && location.status === "success";
 
+  useEffect(() => {
+    if (!mapRef.current || center.lat === 0) return;
+    fitMapToZone(mapRef.current);
+  }, [center.lat, center.lng, radiusMeters, fitMapToZone]);
+
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col bg-amber-50/95 dark:bg-zinc-900/95 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex min-h-screen min-h-[100dvh] flex-col bg-amber-50/95 dark:bg-zinc-900/95 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="zone-modal-title"
@@ -201,75 +217,85 @@ export function GameZoneModal({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-safe">
-        {location.status === "loading" && (
-          <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
-            Getting your location…
-          </p>
-        )}
-        {location.status === "error" && (
-          <p className="text-sm text-red-600 dark:text-red-400 mb-3">
-            {location.message}
-          </p>
-        )}
-        {location.status === "success" && (
-          <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
-            Center: {location.coords.latitude.toFixed(5)},{" "}
-            {location.coords.longitude.toFixed(5)} · Accuracy ~
-            {Math.round(location.coords.accuracy)} m
-          </p>
-        )}
-
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={getLocation}
-            className="touch-manipulation rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-medium px-4 py-2.5 text-sm transition-colors"
-          >
-            Refresh location
-          </button>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
-            Zone radius: {radiusMeters} m
-          </label>
-          <input
-            type="range"
-            min={RADIUS_MIN_M}
-            max={RADIUS_MAX_M}
-            step={RADIUS_STEP_M}
-            value={radiusMeters}
-            onChange={(e) => setRadiusMeters(Number(e.target.value))}
-            className="w-full h-3 rounded-full appearance-none bg-amber-200 dark:bg-zinc-600 accent-amber-600"
-            aria-valuemin={RADIUS_MIN_M}
-            aria-valuemax={RADIUS_MAX_M}
-            aria-valuenow={radiusMeters}
-          />
-          <div className="flex justify-between text-xs text-amber-700 dark:text-amber-300 mt-1">
-            <span>{RADIUS_MIN_M} m</span>
-            <span>{RADIUS_MAX_M} m</span>
-          </div>
+      <div className="flex flex-1 flex-col min-h-0">
+        <div className="shrink-0 px-4 py-3 space-y-2">
+          {location.status === "loading" && (
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              Getting your location…
+            </p>
+          )}
+          {location.status === "error" && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {location.message}
+            </p>
+          )}
+          {location.status === "success" && (
+            <>
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                Center: {location.coords.latitude.toFixed(5)},{" "}
+                {location.coords.longitude.toFixed(5)} · Accuracy ~
+                {Math.round(location.coords.accuracy)} m
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={getLocation}
+                  className="touch-manipulation shrink-0 rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-medium px-4 py-2 text-sm transition-colors"
+                >
+                  Refresh location
+                </button>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="block text-xs font-medium text-amber-900 dark:text-amber-100 mb-1">
+                    Zone radius: {radiusMeters} m
+                  </label>
+                  <input
+                    type="range"
+                    min={RADIUS_MIN_M}
+                    max={RADIUS_MAX_M}
+                    step={RADIUS_STEP_M}
+                    value={radiusMeters}
+                    onChange={(e) => setRadiusMeters(Number(e.target.value))}
+                    className="w-full h-2.5 rounded-full appearance-none bg-amber-200 dark:bg-zinc-600 accent-amber-600"
+                    aria-valuemin={RADIUS_MIN_M}
+                    aria-valuemax={RADIUS_MAX_M}
+                    aria-valuenow={radiusMeters}
+                  />
+                  <div className="flex justify-between text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                    <span>{RADIUS_MIN_M} m</span>
+                    <span>{RADIUS_MAX_M} m</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {loadError && (
-          <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-red-700 dark:text-red-300 text-sm mb-4">
+          <div className="shrink-0 mx-4 mb-2 rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-red-700 dark:text-red-300 text-sm">
             Failed to load map. Check your API key.
           </div>
         )}
 
-        {!isLoaded && !loadError && (
-          <div className="w-full min-h-[280px] rounded-xl bg-amber-100/80 dark:bg-zinc-700/80 flex items-center justify-center text-amber-800 dark:text-amber-200 text-sm mb-4">
+        {!isLoaded && !loadError && !showMap && (
+          <div className="flex-1 min-h-0 flex items-center justify-center text-amber-800 dark:text-amber-200 text-sm px-4">
             Loading map…
           </div>
         )}
 
         {showMap && (
-          <div className="w-full overflow-hidden rounded-xl border border-amber-200/50 dark:border-zinc-600 mb-4 relative">
+          <div className="flex-1 min-h-0 w-full relative">
             <GoogleMap
-              mapContainerStyle={mapContainerStyle}
+              mapContainerStyle={{ width: "100%", height: "100%" }}
+              mapContainerClassName="absolute inset-0"
               center={center}
               zoom={15}
+              onLoad={(map) => {
+                mapRef.current = map;
+                fitMapToZone(map);
+              }}
+              onUnmount={() => {
+                mapRef.current = null;
+              }}
               options={{
                 zoomControl: true,
                 mapTypeControl: true,
@@ -290,15 +316,15 @@ export function GameZoneModal({
                   zIndex: 1,
                 }}
               />
-              {/* Zone boundary: red circle */}
+              {/* Zone boundary: red circle, empty inside */}
               <Circle
                 center={center}
                 radius={radiusMeters}
                 options={{
                   strokeColor: "#b91c1c",
                   strokeWeight: 3,
-                  fillColor: "#22c55e",
-                  fillOpacity: 0.15,
+                  fillColor: "transparent",
+                  fillOpacity: 0,
                   clickable: false,
                   zIndex: 2,
                 }}
@@ -328,13 +354,10 @@ export function GameZoneModal({
           </div>
         )}
 
-        {saveError && (
-          <p className="text-sm text-red-600 dark:text-red-400 mb-3">
-            {saveError}
-          </p>
-        )}
-
-        <div className="flex flex-col gap-2">
+        <div className="shrink-0 px-4 py-3 pb-safe border-t border-amber-200/60 dark:border-zinc-700 space-y-2">
+          {saveError && (
+            <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+          )}
           <button
             type="button"
             onClick={handleSave}
@@ -344,8 +367,7 @@ export function GameZoneModal({
             {saving ? "Saving…" : "Save game zone"}
           </button>
           <p className="text-xs text-amber-700 dark:text-amber-300">
-            The game zone is required before starting. Inside the green circle is
-            the play area; outside is out of bounds (red).
+            Inside the circle = play area. Outside = out of bounds (red).
           </p>
         </div>
       </div>

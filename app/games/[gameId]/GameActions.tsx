@@ -125,7 +125,7 @@ export function GameActions({ gameId, status, joinUrl, playerCount, zone }: Prop
             href={`/games/${gameId}/zone`}
             className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 text-center transition-colors"
           >
-            View game zone
+            Start hiding
           </a>
         </div>
       )}
