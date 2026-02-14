@@ -2,13 +2,15 @@
  * Photo record from the database
  */
 export interface Photo {
-  id: string;
+  id: number;
   url: string;
   storage_path: string;
   created_at: string;
   latitude: number | null;
   longitude: number | null;
   location_name: string | null;
+  game_id: string | null;
+  player_id: number | null;
 }
 
 /**
@@ -47,4 +49,12 @@ export interface Player {
   created_at: string;
   name: string;
   game_id: string;
+  /** bigint FK to photos.id — the main hiding spot photo */
+  hiding_photo: number | null;
+  /** bigint FK to photos.id — optional tree photo */
+  tree_photo: number | null;
+  /** bigint FK to photos.id — optional building photo */
+  building_photo: number | null;
+  /** bigint FK to photos.id — optional path photo */
+  path_photo: number | null;
 }

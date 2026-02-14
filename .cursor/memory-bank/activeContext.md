@@ -1,21 +1,33 @@
 # Active Context
 
 ## Current focus
-- Game zone and zone view are implemented and documented in the memory bank.
+- Player waiting/ready-up page and photo lock-in flow.
+- Game flow: lobby → hiding (zone + photo setup) → waiting (ready-up) → seeking.
 
-## Recent changes (game zone + player identity)
-- **Games table:** Zone columns (see `docs/supabase-game-zone.sql`). Zone required before start.
-- **Set game zone modal:** Full-screen, 50m–1km slider, map (red outside, zone circle, blue pin + accuracy). fitBounds to zone; no stacking (no keys, imperative user circle on zone view).
-- **Game page:** GameActions receives `currentPlayer`. "Start hiding" only when currentPlayer set; else "Join as a player below (tap a name) to start hiding." **PlayerList:** when !currentPlayer, player rows are clickable → assume identity (`setPlayerInCookie`); when currentPlayer, "You are: X" + "Release my identity" (`clearPlayerForGame`).
-- **Zone / capture pages:** Redirect to `/games/[gameId]` if !currentPlayer (cookie check).
-- **lib/player-cookie.ts:** `getPlayerForGame`, `setPlayerInCookie`, `clearPlayerForGame(gameId)` (release). Cookie name `sas_players`, per-game `{ id, name }`.
-- **Map helpers:** `lib/map-utils.ts` — getBoundsForCircle, distanceMeters, isEntirelyOutsideZone, circleToPolygonPoints, outerBounds.
+## Recent changes
+- **Photo lock-in refactor:** Removed `label`/`is_main` from photos table. Added `hiding_photo`, `tree_photo`, `building_photo`, `path_photo` (bigint FK to `photos.id`) on `players` table. Photos upload immediately but are only "locked in" to the player row on "Next" click via `PATCH /api/games/[gameId]/lock-in`. Migration: `docs/supabase-player-photos.sql`.
+- **Setup page items:** Changed from Tree/Rock to Tree/Building/Path. IDs match player column names. `PhotoSlot` now tracks `photoId` (number). Upload API no longer sends label/is_main.
+- **Waiting page:** `/games/[gameId]/waiting` — polls `/api/games/[gameId]/readiness` every 5s with visible countdown. Player is ready when `players.hiding_photo IS NOT NULL`. Blue "Start seeking!" button enabled when all ready → PATCH status to "seeking" → navigate to seeking page.
+- **Seeking phase:** Status `"seeking"`, `seeking_started_at`, `/games/[gameId]/seeking` with map + timer pill.
+- **Other merged features:** Hiding timer, hiding duration config, god mode, player pings.
+
+## Recent decisions
+- Photo IDs are bigint (not UUID) — `photos.id` is Supabase default bigint.
+- Photos upload immediately for preview feedback; lock-in writes IDs to player row on "Next".
+- Retaking photos overwrites the player columns with new photo IDs. Old photos orphaned but harmless.
+- Readiness checks `players.hiding_photo` directly — no cross-table query needed.
+- Optional photos (tree/building/path) don't affect readiness.
+- Waiting page uses 5s polling (not realtime).
 
 ## Important patterns
-- **Avoid map overlay stacking:** Use stable keys for Marker; for Circle that updates every N seconds, use imperative API (ref, create once, update in place) instead of library `<Circle>` which can stack on prop change.
-- **Zone map layout:** Full-size map needs parent with explicit height (e.g. flex-1 min-h-[50vh]); map container minHeight 50vh; trigger `resize` + fitBounds after load for correct tiles.
-- **Mobile:** viewport `viewportFit: cover`, touch-manipulation, safe-area classes, full-width CTAs.
+- **Lock-in flow:** Upload returns `{ id, url }` → stored in client state → "Next" calls lock-in API → navigate to waiting.
+- **Game status flow:** `"lobby"` → `"hiding"` → `"seeking"`.
+- **Auto-redirect on game page:** seeking → seeking page, hiding → zone. Bypass with `?manage=1`.
+- Cookie-based player identity (`sas_players`).
+- Imperative google.maps.Circle to avoid stacking on zone map.
 
-## Next steps (not started)
-- Real photo capture flow (camera + upload tied to game).
-- Teams, active play phase, results.
+## Known issues
+- Old orphaned photo rows accumulate in photos table (no cleanup).
+
+## Next steps
+- Teams, active play mechanics, results.

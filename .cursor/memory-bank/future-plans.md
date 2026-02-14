@@ -4,15 +4,14 @@
 
 ### 1. ~~Enhance Photos Table Schema~~ (DONE)
 `latitude`, `longitude`, `location_name` columns added. Camera capture + geolocation tagging + reverse geocoding implemented.
+`game_id`, `player_id`, `label`, `is_main` columns added for setup page. Migration SQL in `docs/supabase-schema-changes.sql`.
 
-**Remaining fields to add when needed:**
-```sql
-ALTER TABLE photos
-ADD COLUMN game_id UUID REFERENCES games(id),
-ADD COLUMN team_id UUID,
-ADD COLUMN hints TEXT,
-ADD COLUMN metadata JSONB;
-```
+**IMPORTANT — Photo labeling concern:**
+Currently non-main photos use a simple text `label` field (e.g., "Tree", "Rock") to distinguish categories. When the "Visible from" items become dynamic (not hardcoded), this system needs to be made more robust:
+- Consider a dedicated `item_id` foreign key referencing a new `game_items` or `setup_items` table.
+- Or add a unique constraint on `(game_id, player_id, label)` to prevent duplicates.
+- Need reliable per-category queries: "get all photos for player X in game Y, grouped by item."
+- Current text-label approach works for the hardcoded demo but will break down with user-defined items (duplicates, renames, etc.).
 
 ### 2. Game Lobby System
 **Priority: HIGH**
@@ -87,36 +86,19 @@ CREATE TABLE player_positions (
 - `/api/position/[gameId]` - Get all positions for game
 
 **Maps Implementation:**
-- Install: `npm install @react-google-maps/api`
+- Install: `npm install @react-google-maps/api` (already installed)
 - Create client-only map component (e.g. `MapDisplay.tsx`)
   - Takes `lat`, `lng` as props
   - Uses `useJsApiLoader` + `GoogleMap` + `Marker`
   - Container: `width: 100%` and `min-height: 300px` or `50vh`
 - Load with `next/dynamic(..., { ssr: false })` to avoid SSR issues
-- Component structure:
-  - `GoogleMap` with `center={{ lat, lng }}` and `zoom={15}`
-  - `Marker` at `position={{ lat, lng }}` for "you are here"
-  - Optional: Disable unnecessary UI (fullscreen, street view) for minimal in-app map
-
-**Mobile-Friendly Setup:**
-- Ensure viewport meta tag: `<meta name="viewport" content="width=device-width, initial-scale=1">`
-- Responsive container with min-height for mobile
-- Touch gestures (pan/zoom) work by default
-- Place map below location button for easy first tap
-
-**Implementation Steps:**
-1. Add `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` to `.env.local` and `.env.example`
-2. Create `MapDisplay.tsx` client component with map rendering logic
-3. Load component with `next/dynamic` from parent (e.g. `LocationDisplay.tsx`)
-4. When location is available, render map and pass coordinates
-5. Optional: Show "Loading map..." state while Google script loads
 
 **Libraries:**
-- `@react-google-maps/api` for Google Maps (already chosen)
+- `@react-google-maps/api` for Google Maps (already installed)
 - Turf.js for distance calculations
 
 ### 5. ~~Camera Integration~~ (DONE)
-Implemented via `getUserMedia` with `facingMode: "environment"` (rear camera). `CameraCapture` component with viewfinder, shutter, preview, retake. Geolocation captured at time of photo. Reverse geocoding server-side.
+Implemented via `getUserMedia` with `facingMode: "environment"` (rear camera). `CameraCapture` shared component with viewfinder, shutter, preview, retake, `autoStart`/`fullScreen` props. Wrapped in `CameraModal` for full-screen overlay use. Geolocation captured at time of photo. Reverse geocoding server-side.
 
 ### 6. Proximity Questions System
 **Priority: MEDIUM**
@@ -247,14 +229,15 @@ Currently using service role key (bypasses RLS). For production:
 For fastest path to playable demo:
 
 1. ✅ Photo upload/display (DONE)
-2. **Lobby system** - Need this to coordinate players
-3. **Teams** - Assign players to teams
-4. **GPS tracking** - Core mechanic
-5. **Map view** - Visualize game state
-6. **Photo setup phase** - Let teams hide spots
-7. **Active play phase** - Find targets
-8. **Basic proximity questions** - Help players search
-9. **Auto-discovery** - Detect when targets found
-10. **Results screen** - Declare winner
+2. ✅ Lobby system (DONE — basic: create, join, player list)
+3. ✅ Photo setup phase (DONE — main photo + hardcoded items + camera modal)
+4. **Dynamic item selection** — Make "Visible from" items user-configurable
+5. **Teams** — Assign players to teams
+6. **GPS tracking** — Core mechanic
+7. **Map view** — Visualize game state
+8. **Active play phase** — Find targets
+9. **Basic proximity questions** — Help players search
+10. **Auto-discovery** — Detect when targets found
+11. **Results screen** — Declare winner
 
 Everything else is polish!

@@ -4,6 +4,13 @@
 - **Home:** Server Component; fetches games via Supabase server client.
 - **Location test:** Page is server component; all interactive UI is in client components (`LocationDisplay`, `MapDisplay`). Map script loads only on client via `useJsApiLoader` and dynamic import with `ssr: false`.
 - **Photo upload (`/test-upload`):** Client component with `CameraCapture` child. Camera + geolocation both client-side; upload + reverse geocoding server-side via API route.
+- **Game lobby (`/games/[gameId]`):** Server component fetches game + players. Client component `GameActions` handles start game, share link, zone modal. `PlayerList` handles assume/release identity. Cookie-based player identity.
+- **Photo setup (`/games/[gameId]/setup`):** Server component checks cookie identity (redirects to join if missing), fetches game. Client component `SetupClient` manages photo slots, camera modal, per-item uploads.
+
+## Shared components (`components/`)
+- **CameraCapture:** `getUserMedia` viewfinder (rear camera), shutter, preview, retake/use-photo. Props: `onCapture(blob)`, `disabled`, `autoStart` (skip Open Camera button), `fullScreen` (remove max-width, cap at 65vh). Used by `/test-upload` (via re-export) and `CameraModal`.
+- **CameraModal:** Fixed full-screen overlay (z-50, bg-black). Header with close button, CameraCapture with `autoStart fullScreen`, flex layout pins controls at bottom. Props: `isOpen`, `onClose`, `onCapture(blob)`. Calls `onCapture` then `onClose` on use-photo.
+- **ItemBar:** Clickable bar with label, photo thumbnail, upload status badge. Props: `label`, `photoUrl`, `uploading`, `uploaded`, `onClick`.
 
 ## Location flow (location-test)
 1. User clicks "Get my location" → `navigator.geolocation.getCurrentPosition` (one-shot).
@@ -18,12 +25,21 @@
 3. Single `<video>` element stays mounted across loading/streaming states (prevents `srcObject` loss).
 4. User taps shutter → canvas snapshot → JPEG blob → preview shown with Retake/Use Photo.
 5. "Use Photo" → refreshes geolocation for accuracy → sends `FormData` (file + lat/lng) to `/api/upload`.
-6. Server: uploads to Supabase Storage → reverse geocodes via Google Geocoding API → inserts into `photos` table with `url`, `storage_path`, `latitude`, `longitude`, `location_name`.
+6. Server: uploads to Supabase Storage → reverse geocodes via Google Geocoding API → inserts into `photos` table.
 7. Graceful degradation: if geolocation denied → uploads without location; if geocoding fails → stores coords only, `location_name` null.
 
+## Photo setup flow (`/games/[gameId]/setup`)
+1. Server component checks cookie identity → redirects to `/join/[gameId]` if not joined.
+2. `SetupClient` renders main photo slot + 2 hardcoded "Visible from" items (Tree, Rock).
+3. User taps a slot → `cameraTarget` state set to `"main"` or item id → `CameraModal` opens.
+4. `CameraModal` auto-starts camera. User takes photo → retake/use-photo flow.
+5. "Use Photo" → `onCapture(blob)` called → modal closes → parent callback fires.
+6. Per-item callback (from `makeItemCapture` factory): creates preview URL, sets uploading state, uploads to `/api/upload` with `game_id`, `player_id`, `label`, `is_main`, updates state with uploaded URL.
+7. ItemBar shows "Photo Uploaded" badge when complete. Tapping again allows retake.
+
 ## Map
-- **MapDisplay** (location-test): receives `locations: LocationPoint[]` and `countdownSeconds: number | null`. Renders one `GoogleMap`, multiple `Marker`s (one per point). Icon: blue-dot, label = index+1, title = "#N — time". Countdown overlay: absolute bottom-center, "Next ping in Xs". No fitBounds.
-- **Game zone modal:** Single zone Circle + Polygon (red outside with hole); no keys so they update in place (avoids stacking). Zone overlays drawn after one rAF (`showZoneOverlays`) to avoid stuck initial circle. Blue pin + accuracy circle from current location; map fitBounds to zone with padding.
+- **MapDisplay** (location-test): receives `locations: LocationPoint[]` and `countdownSeconds: number | null`. Renders one `GoogleMap`, multiple `Marker`s. No fitBounds.
+- **Game zone modal:** Single zone Circle + Polygon (red outside with hole); no keys so they update in place. Zone overlays drawn after one rAF (`showZoneOverlays`). Blue pin + accuracy circle; fitBounds to zone with padding.
 - **Zone view:** `ZoneMapView` gets zone + optional `userPosition`. Zone = Polygon + Circle (library). User = one Marker (library) + one accuracy circle via **imperative** `google.maps.Circle` (ref: create once, `setCenter`/`setRadius` on update) to avoid stacking. Map fitBounds to zone (+ user when present). `fullSize` prop: map fills container (min-height 50vh, resize trigger after load).
 
 ## Player identity (no auth)
@@ -35,6 +51,8 @@
 
 ## Data types
 - `LocationPoint`: `{ lat, lng, timestamp }`. Exported from `LocationDisplay.tsx`, used by `MapDisplay.tsx`.
-- `Photo`: `{ id, url, storage_path, created_at, latitude, longitude, location_name }`. Defined in `lib/types.ts`.
-- `Game`: `id`, `name`, `status`, `created_at`, `zone_center_lat`, `zone_center_lng`, `zone_radius_meters`. `GameZone`: `{ center_lat, center_lng, radius_meters }`.
-- `lib/map-utils.ts`: `circleToPolygonPoints`, `outerBounds`, `getBoundsForCircle`, `distanceMeters`, `isEntirelyOutsideZone` (user circle entirely outside zone when `distance > zoneRadius + userAccuracy`).
+- `Photo`: `{ id, url, storage_path, created_at, latitude, longitude, location_name, game_id, player_id, label, is_main }`. Defined in `lib/types.ts`.
+- `Game`: `{ id, name, status, created_at, zone_center_lat, zone_center_lng, zone_radius_meters }`. Defined in `lib/types.ts`.
+- `GameZone`: `{ center_lat, center_lng, radius_meters }`. Defined in `lib/types.ts`.
+- `Player`: `{ id, created_at, name, game_id }`. Defined in `lib/types.ts`.
+- `lib/map-utils.ts`: `circleToPolygonPoints`, `outerBounds`, `getBoundsForCircle`, `distanceMeters`, `isEntirelyOutsideZone`.
