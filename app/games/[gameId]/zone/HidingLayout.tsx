@@ -80,7 +80,7 @@ export function HidingLayout({
           Play area: inside the circle ({Math.round(zone.radius_meters)} m). Red = out of bounds.
         </p>
         <Link
-          href={`/games/${gameId}/capture`}
+          href={`/games/${gameId}/setup`}
           className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
         >
           Go to photo capture
@@ -103,7 +103,7 @@ export function HidingLayout({
               Take a picture right now and submit it of something!
             </p>
             <Link
-              href={`/games/${gameId}/capture`}
+              href={`/games/${gameId}/setup`}
               className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
             >
               Take photo
