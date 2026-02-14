@@ -5,15 +5,18 @@ import Link from "next/link";
 import { CameraModal } from "@/components/CameraModal";
 import { ItemBar } from "@/components/ItemBar";
 
-/** The two hardcoded optional items for now. Will be dynamic later. */
-const DEFAULT_ITEMS: { id: string; label: string }[] = [
-  { id: "item-1", label: "Tree" },
-  { id: "item-2", label: "Rock" },
+/** The three optional "visible from" items. IDs match the player column names. */
+const VISIBLE_FROM_ITEMS: { id: string; label: string }[] = [
+  { id: "tree", label: "Tree" },
+  { id: "building", label: "Building" },
+  { id: "path", label: "Path" },
 ];
 
 type PhotoSlot = {
   previewUrl?: string;
   uploadedUrl?: string;
+  /** ID of the photo record in the database (bigint) */
+  photoId?: number;
   uploading: boolean;
 };
 
@@ -30,24 +33,22 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
 
   // Optional "visible from" items — each keyed by its id
   const [itemPhotos, setItemPhotos] = useState<Record<string, PhotoSlot>>(() =>
-    Object.fromEntries(DEFAULT_ITEMS.map((item) => [item.id, { uploading: false }]))
+    Object.fromEntries(VISIBLE_FROM_ITEMS.map((item) => [item.id, { uploading: false }]))
   );
 
   // Which slot the camera modal is open for: "main", an item id, or null (closed)
   const [cameraTarget, setCameraTarget] = useState<string | null>(null);
 
+  // Lock-in state
+  const [lockingIn, setLockingIn] = useState(false);
+
   // ------- Upload helper -------
   const uploadPhoto = useCallback(
-    async (
-      blob: Blob,
-      opts: { label: string | null; isMain: boolean }
-    ): Promise<string | null> => {
+    async (blob: Blob): Promise<{ url: string; id: number } | null> => {
       const formData = new FormData();
       formData.append("file", blob, `capture-${Date.now()}.jpg`);
       formData.append("game_id", gameId);
       formData.append("player_id", String(playerId));
-      if (opts.label) formData.append("label", opts.label);
-      formData.append("is_main", String(opts.isMain));
 
       try {
         const res = await fetch("/api/upload", {
@@ -55,8 +56,8 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
           body: formData,
         });
         const data = await res.json();
-        if (data.success && data.photo?.url) {
-          return data.photo.url as string;
+        if (data.success && data.photo?.url && data.photo?.id != null) {
+          return { url: data.photo.url as string, id: data.photo.id as number };
         }
         console.error("Upload failed:", data.error);
         return null;
@@ -77,15 +78,13 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
       setMainPhoto({ previewUrl, uploading: true });
       setCameraTarget(null);
 
-      const uploadedUrl = await uploadPhoto(blob, {
-        label: null,
-        isMain: true,
-      });
+      const result = await uploadPhoto(blob);
 
       setMainPhoto((prev) => ({
         ...prev,
         uploading: false,
-        uploadedUrl: uploadedUrl ?? undefined,
+        uploadedUrl: result?.url ?? undefined,
+        photoId: result?.id ?? undefined,
       }));
     },
     [uploadPhoto]
@@ -93,7 +92,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
 
   /** Factory that returns a capture callback for a specific item. */
   const makeItemCapture = useCallback(
-    (itemId: string, label: string) => {
+    (itemId: string) => {
       return async (blob: Blob) => {
         const previewUrl = URL.createObjectURL(blob);
         setItemPhotos((prev) => ({
@@ -102,17 +101,15 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
         }));
         setCameraTarget(null);
 
-        const uploadedUrl = await uploadPhoto(blob, {
-          label,
-          isMain: false,
-        });
+        const result = await uploadPhoto(blob);
 
         setItemPhotos((prev) => ({
           ...prev,
           [itemId]: {
             ...prev[itemId],
             uploading: false,
-            uploadedUrl: uploadedUrl ?? undefined,
+            uploadedUrl: result?.url ?? undefined,
+            photoId: result?.id ?? undefined,
           },
         }));
       };
@@ -124,12 +121,46 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
   const getActiveCaptureCallback = useCallback(() => {
     if (cameraTarget === "main") return handleMainCapture;
     if (cameraTarget) {
-      const item = DEFAULT_ITEMS.find((i) => i.id === cameraTarget);
-      if (item) return makeItemCapture(item.id, item.label);
+      const item = VISIBLE_FROM_ITEMS.find((i) => i.id === cameraTarget);
+      if (item) return makeItemCapture(item.id);
     }
     // Fallback (shouldn't happen)
     return () => {};
   }, [cameraTarget, handleMainCapture, makeItemCapture]);
+
+  // ------- Lock-in: save photo IDs to player row, then navigate -------
+  async function handleLockIn() {
+    if (!mainPhoto.photoId) return;
+
+    setLockingIn(true);
+    try {
+      const res = await fetch(`/api/games/${gameId}/lock-in`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          player_id: playerId,
+          hiding_photo: mainPhoto.photoId,
+          tree_photo: itemPhotos["tree"]?.photoId ?? null,
+          building_photo: itemPhotos["building"]?.photoId ?? null,
+          path_photo: itemPhotos["path"]?.photoId ?? null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to lock in photos");
+      }
+
+      window.location.href = `/games/${gameId}/waiting`;
+    } catch (err) {
+      setLockingIn(false);
+      alert(err instanceof Error ? err.message : "Failed to lock in photos");
+    }
+  }
+
+  const anyUploading =
+    mainPhoto.uploading ||
+    Object.values(itemPhotos).some((s) => s.uploading);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
@@ -261,7 +292,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
             Visible from
           </h2>
           <div className="space-y-3">
-            {DEFAULT_ITEMS.map((item) => {
+            {VISIBLE_FROM_ITEMS.map((item) => {
               const slot = itemPhotos[item.id] ?? { uploading: false };
               return (
                 <ItemBar
@@ -282,13 +313,11 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
           <div className="mx-auto max-w-lg">
             <button
               type="button"
-              onClick={() => {
-                // Placeholder — will navigate to waiting/lobby later
-                window.location.href = `/games/${gameId}`;
-              }}
-              className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 disabled:opacity-50 text-white font-semibold px-6 py-3.5 transition-colors shadow-lg text-base"
+              disabled={!mainPhoto.photoId || anyUploading || lockingIn}
+              onClick={handleLockIn}
+              className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-3.5 transition-colors shadow-lg text-base"
             >
-              Next
+              {lockingIn ? "Saving\u2026" : "Next"}
             </button>
           </div>
         </div>

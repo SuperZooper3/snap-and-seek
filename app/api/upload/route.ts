@@ -70,13 +70,10 @@ export async function POST(request: NextRequest) {
       !isNaN(latitude) &&
       !isNaN(longitude);
 
-    // Parse optional game/player/item fields (used by the setup page)
+    // Parse optional game/player fields (used by the setup page)
     const gameId = (formData.get("game_id") as string | null) || null;
     const playerIdStr = formData.get("player_id") as string | null;
     const playerId = playerIdStr ? parseInt(playerIdStr, 10) : null;
-    const label = (formData.get("label") as string | null) || null;
-    const isMainStr = formData.get("is_main") as string | null;
-    const isMain = isMainStr === "true";
 
     // Reverse geocode if we have coordinates
     let locationName: string | null = null;
@@ -129,8 +126,6 @@ export async function POST(request: NextRequest) {
         }),
         ...(gameId && { game_id: gameId }),
         ...(playerId && { player_id: playerId }),
-        ...(label && { label }),
-        is_main: isMain,
       })
       .select()
       .single();
