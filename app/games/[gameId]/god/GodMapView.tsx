@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef } from "react";
-import { GoogleMap, useJsApiLoader, Circle, Polygon, Marker } from "@react-google-maps/api";
+import { GoogleMap, Circle, Polygon, Marker } from "@react-google-maps/api";
+import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
 const ZONE_FIT_PADDING_PX = 80;
@@ -34,11 +35,7 @@ function makeCircleIconUrl(hexColor: string): string {
 
 export function GodMapView({ zone, playerMarkers }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-zone-view",
-    googleMapsApiKey: apiKey,
-  });
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const center = useMemo(
     () => ({ lat: zone.center_lat, lng: zone.center_lng }),

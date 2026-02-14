@@ -1,13 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  GoogleMap,
-  useJsApiLoader,
-  Marker,
-  Circle,
-  Polygon,
-} from "@react-google-maps/api";
+import { GoogleMap, Marker, Circle, Polygon } from "@react-google-maps/api";
+import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
 const ZONE_FIT_PADDING_PX = 16;
@@ -46,7 +41,6 @@ export function GameZoneModal({
   onSaved,
   onClose,
 }: Props) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const [location, setLocation] = useState<LocationState>(() =>
     initialZone
       ? {
@@ -66,10 +60,7 @@ export function GameZoneModal({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-zone",
-    googleMapsApiKey: apiKey,
-  });
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
