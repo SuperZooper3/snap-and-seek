@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import { ZoneWithLocation } from "./ZoneWithLocation";
+import { HidingTimeRemaining } from "./HidingTimeRemaining";
+import { StartSeekingTestLink } from "./StartSeekingTestLink";
 
 type Props = { params: Promise<{ gameId: string }> };
 
@@ -20,7 +22,7 @@ export default async function GameZonePage({ params }: Props) {
 
   const { data: game, error } = await supabase
     .from("games")
-    .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters")
+    .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, hiding_started_at, hiding_duration_seconds")
     .eq("id", gameId)
     .single();
 
@@ -48,9 +50,10 @@ export default async function GameZonePage({ params }: Props) {
       <header className="shrink-0 border-b border-amber-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top">
         <Link
           href={`/games/${gameId}`}
-          className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
         >
-          ← Back to game
+          <span aria-hidden>←</span>
+          Back to game
         </Link>
         <h1 className="mt-1.5 text-lg font-bold text-amber-900 dark:text-amber-100">
           Game zone
@@ -61,7 +64,11 @@ export default async function GameZonePage({ params }: Props) {
       </header>
 
       <main className="relative flex min-h-0 flex-1 flex-col w-full">
-        <ZoneWithLocation zone={zone} />
+        <HidingTimeRemaining
+          hidingStartedAt={(game as { hiding_started_at: string | null }).hiding_started_at}
+          hidingDurationSeconds={(game as { hiding_duration_seconds: number | null }).hiding_duration_seconds ?? 600}
+        />
+        <ZoneWithLocation zone={zone} gameId={gameId} playerId={currentPlayer.id} />
       </main>
 
       <footer className="shrink-0 border-t border-amber-200/50 dark:border-zinc-700 px-4 py-3 pb-safe space-y-2 bg-amber-50/80 dark:bg-zinc-900/80">
@@ -74,6 +81,7 @@ export default async function GameZonePage({ params }: Props) {
         >
           Go to photo capture
         </Link>
+        <StartSeekingTestLink gameId={gameId} />
       </footer>
     </div>
   );

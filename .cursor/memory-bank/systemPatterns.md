@@ -42,6 +42,13 @@
 - **Game zone modal:** Single zone Circle + Polygon (red outside with hole); no keys so they update in place. Zone overlays drawn after one rAF (`showZoneOverlays`). Blue pin + accuracy circle; fitBounds to zone with padding.
 - **Zone view:** `ZoneMapView` gets zone + optional `userPosition`. Zone = Polygon + Circle (library). User = one Marker (library) + one accuracy circle via **imperative** `google.maps.Circle` (ref: create once, `setCenter`/`setRadius` on update) to avoid stacking. Map fitBounds to zone (+ user when present). `fullSize` prop: map fills container (min-height 50vh, resize trigger after load).
 
+## Player identity (no auth)
+- **Cookie** `sas_players`: JSON object `Record<gameId, { id, name }>`. Read via `getPlayerForGame(cookieValue, gameId)` (server or client). Write from client only: `setPlayerInCookie(gameId, { id, name })` (join or assume), `clearPlayerForGame(gameId)` (release).
+- **Join flow:** POST `/api/games/[gameId]/players` with name → response has player `id`, `name` → `setPlayerInCookie` → redirect to game page.
+- **Assume identity:** On game page, when !currentPlayer, PlayerList renders each player as clickable; onClick → `setPlayerInCookie(gameId, { id: p.id, name: p.name })`, router.refresh().
+- **Release identity:** When currentPlayer, "Release my identity" → `clearPlayerForGame(gameId)`, router.refresh(). User no longer that player; "Start hiding" hidden until they assume or join again.
+- **Route protection:** Zone page and capture page (server): read cookie, if !getPlayerForGame(decoded, gameId) redirect to `/games/[gameId]`. "Start hiding" link only rendered when currentPlayer.
+
 ## Data types
 - `LocationPoint`: `{ lat, lng, timestamp }`. Exported from `LocationDisplay.tsx`, used by `MapDisplay.tsx`.
 - `Photo`: `{ id, url, storage_path, created_at, latitude, longitude, location_name, game_id, player_id, label, is_main }`. Defined in `lib/types.ts`.

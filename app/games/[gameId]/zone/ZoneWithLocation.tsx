@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ZoneMapView } from "./ZoneMapView";
 import { isEntirelyOutsideZone } from "@/lib/map-utils";
 
-const REFRESH_INTERVAL_MS = 10_000;
+const MIN_PING_INTERVAL_MS = 8_000;
 
 type Zone = {
   center_lat: number;
@@ -14,6 +14,11 @@ type Zone = {
 
 type Props = {
   zone: Zone;
+  gameId: string;
+  playerId: number;
+  /** When true, hide the refresh bar and report countdown via onCountdownChange (e.g. for seeking header) */
+  hideRefreshBar?: boolean;
+  onCountdownChange?: (countdown: number) => void;
 };
 
 type UserPosition = {
@@ -22,10 +27,31 @@ type UserPosition = {
   accuracy: number;
 } | null;
 
-export function ZoneWithLocation({ zone }: Props) {
+export function ZoneWithLocation({
+  zone,
+  gameId,
+  playerId,
+  hideRefreshBar = false,
+  onCountdownChange,
+}: Props) {
   const [userPosition, setUserPosition] = useState<UserPosition>(null);
   const [countdown, setCountdown] = useState(10);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const lastPingAtRef = useRef<number>(0);
+
+  const uploadPing = useCallback(
+    (lat: number, lng: number) => {
+      const now = Date.now();
+      if (now - lastPingAtRef.current < MIN_PING_INTERVAL_MS) return;
+      lastPingAtRef.current = now;
+      fetch(`/api/games/${gameId}/pings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player_id: playerId, lat, lng }),
+      }).catch(() => {});
+    },
+    [gameId, playerId]
+  );
 
   const refreshLocation = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -35,12 +61,15 @@ export function ZoneWithLocation({ zone }: Props) {
     setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
         setUserPosition({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lat,
+          lng,
           accuracy: position.coords.accuracy ?? 30,
         });
         setCountdown(10);
+        uploadPing(lat, lng);
       },
       () => {
         setLocationError("Could not get location");
@@ -48,11 +77,15 @@ export function ZoneWithLocation({ zone }: Props) {
       },
       { enableHighAccuracy: true }
     );
-  }, []);
+  }, [uploadPing]);
 
   useEffect(() => {
     refreshLocation();
   }, [refreshLocation]);
+
+  useEffect(() => {
+    onCountdownChange?.(countdown);
+  }, [countdown, onCountdownChange]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -80,14 +113,16 @@ export function ZoneWithLocation({ zone }: Props) {
 
   return (
     <>
-      <div className="shrink-0 flex flex-col items-center justify-center gap-0.5 bg-amber-200/60 dark:bg-zinc-700/60 px-4 py-2 text-sm">
-        <span className="text-amber-900 dark:text-amber-100 font-medium">
-          Next refresh in {countdown}s
-        </span>
-        <span className="text-xs text-amber-800/80 dark:text-amber-200/80">
-          Blue is where you are
-        </span>
-      </div>
+      {!hideRefreshBar && (
+        <div className="shrink-0 flex flex-col items-center justify-center gap-0.5 bg-amber-200/60 dark:bg-zinc-700/60 px-4 py-2 text-sm">
+          <span className="text-amber-900 dark:text-amber-100 font-medium">
+            Next refresh in {countdown}s
+          </span>
+          <span className="text-xs text-amber-800/80 dark:text-amber-200/80">
+            Blue is where you are
+          </span>
+        </div>
+      )}
 
       {outsideZone && (
         <div className="shrink-0 bg-red-600 text-white px-4 py-3 text-center text-sm font-medium">

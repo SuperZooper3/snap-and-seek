@@ -12,6 +12,17 @@ type GameZone = {
 
 type PlayerIdentity = { id: number; name: string } | null;
 
+const HIDING_DURATION_PRESETS = [
+  { label: "30 seconds", value: 30 },
+  { label: "1 minute", value: 60 },
+  { label: "2 minutes", value: 120 },
+  { label: "5 minutes", value: 300 },
+  { label: "10 minutes", value: 600 },
+  { label: "15 minutes", value: 900 },
+  { label: "20 minutes", value: 1200 },
+  { label: "30 minutes", value: 1800 },
+] as const;
+
 type Props = {
   gameId: string;
   status: string | null;
@@ -19,13 +30,24 @@ type Props = {
   playerCount: number;
   zone: GameZone;
   currentPlayer: PlayerIdentity;
+  /** Hiding phase duration in seconds (default 600). Only used in lobby. */
+  hidingDurationSeconds: number;
 };
 
-export function GameActions({ gameId, status, joinUrl, playerCount, zone, currentPlayer }: Props) {
+export function GameActions({
+  gameId,
+  status,
+  joinUrl,
+  playerCount,
+  zone,
+  currentPlayer,
+  hidingDurationSeconds,
+}: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
   const [zoneModalOpen, setZoneModalOpen] = useState(false);
+  const [savingDuration, setSavingDuration] = useState(false);
   const isLobby = status === "lobby";
   const hasZone = zone != null;
   const canStart = playerCount >= 2 && hasZone;
@@ -54,6 +76,21 @@ export function GameActions({ gameId, status, joinUrl, playerCount, zone, curren
     }
   }
 
+  async function setHidingDuration(seconds: number) {
+    setSavingDuration(true);
+    try {
+      const res = await fetch(`/api/games/${gameId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hiding_duration_seconds: seconds }),
+      });
+      if (!res.ok) throw new Error("Failed to update duration");
+      router.refresh();
+    } finally {
+      setSavingDuration(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -79,6 +116,23 @@ export function GameActions({ gameId, status, joinUrl, playerCount, zone, curren
 
       {isLobby && (
         <>
+          <div>
+            <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-1.5">
+              Hiding period
+            </label>
+            <select
+              value={hidingDurationSeconds}
+              onChange={(e) => setHidingDuration(Number(e.target.value))}
+              disabled={savingDuration}
+              className="w-full rounded-lg border border-amber-200 dark:border-zinc-600 bg-amber-50/50 dark:bg-zinc-700/50 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+            >
+              {HIDING_DURATION_PRESETS.map(({ label, value }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             onClick={() => setZoneModalOpen(true)}
@@ -121,19 +175,34 @@ export function GameActions({ gameId, status, joinUrl, playerCount, zone, curren
 
       {!isLobby && status && (
         <div className="space-y-2">
-          <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
-            Status: <strong>{status}</strong>
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+              Status
+            </span>
+            <span
+              className={
+                status === "hiding"
+                  ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-200/90 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100"
+                  : status === "seeking"
+                    ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-sky-200/90 dark:bg-sky-800/50 text-sky-900 dark:text-sky-100"
+                    : "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-amber-200/90 dark:bg-amber-800/50 text-amber-900 dark:text-amber-100"
+              }
+            >
+              {status}
+            </span>
+          </div>
           {currentPlayer ? (
             <a
-              href={`/games/${gameId}/zone`}
+              href={status === "seeking" ? `/games/${gameId}/seeking` : `/games/${gameId}/zone`}
               className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 text-center transition-colors"
             >
-              Start hiding
+              {status === "seeking" ? "Go to seeking" : "Go to hiding"}
             </a>
           ) : (
             <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
-              Join as a player below (tap a name) to start hiding.
+              {status === "seeking"
+                ? "Seeking in progress — join as a player to view the seeking map."
+                : "Join as a player below (tap a name) to start hiding."}
             </p>
           )}
         </div>

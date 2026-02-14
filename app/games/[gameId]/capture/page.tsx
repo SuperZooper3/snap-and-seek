@@ -31,9 +31,10 @@ export default async function CapturePage({ params }: Props) {
       <header className="shrink-0 border-b border-amber-200/50 dark:border-zinc-700 px-4 py-3 safe-area-inset-top">
         <Link
           href={`/games/${gameId}/zone`}
-          className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
         >
-          ← Back to zone
+          <span aria-hidden>←</span>
+          Back to zone
         </Link>
         <h1 className="mt-2 text-xl font-bold text-amber-900 dark:text-amber-100">
           Photo capture

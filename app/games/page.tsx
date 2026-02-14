@@ -14,9 +14,10 @@ export default async function GamesPage() {
         <header className="mb-10">
           <Link
             href="/"
-            className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
           >
-            ← Create game
+            <span aria-hidden>←</span>
+            Create game
           </Link>
           <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">
             All games
@@ -48,8 +49,16 @@ export default async function GamesPage() {
                     <span className="font-medium text-amber-900 dark:text-amber-100">
                       {game.name || "Unnamed game"}
                     </span>
-                    <span className="ml-2 text-sm text-amber-700/80 dark:text-amber-300/80">
-                      {game.status ?? "lobby"}
+                    <span
+                      className={
+                        (game as Game).status === "hiding"
+                          ? "ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-200/90 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100"
+                          : (game as Game).status === "seeking"
+                            ? "ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-sky-200/90 dark:bg-sky-800/50 text-sky-900 dark:text-sky-100"
+                            : "ml-2 inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-amber-200/80 dark:bg-amber-800/50 text-amber-800 dark:text-amber-200"
+                      }
+                    >
+                      {(game as Game).status ?? "lobby"}
                     </span>
                   </Link>
                 </li>

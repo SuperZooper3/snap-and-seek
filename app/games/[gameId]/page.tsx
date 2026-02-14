@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { headers, cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
@@ -7,7 +7,10 @@ import type { Game, Player } from "@/lib/types";
 import { GameActions } from "./GameActions";
 import { PlayerList } from "./PlayerList";
 
-type Props = { params: Promise<{ gameId: string }> };
+type Props = {
+  params: Promise<{ gameId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
 async function getBaseUrl() {
   const url = process.env.NEXT_PUBLIC_APP_URL;
@@ -18,8 +21,10 @@ async function getBaseUrl() {
   return host ? `${proto}://${host}` : "http://localhost:3000";
 }
 
-export default async function GamePage({ params }: Props) {
+export default async function GamePage({ params, searchParams }: Props) {
   const { gameId } = await params;
+  const query = await searchParams;
+  const skipRedirect = query?.manage === "1";
 
   const { data: game, error: gameError } = await supabase
     .from("games")
@@ -55,15 +60,24 @@ export default async function GamePage({ params }: Props) {
   const decoded = playersCookie ? decodeURIComponent(playersCookie) : undefined;
   const currentPlayer = getPlayerForGame(decoded, gameId);
 
+  const status = (game as Game).status;
+  if (!skipRedirect && currentPlayer && status === "seeking") {
+    redirect(`/games/${gameId}/seeking`);
+  }
+  if (!skipRedirect && currentPlayer && status === "hiding") {
+    redirect(`/games/${gameId}/zone`);
+  }
+
   return (
     <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
       <main className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-16 pb-safe">
         <header className="mb-10">
           <Link
             href="/"
-            className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
           >
-            ← Create game
+            <span aria-hidden>←</span>
+            Create game
           </Link>
           <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">
             {(game as Game).name || "Unnamed game"}
@@ -78,7 +92,19 @@ export default async function GamePage({ params }: Props) {
             playerCount={(players as Player[])?.length ?? 0}
             zone={zone}
             currentPlayer={currentPlayer}
+            hidingDurationSeconds={
+              (game as Game).hiding_duration_seconds ?? 600
+            }
           />
+
+          {zone && !currentPlayer && (
+          <Link
+            href={`/games/${gameId}/god`}
+            className="touch-manipulation block w-full rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold px-6 py-3 text-center transition-colors"
+          >
+            God mode — view all positions on map
+          </Link>
+        )}
 
           <PlayerList
             gameId={gameId}
