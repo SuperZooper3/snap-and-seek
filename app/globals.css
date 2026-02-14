@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
-/* ——— Pastel design system: drawn, whimsical, neal.fun style ——— */
+/* ——— Pastel design system: always light, black text for readability ——— */
+/* No OS dark mode: white/cream background, black text everywhere */
 :root {
-  --background: #fef9f3;
-  --foreground: #2d2a26;
-  /* Pastel fills (light mode) */
+  color-scheme: light;
+  --background: #fffef9;
+  --foreground: #111111;
+  /* Pastel fills (light only) */
   --pastel-mint: #c8f0df;
   --pastel-peach: #ffdfc9;
   --pastel-lavender: #e5d8fa;
@@ -12,38 +14,14 @@
   --pastel-butter: #f0ead6;
   --pastel-rose: #ffd6e0;
   --pastel-paper: #fffef9;
-  --pastel-border: #2d2a26;
-  --pastel-border-subtle: rgba(45, 42, 38, 0.25);
-  /* Button/text on pastel */
-  --pastel-ink: #2d2a26;
-  --pastel-ink-muted: #5c5650;
-  /* Semantic pastels */
+  --pastel-border: #111111;
+  --pastel-border-subtle: rgba(17, 17, 17, 0.2);
+  --pastel-ink: #111111;
+  --pastel-ink-muted: #333333;
   --pastel-success: #a8e6b8;
   --pastel-warn: #ffe4a8;
   --pastel-error: #ffc4c4;
   --pastel-info: #b8d4f7;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1a1916;
-    --foreground: #f5f2ec;
-    --pastel-mint: #5a9b7a;
-    --pastel-peach: #c97d52;
-    --pastel-lavender: #8b7ab8;
-    --pastel-sky: #5a8fc9;
-    --pastel-butter: #a89878;
-    --pastel-rose: #c96a7a;
-    --pastel-paper: #252320;
-    --pastel-border: #e8e4dc;
-    --pastel-border-subtle: rgba(232, 228, 220, 0.3);
-    --pastel-ink: #f5f2ec;
-    --pastel-ink-muted: #b8b2a8;
-    --pastel-success: #4a8a5a;
-    --pastel-warn: #b8924a;
-    --pastel-error: #b85a5a;
-    --pastel-info: #5a7aa8;
-  }
 }
 
 @theme inline {
@@ -54,14 +32,17 @@
 }
 
 html {
-  font-size: 18px;
+  font-size: 20px;
+  background: var(--background, #fffef9);
+  color: var(--foreground, #111111);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--background, #fffef9);
+  color: var(--foreground, #111111);
   font-family: var(--font-sans), "Comic Sans MS", "Chalkboard", cursive;
   font-size: 1rem;
+  min-height: 100vh;
 }
 
 /* Hand-drawn style: thick, rounded, no sharp shadows */

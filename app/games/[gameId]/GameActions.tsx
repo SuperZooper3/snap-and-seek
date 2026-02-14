@@ -151,7 +151,7 @@ export function GameActions({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-bold mb-1.5" style={{ color: "var(--foreground)" }}>
+        <p className="text-base font-bold mb-1.5 text-[var(--foreground)]">
           Share this link for players to join
         </p>
         <div className="flex gap-2">
@@ -159,8 +159,7 @@ export function GameActions({
             type="text"
             readOnly
             value={joinUrl}
-            className="sketch-input flex-1 px-3 py-2.5 text-sm min-h-0"
-            style={{ color: "var(--pastel-ink)" }}
+            className="sketch-input flex-1 px-3 py-3 text-base min-h-[3rem] text-[var(--pastel-ink)]"
           />
           <button type="button" onClick={copyLink} className="btn-sm whitespace-nowrap">
             {copied ? "Copied!" : "Copy"}
@@ -181,15 +180,14 @@ export function GameActions({
             How to play <strong>Snap and Seek</strong>!
           </button>
           <div>
-            <label className="block text-sm font-bold mb-1.5" style={{ color: "var(--foreground)" }}>
+            <label className="block text-base font-bold mb-1.5 text-[var(--foreground)]">
               Hiding period
             </label>
             <select
               value={hidingDurationSeconds}
               onChange={(e) => setHidingDuration(Number(e.target.value))}
               disabled={savingDuration}
-              className="sketch-input w-full px-3 py-2.5 text-sm min-h-[2.75rem]"
-              style={{ color: "var(--pastel-ink)" }}
+              className="sketch-input w-full px-3 py-3 text-base min-h-[3rem] text-[var(--pastel-ink)]"
             >
               {HIDING_DURATION_PRESETS.map(({ label, value }) => (
                 <option key={value} value={value}>
@@ -199,14 +197,14 @@ export function GameActions({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-1.5">
+            <label className="block text-base font-bold mb-1.5 text-[var(--foreground)]">
               Time to Cast
             </label>
             <select
               value={powerupCastingSeconds}
               onChange={(e) => setPowerupCasting(Number(e.target.value))}
               disabled={savingCasting}
-              className="w-full rounded-lg border border-amber-200 dark:border-zinc-600 bg-amber-50/50 dark:bg-zinc-700/50 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+              className="sketch-input w-full px-3 py-3 text-base min-h-[3rem] text-[var(--pastel-ink)]"
             >
               {POWERUP_CASTING_PRESETS.map(({ label, value }) => (
                 <option key={value} value={value}>
@@ -214,19 +212,19 @@ export function GameActions({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+            <p className="text-sm text-[var(--pastel-ink-muted)] mt-1">
               How long power-ups take to cast during seeking
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-1.5">
+            <label className="block text-base font-bold mb-1.5 text-[var(--foreground)]">
               Thermometer distance
             </label>
             <select
               value={THERMOMETER_THRESHOLD_PRESETS.some((p) => p.value === thermometerThresholdMeters) ? thermometerThresholdMeters : 100}
               onChange={(e) => setThermometerThreshold(Number(e.target.value))}
               disabled={savingThermometer}
-              className="w-full rounded-lg border border-amber-200 dark:border-zinc-600 bg-amber-50/50 dark:bg-zinc-700/50 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+              className="sketch-input w-full px-3 py-3 text-base min-h-[3rem] text-[var(--pastel-ink)]"
             >
               {THERMOMETER_THRESHOLD_PRESETS.map(({ label, value }) => (
                 <option key={value} value={value}>
@@ -234,7 +232,7 @@ export function GameActions({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+            <p className="text-sm text-[var(--pastel-ink-muted)] mt-1">
               Minimum distance to move from start to complete thermometer hint
             </p>
           </div>

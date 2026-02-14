@@ -290,7 +290,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
                     uploaded={!!slot.uploadedUrl}
                     onClick={() => setCameraTarget(item.id)}
                   />
-                  <label className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200 cursor-pointer select-none">
+                  <label className="flex items-center gap-2 text-base font-bold text-[var(--foreground)] cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={unavailableItems[item.id] ?? false}
@@ -301,7 +301,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
                           [item.id]: e.target.checked,
                         }))
                       }
-                      className="rounded border-amber-400 text-amber-600 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="rounded border-2 border-[var(--pastel-border)] text-[var(--pastel-ink)] focus:ring-2 focus:ring-[var(--pastel-sky)] disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className={hasPhoto ? "opacity-70" : undefined}>
                       I don&apos;t have this option
