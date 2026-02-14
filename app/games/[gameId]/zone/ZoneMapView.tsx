@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import { GoogleMap, useJsApiLoader, Circle, Polygon } from "@react-google-maps/api";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { GoogleMap, useJsApiLoader, Circle, Polygon, Marker } from "@react-google-maps/api";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
 const ZONE_FIT_PADDING_PX = 16;
+const BLUE_DOT_ICON_URL = "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
 
 type Zone = {
   center_lat: number;
@@ -12,13 +13,23 @@ type Zone = {
   radius_meters: number;
 };
 
+type UserPosition = {
+  lat: number;
+  lng: number;
+  accuracy: number;
+} | null;
+
 type Props = {
   zone: Zone;
   /** When true, map fills container (height 100%) for full-screen zone view */
   fullSize?: boolean;
+  /** Current user location for blue pin + accuracy circle */
+  userPosition?: UserPosition;
 };
 
-export function ZoneMapView({ zone, fullSize = false }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Props) {
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const userCircleRef = useRef<google.maps.Circle | null>(null);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-zone-view",
@@ -41,6 +52,31 @@ export function ZoneMapView({ zone, fullSize = false }: Props) {
     return [outer, inner];
   }, [zone]);
 
+  const updateUserCircle = useCallback((map: google.maps.Map) => {
+    if (!userPosition) {
+      if (userCircleRef.current) {
+        userCircleRef.current.setMap(null);
+        userCircleRef.current = null;
+      }
+      return;
+    }
+    if (!userCircleRef.current) {
+      userCircleRef.current = new google.maps.Circle({
+        map,
+        center: { lat: userPosition.lat, lng: userPosition.lng },
+        radius: userPosition.accuracy,
+        strokeColor: "#3b82f6",
+        strokeWeight: 1.5,
+        fillColor: "#3b82f6",
+        fillOpacity: 0.25,
+        clickable: false,
+      });
+    } else {
+      userCircleRef.current.setCenter({ lat: userPosition.lat, lng: userPosition.lng });
+      userCircleRef.current.setRadius(userPosition.accuracy);
+    }
+  }, [userPosition]);
+
   const fitMapToZone = useCallback((map: google.maps.Map) => {
     const b = getBoundsForCircle(
       zone.center_lat,
@@ -51,6 +87,9 @@ export function ZoneMapView({ zone, fullSize = false }: Props) {
       { lat: b.south, lng: b.west },
       { lat: b.north, lng: b.east }
     );
+    if (userPosition) {
+      bounds.extend({ lat: userPosition.lat, lng: userPosition.lng });
+    }
     map.fitBounds(bounds, ZONE_FIT_PADDING_PX);
     if (fullSize) {
       window.setTimeout(() => {
@@ -58,7 +97,27 @@ export function ZoneMapView({ zone, fullSize = false }: Props) {
         map.fitBounds(bounds, ZONE_FIT_PADDING_PX);
       }, 100);
     }
-  }, [zone.center_lat, zone.center_lng, zone.radius_meters, fullSize]);
+  }, [zone.center_lat, zone.center_lng, zone.radius_meters, fullSize, userPosition]);
+
+  useEffect(() => {
+    if (mapRef.current && userPosition) {
+      fitMapToZone(mapRef.current);
+    }
+  }, [userPosition, fitMapToZone]);
+
+  useEffect(() => {
+    if (mapRef.current && typeof google !== "undefined") {
+      updateUserCircle(mapRef.current);
+    }
+  }, [userPosition, updateUserCircle]);
+
+  const blueIcon = useMemo(() => {
+    if (typeof window === "undefined" || !window.google) return undefined;
+    return {
+      url: BLUE_DOT_ICON_URL,
+      scaledSize: new window.google.maps.Size(32, 32),
+    };
+  }, [isLoaded]);
 
   if (loadError) {
     return (
@@ -99,7 +158,18 @@ export function ZoneMapView({ zone, fullSize = false }: Props) {
         mapContainerClassName={fullSize ? "absolute inset-0 h-full w-full" : undefined}
         center={center}
         zoom={15}
-        onLoad={fitMapToZone}
+        onLoad={(map) => {
+          mapRef.current = map;
+          fitMapToZone(map);
+          updateUserCircle(map);
+        }}
+        onUnmount={() => {
+          if (userCircleRef.current) {
+            userCircleRef.current.setMap(null);
+            userCircleRef.current = null;
+          }
+          mapRef.current = null;
+        }}
         options={{
           zoomControl: true,
           mapTypeControl: true,
@@ -129,6 +199,14 @@ export function ZoneMapView({ zone, fullSize = false }: Props) {
             clickable: false,
           }}
         />
+        {userPosition && (
+          <Marker
+            key="user-marker"
+            position={{ lat: userPosition.lat, lng: userPosition.lng }}
+            icon={blueIcon}
+            title="You are here"
+          />
+        )}
       </GoogleMap>
     </div>
   );

@@ -20,7 +20,12 @@ Hide-and-seek meets scavenger hunt. Teams photograph hidden spots, then race to 
 - ✅ Photo upload + reverse geocoding + location display
 - ✅ Supabase Storage integration (`snap-and-seek-image` bucket)
 - ✅ Location test page with GPS polling + in-app map
-- 📋 Game lobby system - TBD
+- ✅ Game management: create game, join via link, players list
+- ✅ Game zone: Set zone modal (location + radius 50m–1km, map), required before start; zone stored on `games` table
+- ✅ Zone view: full-screen map, live location (10s refresh, countdown), blue pin + accuracy circle, outside-zone warning, "Go to photo capture"
+- ✅ Photo capture placeholder page (`/games/[gameId]/capture`)
+- 📋 Real photo capture in game (camera + upload tied to game)
+- 📋 Game lobby system (join code, etc.) - optional
 - 📋 GPS tracking in gameplay - TBD
 - 📋 Proximity questions - TBD
 - 📋 Main game UI - TBD
@@ -34,3 +39,12 @@ Hide-and-seek meets scavenger hunt. Teams photograph hidden spots, then race to 
 - ✅ Test page: `/test-upload` — in-app camera, geolocation, photo grid with location
 - ✅ TypeScript types: Photo interface in `lib/types.ts`
 - ✅ Camera: `CameraCapture` component using `getUserMedia` (rear camera)
+
+### Phase 2: Game zone & flow (COMPLETED)
+- ✅ DB: `games` zone columns (`zone_center_lat`, `zone_center_lng`, `zone_radius_meters`) — see `docs/supabase-game-zone.sql`
+- ✅ Game management: `/games`, `/games/new`, `/join/[gameId]`, game page with join link and players
+- ✅ Set zone modal: geolocation, slider 50m–1km, map (red outside, zone circle, blue pin + accuracy), save via PATCH; zone required before start
+- ✅ Start game: PATCH status `hiding`, redirect to zone view; "Start hiding" button
+- ✅ Zone view: full-screen map, 10s location refresh + countdown, single blue pin + single accuracy circle (imperative Circle to avoid stacking), outside-zone warning, "Go to photo capture"
+- ✅ Capture page: placeholder
+- ✅ Map utils: `lib/map-utils.ts` (getBoundsForCircle, distanceMeters, isEntirelyOutsideZone, circleToPolygonPoints, outerBounds)

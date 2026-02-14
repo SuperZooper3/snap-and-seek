@@ -22,11 +22,12 @@
 7. Graceful degradation: if geolocation denied → uploads without location; if geocoding fails → stores coords only, `location_name` null.
 
 ## Map
-- **MapDisplay** receives `locations: LocationPoint[]` and `countdownSeconds: number | null`.
-- Renders one `GoogleMap`, multiple `Marker`s (one per point). Icon: blue-dot, label = index+1, title = "#N — time".
-- Countdown overlay: absolute bottom-center, "Next ping in Xs".
-- No fitBounds: initial center/zoom from first point only; subsequent points just add markers.
+- **MapDisplay** (location-test): receives `locations: LocationPoint[]` and `countdownSeconds: number | null`. Renders one `GoogleMap`, multiple `Marker`s (one per point). Icon: blue-dot, label = index+1, title = "#N — time". Countdown overlay: absolute bottom-center, "Next ping in Xs". No fitBounds.
+- **Game zone modal:** Single zone Circle + Polygon (red outside with hole); no keys so they update in place (avoids stacking). Zone overlays drawn after one rAF (`showZoneOverlays`) to avoid stuck initial circle. Blue pin + accuracy circle from current location; map fitBounds to zone with padding.
+- **Zone view:** `ZoneMapView` gets zone + optional `userPosition`. Zone = Polygon + Circle (library). User = one Marker (library) + one accuracy circle via **imperative** `google.maps.Circle` (ref: create once, `setCenter`/`setRadius` on update) to avoid stacking. Map fitBounds to zone (+ user when present). `fullSize` prop: map fills container (min-height 50vh, resize trigger after load).
 
 ## Data types
 - `LocationPoint`: `{ lat, lng, timestamp }`. Exported from `LocationDisplay.tsx`, used by `MapDisplay.tsx`.
 - `Photo`: `{ id, url, storage_path, created_at, latitude, longitude, location_name }`. Defined in `lib/types.ts`.
+- `Game`: `id`, `name`, `status`, `created_at`, `zone_center_lat`, `zone_center_lng`, `zone_radius_meters`. `GameZone`: `{ center_lat, center_lng, radius_meters }`.
+- `lib/map-utils.ts`: `circleToPolygonPoints`, `outerBounds`, `getBoundsForCircle`, `distanceMeters`, `isEntirelyOutsideZone` (user circle entirely outside zone when `distance > zoneRadius + userAccuracy`).

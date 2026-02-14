@@ -26,6 +26,43 @@ export function circleToPolygonPoints(
 }
 
 /**
+ * Distance between two points in meters (Haversine approximation).
+ */
+export function distanceMeters(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * True if the user's accuracy circle is entirely outside the zone circle.
+ */
+export function isEntirelyOutsideZone(
+  userLat: number,
+  userLng: number,
+  userAccuracyMeters: number,
+  zoneCenterLat: number,
+  zoneCenterLng: number,
+  zoneRadiusMeters: number
+): boolean {
+  const d = distanceMeters(userLat, userLng, zoneCenterLat, zoneCenterLng);
+  return d > zoneRadiusMeters + userAccuracyMeters;
+}
+
+/**
  * Bounding box (degrees) that contains the circle. Use with map.fitBounds().
  */
 export function getBoundsForCircle(

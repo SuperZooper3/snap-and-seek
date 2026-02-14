@@ -11,11 +11,18 @@
    - Upload to Supabase Storage + insert into `photos` table with location
    - Photo grid displays location (address, coords fallback, or "unavailable")
 
+2. **Game management & zone**
+   - **Create/join:** `/games`, `/games/new`, `/join/[gameId]` (shareable link), players list on game page.
+   - **Set game zone (required before start):** Modal with current location, slider 50m–1km, map (red outside polygon, red zone circle, blue pin + accuracy). Saves to `games.zone_center_lat/lng/radius_meters`. Start game disabled until zone set + ≥2 players.
+   - **Start game:** PATCH status to `hiding`, redirect to zone view. Button label "Start hiding".
+   - **Zone view** (`/games/[gameId]/zone`): Full-screen map, zone boundary, live location every 10s (countdown, "Blue is where you are"), single blue pin + single accuracy circle, warning if entirely outside zone. "Go to photo capture" → capture page.
+   - **Photo capture** (`/games/[gameId]/capture`): Placeholder "coming soon" page.
+
 ### To Be Implemented
-1. **Lobby**: Create/join game with code
-2. **Setup**: Teams photograph their hidden spots (integrate with photo upload)
-3. **Active Play**: Find other teams' locations via GPS + questions
-4. **Results**: Winner, stats, replay
+1. **Lobby**: Join with code (optional; currently join via link).
+2. **Setup**: Real photo capture in game (camera + upload tied to game/team).
+3. **Active Play**: Find other teams' locations via GPS + questions.
+4. **Results**: Winner, stats, replay.
 
 ## Full Game Flow (Target)
 
