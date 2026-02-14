@@ -9,9 +9,9 @@ import { getLocation } from "@/lib/get-location";
 
 /** The three optional "visible from" items. IDs match the player column names. */
 const VISIBLE_FROM_ITEMS: { id: string; label: string }[] = [
-  { id: "tree", label: "Tree" },
-  { id: "building", label: "Building" },
-  { id: "path", label: "Path" },
+  { id: "tree", label: "Nearest tree" },
+  { id: "building", label: "Tallest building" },
+  { id: "path", label: "Closest path" },
 ];
 
 type PhotoSlot = {

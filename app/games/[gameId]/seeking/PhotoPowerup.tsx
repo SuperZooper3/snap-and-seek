@@ -32,21 +32,21 @@ interface Props {
 }
 
 const PHOTO_TYPE_LABELS = {
-  tree: '🌳 Tree',
-  building: '🏢 Building', 
-  path: '🛤️ Path'
+  tree: '🌳 Nearest tree',
+  building: '🏢 Tallest building',
+  path: '🛤️ Closest path'
 };
 
 const PHOTO_TYPE_DESCRIPTIONS = {
-  tree: 'A tree or natural landmark near the hiding spot',
-  building: 'A building or structure near the hiding spot',
-  path: 'A path, road, or walkway near the hiding spot'
+  tree: 'The nearest tree or natural landmark to the hiding spot',
+  building: 'The tallest building or structure near the hiding spot',
+  path: 'The closest path, road, or walkway to the hiding spot'
 };
 
 const UNAVAILABLE_HINT_MESSAGE: Record<'tree' | 'building' | 'path', string> = {
-  tree: "This player has no tree or similar landmark near their spot.",
-  building: "This player has no building or structure near their spot.",
-  path: "This player has no path or road near their spot."
+  tree: "This player has no nearest tree or similar landmark.",
+  building: "This player has no tallest building or structure.",
+  path: "This player has no closest path or road."
 };
 
 export function PhotoPowerup({ 
