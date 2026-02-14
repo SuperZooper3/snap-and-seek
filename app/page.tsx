@@ -22,10 +22,6 @@ export default function Home() {
           <Link href="/games" className="hover:underline">
             View all games
           </Link>
-          {" · "}
-          <Link href="/location-test" className="hover:underline">
-            Location test
-          </Link>
         </footer>
       </main>
     </div>
