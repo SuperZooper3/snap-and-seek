@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { ZoneWithLocation } from "../zone/ZoneWithLocation";
+import type { ThermometerPin } from "../zone/ZoneMapView";
 import { getLocation } from "@/lib/get-location";
 import { SeekingTimer } from "./SeekingTimer";
 import { BackArrowIcon } from "@/components/BackArrowIcon";
@@ -70,8 +71,26 @@ export function SeekingLayout({
   const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; height: number } | null>(null);
   const didDragRef = useRef(false);
-  // Power-up and hint state
+  // Power-up and hint state (thermometer hints with pin data for map; merged with session completions)
   const [hintResults, setHintResults] = useState<Hint[]>([]);
+
+  // Load completed thermometer hints on mount so map pins show after refresh
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/games/${gameId}/hints?seekerId=${playerId}&status=completed`)
+      .then((res) => res.json())
+      .then((data: { hints?: Hint[] }) => {
+        if (cancelled || !Array.isArray(data.hints)) return;
+        const thermos = data.hints.filter((h) => h.type === "thermometer");
+        setHintResults((prev) => {
+          const byId = new Map(prev.map((h) => [h.id, h]));
+          thermos.forEach((h) => byId.set(h.id, h));
+          return Array.from(byId.values());
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [gameId, playerId]);
 
   // Submission state
   const [submissions, setSubmissions] = useState<Submission[]>(initialSubmissions);
@@ -315,6 +334,57 @@ export function SeekingLayout({
     setHintResults(prev => [...prev, hint]);
   }, []);
 
+  // Active thermometer hint (casting) — so we can show start pin before they tap "Get result"
+  const [activeThermometerHint, setActiveThermometerHint] = useState<Hint | null>(null);
+
+  // Thermometer pins: completed hints (start + end) + active casting hint (start only)
+  const thermometerPins = useMemo((): ThermometerPin[] => {
+    const pins: ThermometerPin[] = [];
+
+    // Start pin from active (casting) thermometer hint
+    if (activeThermometerHint?.note) {
+      try {
+        const note = JSON.parse(activeThermometerHint.note) as { startLat?: number; startLng?: number };
+        if (typeof note.startLat === "number" && typeof note.startLng === "number") {
+          pins.push({ lat: note.startLat, lng: note.startLng, number: 1, color: "gray" });
+        }
+      } catch {}
+    }
+
+    // Completed thermometer hints (start + end pins)
+    for (const hint of hintResults) {
+      if (hint.type !== "thermometer" || !hint.note) continue;
+      try {
+        const note = JSON.parse(hint.note) as {
+          startLat?: number;
+          startLng?: number;
+          endLat?: number;
+          endLng?: number;
+          result?: "hotter" | "colder" | "same";
+        };
+        const { startLat, startLng, endLat, endLng, result } = note;
+        if (typeof startLat !== "number" || typeof startLng !== "number") continue;
+        pins.push({
+          lat: startLat,
+          lng: startLng,
+          number: 1,
+          color: "gray",
+        });
+        if (typeof endLat === "number" && typeof endLng === "number") {
+          pins.push({
+            lat: endLat,
+            lng: endLng,
+            number: 2,
+            color: result === "hotter" ? "red" : result === "colder" ? "blue" : "gray",
+          });
+        }
+      } catch {
+        // skip invalid note
+      }
+    }
+    return pins;
+  }, [hintResults, activeThermometerHint]);
+
   // Submission-derived state for selected target
   const isTargetFound = selectedTarget ? foundHiderIds.has(selectedTarget.playerId) : false;
   const selectedSubmission = selectedTarget ? getMySubmissionForHider(selectedTarget.playerId) : undefined;
@@ -350,6 +420,7 @@ export function SeekingLayout({
           playerId={playerId}
           hideRefreshBar
           onCountdownChange={handleCountdownChange}
+          thermometerPins={thermometerPins}
         />
         {/* Dynamic island style pill on top of map */}
         <div
@@ -461,6 +532,7 @@ export function SeekingLayout({
                 powerupCastingSeconds={powerupCastingSeconds}
                 thermometerThresholdMeters={thermometerThresholdMeters}
                 onHintResult={handleHintResult}
+                onActiveThermometerHint={setActiveThermometerHint}
               />
             </section>
 

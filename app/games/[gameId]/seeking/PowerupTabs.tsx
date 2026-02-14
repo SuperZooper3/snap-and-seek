@@ -15,6 +15,7 @@ interface Props {
   powerupCastingSeconds: number;
   thermometerThresholdMeters: number;
   onHintResult: (hint: Hint) => void;
+  onActiveThermometerHint?: (hint: Hint | null) => void;
 }
 
 export function PowerupTabs({
@@ -24,6 +25,7 @@ export function PowerupTabs({
   powerupCastingSeconds,
   thermometerThresholdMeters,
   onHintResult,
+  onActiveThermometerHint,
 }: Props) {
   const [selectedPowerup, setSelectedPowerup] = useState<'radar' | 'thermometer' | 'photo'>('radar');
   const [activeHints, setActiveHints] = useState<Hint[]>([]);
@@ -106,7 +108,6 @@ export function PowerupTabs({
       const data = await response.json();
       if (response.ok && data.hint) {
         setActiveHints(prev => prev.filter(h => h.id !== hintId));
-        // Persist completed state immediately so "Unlocked" doesn't revert before next poll
         setCompletedHints(prev => [...prev, data.hint]);
         onHintResult(data.hint);
       }
@@ -150,6 +151,16 @@ export function PowerupTabs({
 
   // Check if there's an active hint for this target
   const activeHint = activeHints.find(h => h.hider_id === selectedTarget.playerId);
+
+  // Report active thermometer hint so the map can show the start pin while casting
+  useEffect(() => {
+    if (!onActiveThermometerHint) return;
+    if (activeHint?.type === 'thermometer') {
+      onActiveThermometerHint(activeHint);
+    } else {
+      onActiveThermometerHint(null);
+    }
+  }, [activeHint?.id, activeHint?.type, onActiveThermometerHint]);
   
   // Check which hints have been completed for this target
   const completedHintTypes = new Set(completedHints.map(h => h.type));
@@ -226,11 +237,11 @@ export function PowerupTabs({
             activeHint={activeHint}
             powerupCastingSeconds={powerupCastingSeconds}
             thermometerThresholdMeters={thermometerThresholdMeters}
-            lastCompletedHint={completedHints.filter(h => h.type === 'thermometer').sort((a, b) => (b.completed_at || b.created_at).localeCompare(a.completed_at || a.created_at))[0]}
             onHintCompleted={(hint) => {
               setActiveHints((prev) => prev.filter((h) => h.id !== hint.id));
               setCompletedHints((prev) => [...prev, hint]);
               onHintResult(hint);
+              onActiveThermometerHint?.(null);
             }}
           />
         )}

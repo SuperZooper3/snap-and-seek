@@ -52,7 +52,9 @@ export async function POST(
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 
-  const castingDuration = getPowerupCastingSeconds(game.powerup_casting_duration_seconds);
+  // Thermometer: 0s cast (user already walked); other types use game setting
+  const castingDuration =
+    type === 'thermometer' ? 0 : getPowerupCastingSeconds(game.powerup_casting_duration_seconds);
 
   // Check if there's already an active hint between this seeker-hider pair
   const { data: existingHint } = await supabase

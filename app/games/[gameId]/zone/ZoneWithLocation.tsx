@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ZoneMapView } from "./ZoneMapView";
+import { ZoneMapView, type ThermometerPin } from "./ZoneMapView";
 import { isEntirelyOutsideZone } from "@/lib/map-utils";
 import { getLocation } from "@/lib/get-location";
 
@@ -23,6 +23,8 @@ type Props = {
   onCountdownChange?: (countdown: number) => void;
   /** Called when the user is detected as outside or inside the zone */
   onOutsideZoneChange?: (outside: boolean) => void;
+  /** Thermometer history pins (red=hotter, blue=colder, numbered 1 & 2) */
+  thermometerPins?: ThermometerPin[];
 };
 
 type UserPosition = {
@@ -38,6 +40,7 @@ export function ZoneWithLocation({
   hideRefreshBar = false,
   onCountdownChange,
   onOutsideZoneChange,
+  thermometerPins = [],
 }: Props) {
   const [userPosition, setUserPosition] = useState<UserPosition>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL_SECONDS);
@@ -176,7 +179,7 @@ export function ZoneWithLocation({
       )}
 
       <div className="relative min-h-0 min-w-0 flex-1 w-full overflow-hidden">
-        <ZoneMapView zone={zone} fullSize userPosition={userPosition} />
+        <ZoneMapView zone={zone} fullSize userPosition={userPosition} thermometerPins={thermometerPins} />
       </div>
     </>
   );

@@ -98,9 +98,13 @@ export async function PATCH(
         }
       }
     } else if (hint.type === "thermometer" && resultData) {
-      const { result } = resultData;
+      const { result, endLat, endLng } = resultData;
       if (typeof result === 'string' && ['hotter', 'colder', 'same'].includes(result)) {
-        const thermoNote: ThermometerHintNote = { ...noteData, result: result as 'hotter' | 'colder' | 'same' } as ThermometerHintNote;
+        const thermoNote: ThermometerHintNote = {
+          ...noteData,
+          result: result as 'hotter' | 'colder' | 'same',
+          ...(typeof endLat === 'number' && typeof endLng === 'number' && { endLat, endLng }),
+        } as ThermometerHintNote;
         updatedNote = JSON.stringify(thermoNote);
       }
     } else if (hint.type === "photo" && resultData) {

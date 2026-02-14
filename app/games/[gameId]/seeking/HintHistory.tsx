@@ -53,8 +53,8 @@ export function HintHistory({ gameId, playerId }: Props) {
         
         case 'thermometer': {
           const data = noteData as ThermometerHintNote;
-          return data.result 
-            ? `🌡️ ${data.result === 'same' ? 'Neutral' : data.result.charAt(0).toUpperCase() + data.result.slice(1)}`
+          return data.result
+            ? `1 → 2: ${data.result === 'same' ? 'Neutral' : data.result.charAt(0).toUpperCase() + data.result.slice(1)}`
             : `Thermometer ${data.thresholdMeters}m`;
         }
         
@@ -122,25 +122,39 @@ export function HintHistory({ gameId, playerId }: Props) {
             </div>
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {hints.map((hint) => (
-                <div
-                  key={hint.id}
-                  className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="text-lg">{getHintIcon(hint.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm">
-                      <span className="font-medium">vs {hint.hider.name}</span>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {formatHintResult(hint)}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatTimeAgo(hint.completed_at || hint.created_at)}
+              {hints.map((hint) => {
+                const isThermometer = hint.type === "thermometer";
+                let resultColor: string | undefined;
+                if (isThermometer && hint.note) {
+                  try {
+                    const data = JSON.parse(hint.note) as ThermometerHintNote;
+                    if (data.result === "hotter") resultColor = "var(--pastel-error, #b91c1c)";
+                    else if (data.result === "colder") resultColor = "var(--pastel-sky, #0ea5e9)";
+                  } catch { /* ignore */ }
+                }
+                return (
+                  <div
+                    key={hint.id}
+                    className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="text-lg">{getHintIcon(hint.type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm">
+                        <span className="font-medium">vs {hint.hider.name}</span>
+                      </div>
+                      <div
+                        className="text-sm font-medium"
+                        style={resultColor ? { color: resultColor } : { color: "var(--pastel-ink)" }}
+                      >
+                        {formatHintResult(hint)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatTimeAgo(hint.completed_at || hint.created_at)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

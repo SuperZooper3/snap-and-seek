@@ -133,6 +133,16 @@ export async function POST(
     } else {
       result = 'colder';
     }
+  } else {
+    // Require actual distance: reject completion so client must move
+    return NextResponse.json(
+      {
+        error: 'Must move further',
+        distanceFromStart: Math.round(distanceFromStart),
+        thresholdMeters,
+      },
+      { status: 400 }
+    );
   }
 
   return NextResponse.json({

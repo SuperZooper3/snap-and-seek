@@ -10,12 +10,17 @@ export type LocationResult = {
   accuracy: number;
 };
 
+export type GetLocationOptions = {
+  /** If set to 0, do not use a cached position (force fresh GPS). Use for live distance display. */
+  maximumAge?: number;
+};
+
 /**
  * Returns a Promise that resolves with the current location.
  * If debug mode is active (sas_debug_location cookie present), returns that immediately.
  * Otherwise uses navigator.geolocation.getCurrentPosition.
  */
-export function getLocation(): Promise<LocationResult> {
+export function getLocation(options?: GetLocationOptions): Promise<LocationResult> {
   const debug = getDebugLocation();
   if (debug) {
     return Promise.resolve({
@@ -27,6 +32,10 @@ export function getLocation(): Promise<LocationResult> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     return Promise.reject(new Error("Geolocation is not supported."));
   }
+  const geoOptions: PositionOptions = {
+    enableHighAccuracy: true,
+    ...(options?.maximumAge !== undefined && { maximumAge: options.maximumAge }),
+  };
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -43,7 +52,7 @@ export function getLocation(): Promise<LocationResult> {
             : new Error("Could not get location.")
         );
       },
-      { enableHighAccuracy: true }
+      geoOptions
     );
   });
 }

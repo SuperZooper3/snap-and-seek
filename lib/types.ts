@@ -126,6 +126,9 @@ export interface ThermometerHintNote {
   startLng: number;
   thresholdMeters: number;
   result?: 'hotter' | 'colder' | 'same';
+  /** End position when thermometer was stopped (for map pins) */
+  endLat?: number;
+  endLng?: number;
 }
 
 /**
