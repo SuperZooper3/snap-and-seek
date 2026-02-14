@@ -28,9 +28,14 @@ export function HidingLayout({
 }: Props) {
   const [refreshCountdown, setRefreshCountdown] = useState(5);
   const [showPhotoPopup, setShowPhotoPopup] = useState(false);
+  const [outsideZone, setOutsideZone] = useState<boolean>(false);
 
   const handleCountdownChange = useCallback((countdown: number) => {
     setRefreshCountdown(countdown);
+  }, []);
+
+  const handleOutsideZoneChange = useCallback((outside: boolean) => {
+    setOutsideZone(outside);
   }, []);
 
   const handleTimeUp = useCallback(() => {
@@ -61,6 +66,7 @@ export function HidingLayout({
           playerId={playerId}
           hideRefreshBar
           onCountdownChange={handleCountdownChange}
+          onOutsideZoneChange={handleOutsideZoneChange}
         />
         <div
           className="absolute top-4 left-1/2 z-10 -translate-x-1/2 pointer-events-none"
@@ -80,12 +86,21 @@ export function HidingLayout({
         <p className="text-xs text-amber-700 dark:text-amber-300">
           Play area: inside the circle ({Math.round(zone.radius_meters)} m). Red = out of bounds.
         </p>
-        <Link
-          href={`/games/${gameId}/setup`}
-          className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
-        >
-          Go to photo capture
-        </Link>
+        {outsideZone ? (
+          <span
+            className="touch-manipulation block w-full rounded-xl bg-amber-400/70 dark:bg-amber-500/50 text-amber-900/80 dark:text-amber-100/80 font-semibold px-6 py-3.5 text-center cursor-not-allowed"
+            aria-disabled="true"
+          >
+            Go to photo capture — get inside the zone first
+          </span>
+        ) : (
+          <Link
+            href={`/games/${gameId}/setup`}
+            className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+          >
+            Go to photo capture
+          </Link>
+        )}
       </footer>
 
       {/* Popup when time hits 0 */}
@@ -103,12 +118,18 @@ export function HidingLayout({
             <p className="text-amber-800 dark:text-amber-200">
               Take a picture right now and submit it of something!
             </p>
-            <Link
-              href={`/games/${gameId}/setup`}
-              className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
-            >
-              Take photo
-            </Link>
+            {outsideZone ? (
+              <span className="touch-manipulation block w-full rounded-xl bg-amber-400/70 text-amber-900/80 font-semibold px-6 py-3.5 text-center cursor-not-allowed">
+                Get inside the zone first
+              </span>
+            ) : (
+              <Link
+                href={`/games/${gameId}/setup`}
+                className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+              >
+                Take photo
+              </Link>
+            )}
           </div>
         </div>
       )}

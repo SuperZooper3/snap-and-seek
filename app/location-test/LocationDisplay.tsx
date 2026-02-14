@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { getLocation as resolveLocation } from "@/lib/get-location";
 
 const MapDisplay = dynamic(
   () => import("./MapDisplay").then((mod) => ({ default: mod.MapDisplay })),
@@ -48,44 +49,45 @@ export function LocationDisplay() {
   }
 
   function pollLocation() {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      handlePosition,
-      (err) => {
-        if (err.code === 1) setLocation({ status: "error", message: "Permission denied." });
-        // Don't clear history or stop polling on temporary errors (2, 3)
-      },
-      { enableHighAccuracy: true }
-    );
+    resolveLocation()
+      .then((pos) => {
+        handlePosition({
+          coords: {
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            accuracy: pos.accuracy,
+          },
+        } as GeolocationPosition);
+      })
+      .catch((err) => {
+        if (err instanceof Error && err.message.includes("permission")) {
+          setLocation({ status: "error", message: "Permission denied." });
+        }
+        // Don't clear history or stop polling on temporary errors
+      });
   }
 
   function getLocation() {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setLocation({
-        status: "error",
-        message: "Geolocation is not supported by your browser.",
-      });
-      return;
-    }
-
     setLocation({ status: "loading" });
     setLocationHistory([]);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        handlePosition(position);
+    resolveLocation()
+      .then((pos) => {
+        handlePosition({
+          coords: {
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            accuracy: pos.accuracy,
+          },
+        } as GeolocationPosition);
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = setInterval(pollLocation, POLL_INTERVAL_MS);
-      },
-      (err) => {
-        let message = err.message;
-        if (err.code === 1) message = "Permission denied. Allow location access to see your position.";
-        if (err.code === 2) message = "Position unavailable. Try again.";
-        if (err.code === 3) message = "Request timed out. Try again.";
+      })
+      .catch((err) => {
+        const message =
+          err instanceof Error ? err.message : "Could not get location.";
         setLocation({ status: "error", message });
-      },
-      { enableHighAccuracy: true }
-    );
+      });
   }
 
   useEffect(() => {

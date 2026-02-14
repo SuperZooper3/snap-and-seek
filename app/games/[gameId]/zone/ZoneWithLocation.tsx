@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ZoneMapView } from "./ZoneMapView";
 import { isEntirelyOutsideZone } from "@/lib/map-utils";
+import { getLocation } from "@/lib/get-location";
 
 const REFRESH_INTERVAL_SECONDS = 3;
 const MIN_PING_INTERVAL_MS = (REFRESH_INTERVAL_SECONDS - 1) * 1000;
@@ -20,6 +21,8 @@ type Props = {
   /** When true, hide the refresh bar and report countdown via onCountdownChange (e.g. for seeking header) */
   hideRefreshBar?: boolean;
   onCountdownChange?: (countdown: number) => void;
+  /** Called when the user is detected as outside or inside the zone */
+  onOutsideZoneChange?: (outside: boolean) => void;
 };
 
 type UserPosition = {
@@ -34,6 +37,7 @@ export function ZoneWithLocation({
   playerId,
   hideRefreshBar = false,
   onCountdownChange,
+  onOutsideZoneChange,
 }: Props) {
   const [userPosition, setUserPosition] = useState<UserPosition>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL_SECONDS);
@@ -55,29 +59,21 @@ export function ZoneWithLocation({
   );
 
   const refreshLocation = useCallback(() => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setLocationError("Geolocation not supported");
-      return;
-    }
     setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+    getLocation()
+      .then((res) => {
         setUserPosition({
-          lat,
-          lng,
-          accuracy: position.coords.accuracy ?? 30,
+          lat: res.latitude,
+          lng: res.longitude,
+          accuracy: res.accuracy,
         });
         setCountdown(REFRESH_INTERVAL_SECONDS);
-        uploadPing(lat, lng);
-      },
-      () => {
-        setLocationError("Could not get location");
+        uploadPing(res.latitude, res.longitude);
+      })
+      .catch((err) => {
+        setLocationError(err instanceof Error ? err.message : "Could not get location");
         setCountdown(REFRESH_INTERVAL_SECONDS);
-      },
-      { enableHighAccuracy: true }
-    );
+      });
   }, [uploadPing]);
 
   useEffect(() => {
@@ -111,6 +107,27 @@ export function ZoneWithLocation({
       zone.center_lng,
       zone.radius_meters
     );
+
+  useEffect(() => {
+    onOutsideZoneChange?.(!!outsideZone);
+  }, [outsideZone, onOutsideZoneChange]);
+
+  // Vibrate repeatedly when outside zone (attention-grabbing feedback on mobile)
+  useEffect(() => {
+    if (!outsideZone) return;
+    const canVibrate =
+      typeof navigator !== "undefined" && "vibrate" in navigator;
+    if (!canVibrate) return;
+
+    const vibrateInterval = setInterval(() => {
+      navigator.vibrate([200, 100, 200]);
+    }, 2500);
+
+    return () => {
+      clearInterval(vibrateInterval);
+      navigator.vibrate(0);
+    };
+  }, [outsideZone]);
 
   return (
     <>

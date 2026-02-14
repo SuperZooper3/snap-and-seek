@@ -19,7 +19,7 @@
 - **Set game zone modal:** Current location, slider 50m–1km, map with red shaded outside (polygon with hole), single red zone circle (empty inside), blue pin + light blue accuracy circle. Refresh location; save zone via PATCH. Map fills modal; fitBounds to zone (~90% fill). Zone required before start.
 - **Start game:** PATCH status to `hiding` (sets `hiding_started_at`); redirects to `/games/[gameId]/zone`. Lobby shows "Start hiding" button linking to zone.
 - **Player identity:** Cookie `sas_players` stores per-game `{ id, name }`. "Start hiding" only shown when `currentPlayer` is set. PlayerList: tap player to assume identity; "Release my identity" to clear. Zone/capture pages redirect if !currentPlayer.
-- **Zone view** (`/games/[gameId]/zone`): Protected (redirect if !currentPlayer). Full-screen map (mobile), zone polygon + circle. Live location every 10s with countdown. Single blue pin + imperative accuracy circle (no stacking). Outside-zone warning. Hiding time remaining countdown. "Go to photo capture" → `/games/[gameId]/setup`. "Start seeking (test)" link.
+- **Zone view** (`/games/[gameId]/zone`): Protected (redirect if !currentPlayer). Full-screen map (mobile), zone polygon + circle. Live location every 5s with countdown. Single blue pin + imperative accuracy circle (no stacking). Outside-zone warning (red banner). **Photo capture blocked** when outside zone (button disabled + vibration on mobile). Hiding time remaining countdown. "Go to photo capture" → `/games/[gameId]/setup` (only when inside zone). "Start seeking (test)" link.
 - **API:** PATCH `/api/games/[gameId]` accepts zone fields, `status: 'hiding'` (validates zone + 2+ players), `status: 'seeking'` (sets `seeking_started_at`), `hiding_duration_seconds`.
 - **DB:** Run `docs/supabase-game-zone.sql` in Supabase to add zone columns.
 
@@ -33,6 +33,12 @@
 - **Game page auto-redirect:** If currentPlayer and status is "seeking" → redirect to seeking page. If "hiding" → redirect to zone. Bypass with `?manage=1`.
 - **God mode** (`/games/[gameId]/god`): Spectator-only view (redirects players). Map shows live player pings (color-coded circle markers with initials) + hiding photo locations (default markers with name labels). Draggable bottom photo tray shows all players' hiding photos. Color-coded legend. 5s auto-refresh for positions.
 - **Player pings:** POST/GET `/api/games/[gameId]/pings` + GET `/api/games/[gameId]/pings/latest`. `player_pings` table.
+
+### Debug mode (implemented)
+- **`/debug` page:** Start debug mode (uses current GPS), click map to set fake location, End debug mode (clears cookie). Link in home footer.
+- **`lib/debug-location-cookie.ts`:** Cookie `sas_debug_location` with lat/lng. `getDebugLocation`, `setDebugLocation`, `clearDebugLocation`.
+- **`lib/get-location.ts`:** `getLocation()` — cookie first, else navigator.geolocation. All location consumers use this.
+- **Vibration API:** When outside zone, `navigator.vibrate([200, 100, 200])` every 2.5s until back inside.
 
 ## What's left
 - **DB migration required:** Run `docs/supabase-submissions.sql` in Supabase SQL Editor to create submissions table and add winner columns to games.
