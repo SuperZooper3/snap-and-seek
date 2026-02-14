@@ -26,7 +26,7 @@ export function TutorialModal({ onClose }: Props) {
       <div className="bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-900 dark:to-zinc-950 rounded-2xl shadow-xl border border-amber-200/50 dark:border-zinc-700 max-h-[90vh] w-full max-w-lg flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-amber-200/50 dark:border-zinc-700">
           <h2 id="tutorial-title" className="text-lg font-bold text-amber-900 dark:text-amber-100">
-            How to play
+            How to play <strong>Snap and Seek</strong>!
           </h2>
           <button
             type="button"
