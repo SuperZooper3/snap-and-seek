@@ -2,20 +2,30 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { GameZoneModal } from "./GameZoneModal";
+
+type GameZone = {
+  center_lat: number;
+  center_lng: number;
+  radius_meters: number;
+} | null;
 
 type Props = {
   gameId: string;
   status: string | null;
   joinUrl: string;
   playerCount: number;
+  zone: GameZone;
 };
 
-export function GameActions({ gameId, status, joinUrl, playerCount }: Props) {
+export function GameActions({ gameId, status, joinUrl, playerCount, zone }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [zoneModalOpen, setZoneModalOpen] = useState(false);
   const isLobby = status === "lobby";
-  const canStart = playerCount >= 2;
+  const hasZone = zone != null;
+  const canStart = playerCount >= 2 && hasZone;
 
   function copyLink() {
     navigator.clipboard.writeText(joinUrl);
@@ -35,7 +45,7 @@ export function GameActions({ gameId, status, joinUrl, playerCount }: Props) {
         const data = await res.json();
         throw new Error(data.error || "Failed to start game");
       }
-      router.refresh();
+      router.push(`/games/${gameId}/zone`);
     } finally {
       setStarting(false);
     }
@@ -66,7 +76,19 @@ export function GameActions({ gameId, status, joinUrl, playerCount }: Props) {
 
       {isLobby && (
         <>
-          {!canStart && (
+          <button
+            type="button"
+            onClick={() => setZoneModalOpen(true)}
+            className="touch-manipulation w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-semibold px-6 py-3 transition-colors"
+          >
+            {hasZone ? "Edit game zone" : "Set game zone"}
+          </button>
+          {!hasZone && (
+            <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+              Set the play area on the map (required to start).
+            </p>
+          )}
+          {!canStart && hasZone && (
             <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
               Need at least 2 players to start.
             </p>
@@ -75,17 +97,37 @@ export function GameActions({ gameId, status, joinUrl, playerCount }: Props) {
             type="button"
             onClick={startGame}
             disabled={starting || !canStart}
-            className="rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold px-6 py-3 transition-colors"
+            className="touch-manipulation w-full rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold px-6 py-3 transition-colors"
           >
             {starting ? "Starting…" : "Start game"}
           </button>
         </>
       )}
 
+      {zoneModalOpen && (
+        <GameZoneModal
+          gameId={gameId}
+          initialZone={zone}
+          onSaved={() => {
+            setZoneModalOpen(false);
+            router.refresh();
+          }}
+          onClose={() => setZoneModalOpen(false)}
+        />
+      )}
+
       {!isLobby && status && (
-        <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
-          Status: <strong>{status}</strong>
-        </p>
+        <div className="space-y-2">
+          <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+            Status: <strong>{status}</strong>
+          </p>
+          <a
+            href={`/games/${gameId}/zone`}
+            className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 text-center transition-colors"
+          >
+            View game zone
+          </a>
+        </div>
       )}
     </div>
   );

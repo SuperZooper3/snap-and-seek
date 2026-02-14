@@ -38,14 +38,25 @@ export default async function GamePage({ params }: Props) {
 
   const joinUrl = `${await getBaseUrl()}/join/${gameId}`;
 
+  const zone =
+    game.zone_center_lat != null &&
+    game.zone_center_lng != null &&
+    game.zone_radius_meters != null
+      ? {
+          center_lat: game.zone_center_lat as number,
+          center_lng: game.zone_center_lng as number,
+          radius_meters: game.zone_radius_meters as number,
+        }
+      : null;
+
   const cookieStore = await cookies();
   const playersCookie = cookieStore.get(PLAYER_COOKIE_NAME)?.value;
   const decoded = playersCookie ? decodeURIComponent(playersCookie) : undefined;
   const currentPlayer = getPlayerForGame(decoded, gameId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
-      <main className="mx-auto max-w-2xl px-6 py-16">
+    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+      <main className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-16 pb-safe">
         <header className="mb-10">
           <Link
             href="/"
@@ -69,6 +80,7 @@ export default async function GamePage({ params }: Props) {
             status={(game as Game).status}
             joinUrl={joinUrl}
             playerCount={(players as Player[])?.length ?? 0}
+            zone={zone}
           />
 
           <div>

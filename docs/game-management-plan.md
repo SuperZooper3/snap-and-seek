@@ -15,8 +15,20 @@ create table public.games (
   name text null,
   status text null default 'lobby',
   created_at timestamp with time zone null default now(),
+  zone_center_lat double precision null,
+  zone_center_lng double precision null,
+  zone_radius_meters double precision null,
   constraint games_pkey primary key (id)
 ) TABLESPACE pg_default;
+```
+
+To add zone columns to an existing table, run in Supabase SQL Editor:
+```sql
+-- See docs/supabase-game-zone.sql for the full migration.
+ALTER TABLE public.games
+  ADD COLUMN IF NOT EXISTS zone_center_lat double precision NULL,
+  ADD COLUMN IF NOT EXISTS zone_center_lng double precision NULL,
+  ADD COLUMN IF NOT EXISTS zone_radius_meters double precision NULL;
 ```
 
 **`players`**
