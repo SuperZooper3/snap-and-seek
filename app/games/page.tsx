@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { supabase } from "@/lib/supabase";
 import type { Game } from "@/lib/types";
 
@@ -16,7 +17,7 @@ export default async function GamesPage() {
             href="/"
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
           >
-            <span aria-hidden>←</span>
+            <BackArrowIcon />
             Create game
           </Link>
           <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">

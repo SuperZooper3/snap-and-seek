@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { GodMapView, type PlayerMarker } from "./GodMapView";
 import { GodPhotoTray, type PlayerPhotoItem } from "./GodPhotoTray";
 
-const REFRESH_MS = 5000;
+const REFRESH_MS = 3000;
 const PLAYER_COLORS = [
   "#7c3aed", // purple
   "#ea580c", // orange

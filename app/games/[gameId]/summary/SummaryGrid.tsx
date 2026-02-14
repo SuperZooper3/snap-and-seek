@@ -21,16 +21,20 @@ type Props = {
  * Columns = each player (hider) with their hiding photo as header.
  * Rows = each player (seeker).
  * Cells = the seeker's submitted photo for that hider.
- * Diagonal = the player's own hiding photo (can't find yourself).
+ * Diagonal = the player's own hiding photo (same as column header for that player).
  */
 export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Props) {
-  // Build a lookup: submissions[seekerId][hiderId] = submission
+  // Build a lookup: submissions[seekerId][hiderId] = submission (prefer success; else latest fail so we can show "tried but failed")
   const submissionMap: Record<number, Record<number, Submission>> = {};
   for (const s of submissions) {
-    if (s.status !== "success") continue;
+    if (s.status !== "success" && s.status !== "fail") continue;
     if (!submissionMap[s.seeker_id]) submissionMap[s.seeker_id] = {};
-    // Keep the first successful one (earliest)
-    if (!submissionMap[s.seeker_id][s.hider_id]) {
+    const existing = submissionMap[s.seeker_id][s.hider_id];
+    if (!existing) {
+      submissionMap[s.seeker_id][s.hider_id] = s;
+    } else if (s.status === "success") {
+      submissionMap[s.seeker_id][s.hider_id] = s;
+    } else if (existing.status === "fail" && s.status === "fail") {
       submissionMap[s.seeker_id][s.hider_id] = s;
     }
   }
@@ -79,13 +83,17 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
             return (
               <tr
                 key={seeker.id}
-                className={isWinner ? "bg-emerald-50/60 dark:bg-emerald-900/10" : ""}
+                className={
+                  isWinner
+                    ? "bg-amber-50/80 dark:bg-amber-950/40 ring-2 ring-amber-400 dark:ring-amber-500 ring-inset"
+                    : ""
+                }
               >
                 {/* Row header: seeker name */}
                 <td
                   className={`p-2 sticky left-0 z-10 min-w-[100px] ${
                     isWinner
-                      ? "bg-emerald-50/80 dark:bg-emerald-900/20"
+                      ? "bg-amber-50/95 dark:bg-amber-950/50 ring-1 ring-amber-400/50 dark:ring-amber-500/50"
                       : "bg-white/80 dark:bg-zinc-800/80"
                   }`}
                 >
@@ -94,7 +102,7 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     <span
                       className={`text-sm font-medium truncate max-w-[80px] ${
                         isWinner
-                          ? "text-emerald-800 dark:text-emerald-200 font-semibold"
+                          ? "text-amber-800 dark:text-amber-200 font-semibold"
                           : "text-emerald-700 dark:text-emerald-300"
                       }`}
                     >
@@ -102,7 +110,7 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     </span>
                   </div>
                 </td>
-                {/* Cells: seeker's submission for each hider */}
+                {/* Cells: seeker's submission for each hider — winner row shows full set of found images */}
                 {players.map((hider) => {
                   const isDiagonal = seeker.id === hider.id;
                   const submission = submissionMap[seeker.id]?.[hider.id];
@@ -110,23 +118,63 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     submission?.photo_id != null ? photoUrlById[submission.photo_id] : undefined;
 
                   if (isDiagonal) {
-                    // Diagonal: player's own hiding photo
+                    const selfPhotoUrl =
+                      seeker.hiding_photo != null ? photoUrlById[seeker.hiding_photo] : undefined;
                     return (
-                      <td key={hider.id} className="p-2 text-center">
-                        <div className="w-16 h-12 mx-auto rounded-lg bg-zinc-200/50 dark:bg-zinc-600/30 flex items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-600">
-                          <span className="text-xs text-zinc-400 dark:text-zinc-500">self</span>
-                        </div>
+                      <td
+                        key={hider.id}
+                        className={`p-2 text-center ${isWinner ? "bg-amber-50/60 dark:bg-amber-950/30" : ""}`}
+                      >
+                        {selfPhotoUrl ? (
+                          <div
+                            className={`relative w-16 h-12 mx-auto rounded-lg overflow-hidden border-2 border-dashed ${
+                              isWinner
+                                ? "bg-amber-100 dark:bg-amber-900/40 border-amber-400 dark:border-amber-500 shadow-md"
+                                : "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-600"
+                            }`}
+                          >
+                            <Image
+                              src={selfPhotoUrl}
+                              alt={`${seeker.name}'s hiding spot (self)`}
+                              fill
+                              className="object-cover"
+                              sizes="64px"
+                              unoptimized
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-12 mx-auto rounded-lg bg-zinc-200/50 dark:bg-zinc-600/30 flex items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-600">
+                            <span className="text-xs text-zinc-400 dark:text-zinc-500">self</span>
+                          </div>
+                        )}
                       </td>
                     );
                   }
 
+                  const isFail = submission?.status === "fail";
                   return (
-                    <td key={hider.id} className="p-2 text-center">
+                    <td
+                      key={hider.id}
+                      className={`p-2 text-center ${isWinner ? "bg-amber-50/60 dark:bg-amber-950/30" : ""}`}
+                    >
                       {submissionPhotoUrl ? (
-                        <div className="relative w-16 h-12 mx-auto rounded-lg overflow-hidden bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700">
+                        <div
+                          className={`relative w-16 h-12 mx-auto rounded-lg overflow-hidden ${
+                            isFail
+                              ? "bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-500 shadow-md"
+                              : isWinner
+                                ? "bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-400 dark:border-amber-500 shadow-md"
+                                : "bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700"
+                          }`}
+                          title={isFail ? "Tried but not close enough" : undefined}
+                        >
                           <Image
                             src={submissionPhotoUrl}
-                            alt={`${seeker.name}'s photo of ${hider.name}'s spot`}
+                            alt={
+                              isFail
+                                ? `${seeker.name} tried but wasn't close enough to ${hider.name}'s spot`
+                                : `${seeker.name}'s photo of ${hider.name}'s spot`
+                            }
                             fill
                             className="object-cover"
                             sizes="64px"

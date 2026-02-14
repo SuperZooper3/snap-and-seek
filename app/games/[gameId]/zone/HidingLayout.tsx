@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useCallback } from "react";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { ZoneWithLocation } from "./ZoneWithLocation";
 import { HidingTimeRemaining } from "./HidingTimeRemaining";
 type Zone = {
@@ -42,14 +43,14 @@ export function HidingLayout({
   }, []);
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+    <div className="flex h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
       {/* Single top bar: Back left, Refresh right (same as seeking) */}
       <header className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top bg-amber-50/95 dark:bg-zinc-900/95">
         <Link
           href={`/games/${gameId}`}
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
         >
-          <span aria-hidden>←</span>
+          <BackArrowIcon />
           Back to game
         </Link>
         <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
@@ -57,7 +58,7 @@ export function HidingLayout({
         </div>
       </header>
 
-      {/* Map area with floating time-remaining pill */}
+      {/* Map area with floating time-remaining pill; main fills space so footer stays at bottom of viewport */}
       <main className="relative flex min-h-0 min-w-0 flex-1 flex-col w-full overflow-hidden">
         <ZoneWithLocation
           zone={zone}
@@ -80,7 +81,7 @@ export function HidingLayout({
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer: pinned to bottom of viewport (100dvh) so "Go to photo capture" is always reachable without scroll */}
       <footer className="shrink-0 border-t border-amber-200/50 dark:border-zinc-700 px-4 py-3 pb-safe space-y-2 bg-amber-50/80 dark:bg-zinc-900/80">
         <p className="text-xs text-amber-700 dark:text-amber-300">
           Play area: inside the circle ({Math.round(zone.radius_meters)} m). Red = out of bounds.

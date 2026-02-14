@@ -6,6 +6,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { ZoneWithLocation } from "../zone/ZoneWithLocation";
 import { getLocation } from "@/lib/get-location";
 import { SeekingTimer } from "./SeekingTimer";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { CameraModal } from "@/components/CameraModal";
 import type { Submission } from "@/lib/types";
 
@@ -96,19 +97,17 @@ export function SeekingLayout({
     };
   }, []);
 
-  // 5s polling for game status + submissions.
-  // Once a winner is detected, we keep polling briefly but never clear the winner.
+  // Poll game status regularly while seeking so everyone sees wins (and latest submissions).
+  // First poll after 1s, then every 3s. Stop once a winner is detected.
   useEffect(() => {
-    // Stop polling entirely once we've confirmed a winner
     if (winnerId != null) return;
 
-    const interval = setInterval(async () => {
+    const poll = async () => {
       try {
         const res = await fetch(`/api/games/${gameId}/game-status`);
         if (!res.ok) return;
         const data = await res.json();
         setSubmissions(data.submissions ?? []);
-        // Only set winner, never unset — once set it's permanent
         if (data.winner_id != null) {
           setWinnerId(data.winner_id);
           setWinnerName(data.winner_name ?? null);
@@ -116,8 +115,14 @@ export function SeekingLayout({
       } catch {
         // Silently ignore polling errors
       }
-    }, 5000);
-    return () => clearInterval(interval);
+    };
+
+    const t = setTimeout(poll, 1000);
+    const interval = setInterval(poll, 3000);
+    return () => {
+      clearTimeout(t);
+      clearInterval(interval);
+    };
   }, [gameId, winnerId]);
 
   const handleCountdownChange = useCallback((countdown: number) => {
@@ -126,11 +131,22 @@ export function SeekingLayout({
 
   const selectedTarget = targets[selectedIndex];
 
-  // Determine which targets have been found by the current player
+  // Determine which targets have been found by the current player (success only)
   const foundHiderIds = new Set(
     submissions
       .filter((s) => s.seeker_id === playerId && s.status === "success")
       .map((s) => s.hider_id)
+  );
+
+  // Targets this seeker has tried but failed (no success for that hider yet)
+  const failedAttemptHiderIds = new Set(
+    submissions
+      .filter((s) => s.seeker_id === playerId && s.status === "fail")
+      .map((s) => s.hider_id)
+  );
+  // Only "failed attempt" if they don't have a success for that hider
+  const triedButNotFoundHiderIds = new Set(
+    [...failedAttemptHiderIds].filter((hiderId) => !foundHiderIds.has(hiderId))
   );
 
   // Get the submission photo URL for a specific hider (from current player's submissions)
@@ -215,9 +231,10 @@ export function SeekingLayout({
         }
 
         const submitData = await submitRes.json();
+        const sub = submitData.submission as Submission;
 
-        // Update local state immediately
-        setSubmissions((prev) => [...prev, submitData.submission]);
+        // Update local state immediately (backend returns resolved status: success | fail)
+        setSubmissions((prev) => [...prev, sub]);
         if (photoId && photoUrl) {
           setSubmissionPhotoUrls((prev) => ({ ...prev, [photoId]: photoUrl }));
         }
@@ -226,8 +243,10 @@ export function SeekingLayout({
           setWinnerId(playerId);
           setWinnerName(playerName);
           setSubmitStatus("You found everyone! You win!");
-        } else {
+        } else if (sub.status === "success") {
           setSubmitStatus("Found!");
+        } else {
+          setSubmitStatus("Not close enough.");
         }
       } catch {
         setSubmitStatus("Something went wrong!");
@@ -344,7 +363,7 @@ export function SeekingLayout({
             href={`/games/${gameId}`}
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-sky-800 dark:text-sky-200 bg-sky-100/80 dark:bg-sky-900/30 hover:bg-sky-200/80 dark:hover:bg-sky-800/40 transition-colors shrink-0"
           >
-            <span aria-hidden>←</span>
+            <BackArrowIcon />
             Back to game
           </Link>
           <span className="text-sm text-sky-700 dark:text-sky-300 shrink-0">
@@ -406,6 +425,7 @@ export function SeekingLayout({
               <span className="text-sm font-medium text-sky-700 dark:text-sky-300 shrink-0">Targets:</span>
               {targets.map((t, i) => {
                 const isFound = foundHiderIds.has(t.playerId);
+                const triedButNotFound = triedButNotFoundHiderIds.has(t.playerId);
                 const isSelected = selectedIndex === i;
                 let pillClass: string;
                 if (isFound && isSelected) {
@@ -413,6 +433,11 @@ export function SeekingLayout({
                 } else if (isFound) {
                   pillClass =
                     "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-800/50";
+                } else if (triedButNotFound && isSelected) {
+                  pillClass = "bg-amber-500 text-white dark:bg-amber-600";
+                } else if (triedButNotFound) {
+                  pillClass =
+                    "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-800/50";
                 } else if (isSelected) {
                   pillClass = "bg-sky-600 text-white dark:bg-sky-500";
                 } else {
@@ -557,7 +582,9 @@ export function SeekingLayout({
                   className={`text-center py-3 font-medium ${
                     submitStatus === "Found!" || submitStatus.includes("win")
                       ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-600 dark:text-red-400"
+                      : submitStatus === "Not close enough."
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-red-600 dark:text-red-400"
                   }`}
                 >
                   {submitStatus}
@@ -567,7 +594,11 @@ export function SeekingLayout({
                 <button
                   type="button"
                   onClick={() => handleOpenCamera(selectedTarget.playerId)}
-                  className="touch-manipulation block w-full rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+                  className={`touch-manipulation block w-full rounded-xl text-white font-semibold px-6 py-3.5 text-center transition-colors ${
+                    triedButNotFoundHiderIds.has(selectedTarget.playerId)
+                      ? "bg-amber-500 hover:bg-amber-600"
+                      : "bg-sky-600 hover:bg-sky-700"
+                  }`}
                 >
                   I found {selectedTarget.name}!
                 </button>
@@ -605,12 +636,6 @@ export function SeekingLayout({
               className="touch-manipulation block w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
             >
               View summary
-            </Link>
-            <Link
-              href={`/games/${gameId}`}
-              className="block text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
-            >
-              Back to game
             </Link>
           </div>
         </div>

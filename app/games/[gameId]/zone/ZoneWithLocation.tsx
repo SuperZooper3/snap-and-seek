@@ -5,7 +5,7 @@ import { ZoneMapView } from "./ZoneMapView";
 import { isEntirelyOutsideZone } from "@/lib/map-utils";
 import { getLocation } from "@/lib/get-location";
 
-const REFRESH_INTERVAL_SECONDS = 5;
+const REFRESH_INTERVAL_SECONDS = 3;
 const MIN_PING_INTERVAL_MS = (REFRESH_INTERVAL_SECONDS - 1) * 1000;
 
 type Zone = {
