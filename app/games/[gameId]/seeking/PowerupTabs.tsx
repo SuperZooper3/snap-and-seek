@@ -209,10 +209,11 @@ export function PowerupTabs({
             gameId={gameId}
             targetPlayer={selectedTarget}
             onStartHint={handleStartHint}
-            disabled={!!activeHint || loading || completedHintTypes.has('radar')}
+            disabled={!!activeHint || loading}
             powerupCastingSeconds={powerupCastingSeconds}
-            isCompleted={completedHintTypes.has('radar')}
-            completedHint={completedHints.find(h => h.type === 'radar')}
+            lastResult={completedHints
+              .filter((h) => h.type === 'radar')
+              .sort((a, b) => (b.completed_at || b.created_at).localeCompare(a.completed_at || a.created_at))[0]}
           />
         )}
         

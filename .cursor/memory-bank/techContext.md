@@ -35,7 +35,7 @@
 - `app/games/[gameId]/seeking/SeekingLayout.tsx` — client: map + pull-up tray with target pills, **PowerupTabs** (Radar/Thermometer/Photo), "I found [Name]!" + camera + submission flow, 5s game-status polling, win modal, **HintHistory**.
 - `app/games/[gameId]/seeking/PowerupTabs.tsx` — client: folder-style tabs; CastingTimer when active; RadarPowerup, ThermometerPowerup, PhotoPowerup. Polls hints every 2s; on completion adds hint to completedHints so unlock state persists.
 - `app/games/[gameId]/seeking/CastingTimer.tsx` — client: countdown for active hint; onComplete(hintId), onCancel(hintId). Fixed deps to avoid infinite setState loop.
-- `app/games/[gameId]/seeking/RadarPowerup.tsx`, `ThermometerPowerup.tsx`, `PhotoPowerup.tsx` — client: per-type UI. ThermometerPowerup uses `getLocation()` (debug-aware), requires cast time + distance before Stop, calls `onHintCompleted` for immediate reuse; result at bottom.
+- `app/games/[gameId]/seeking/RadarPowerup.tsx`, `ThermometerPowerup.tsx`, `PhotoPowerup.tsx` — client: per-type UI. RadarPowerup and ThermometerPowerup use `getLocation()` (debug-aware). Radar: inline result ("Yes — you're within range." / "No — you're not within range."), reusable. Thermometer: result at bottom; requires cast time + distance before Stop.
 - `app/games/[gameId]/seeking/HintHistory.tsx` — client: expandable list of completed hints for current seeker.
 - `app/games/[gameId]/seeking/SeekingTimer.tsx` — client: elapsed time since `seeking_started_at`. Supports "bar" and "pill" variants.
 - `app/games/[gameId]/summary/page.tsx` — server: fetches game, all players, all submissions, photo URLs; renders winner banner + `SummaryGrid`. Graceful fallback if submissions table doesn't exist yet.
@@ -59,7 +59,7 @@
 - `app/api/games/[gameId]/pings/latest/route.ts` — GET: latest ping per player.
 - `app/api/games/[gameId]/radar/route.ts` — POST: radar proximity check. Accepts `{ lat, lng, targetPlayerId, distanceMeters }`. Compares seeker GPS vs. target's hiding photo GPS. Returns `{ withinDistance, distanceMeters }`.
 - `app/api/games/[gameId]/hints/route.ts` — POST: create hint (seekerId, hiderId, type, initialData). GET: list hints for game (optional seekerId, status).
-- `app/api/games/[gameId]/hints/[hintId]/route.ts` — PATCH: complete or cancel hint (status, resultData). GET: single hint.
+- `app/api/games/[gameId]/hints/[hintId]/route.ts` — PATCH: complete or cancel hint (status, resultData). For radar, if resultData missing, uses lat/lng/distanceMeters from hint.note (initialData) to compute distance to hider's photo. GET: single hint.
 - `app/api/games/[gameId]/thermometer/route.ts` — POST: hotter/colder/neutral (hintId, currentLat, currentLng). Uses startLat/startLng as fallback when lastLat/lastLng absent. Neutral = distance to target changed ≤10m. Returns distanceFromStart, canComplete, result.
 - `app/api/games/[gameId]/photo-unlock/route.ts` — POST: list available photos (hiderId; includes types with `unavailable: true`) or get photo URL (hiderId, photoType; returns `unavailable: true` for opted-out types).
 - `app/api/games/[gameId]/photo-locations/route.ts` — GET: returns `{ player_id, name, lat, lng }[]` for all players whose hiding photo has GPS coordinates. Used by god mode.

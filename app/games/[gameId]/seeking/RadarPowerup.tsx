@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getLocation } from "@/lib/get-location";
 
 const RADAR_DISTANCES = [10, 25, 50, 100, 200, 500];
 
@@ -16,8 +17,7 @@ interface Props {
   onStartHint: (type: 'radar', initialData: Record<string, unknown>) => void;
   disabled: boolean;
   powerupCastingSeconds: number;
-  isCompleted: boolean;
-  completedHint?: { note: string | null };
+  lastResult?: { note: string | null };
 }
 
 export function RadarPowerup({ 
@@ -26,8 +26,7 @@ export function RadarPowerup({
   onStartHint, 
   disabled,
   powerupCastingSeconds,
-  isCompleted,
-  completedHint
+  lastResult
 }: Props) {
   const [distanceIndex, setDistanceIndex] = useState(2); // Default to 50m
   const [loading, setLoading] = useState(false);
@@ -37,15 +36,8 @@ export function RadarPowerup({
 
     setLoading(true);
     try {
-      // Get current location
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-        });
-      });
-
-      const { latitude: lat, longitude: lng } = position.coords;
+      // Get current location (uses debug cookie if in debug mode)
+      const { latitude: lat, longitude: lng } = await getLocation();
       const distanceMeters = RADAR_DISTANCES[distanceIndex];
 
       // Start the hint with initial data
@@ -63,45 +55,21 @@ export function RadarPowerup({
 
   const selectedDistance = RADAR_DISTANCES[distanceIndex];
 
-  // Show completed result if already used radar
-  if (isCompleted && completedHint) {
-    let resultData;
+  let lastYesNo: boolean | null = null;
+  if (lastResult?.note) {
     try {
-      resultData = JSON.parse(completedHint.note || '{}');
+      const d = JSON.parse(lastResult.note);
+      if (d?.result?.withinDistance === true || d?.result?.withinDistance === false) {
+        lastYesNo = d.result.withinDistance;
+      }
     } catch {
-      resultData = {};
+      /* ignore */
     }
-
-    return (
-      <div className="space-y-4">
-        <div className="text-center p-4 bg-blue-100 border border-blue-200 rounded-lg">
-          <div className="text-lg font-bold text-blue-700 mb-2">
-            Radar Complete ✓
-          </div>
-          {resultData.result && (
-            <div>
-              <div className="text-sm text-blue-600">
-                Searched within {resultData.distanceMeters}m
-              </div>
-              <div className={`text-lg font-semibold ${
-                resultData.result.withinDistance ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {resultData.result.withinDistance ? 'Yes' : 'No'} 
-                ({resultData.result.actualDistance}m away)
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="text-xs text-gray-500 text-center">
-          Radar power-up already used for {targetPlayer.name}
-        </div>
-      </div>
-    );
   }
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600 text-center">
+      <div className="text-sm text-center" style={{ color: "var(--pastel-ink-muted)" }}>
         Check if you&apos;re within a certain distance of {targetPlayer.name}&apos;s hiding spot
       </div>
 
@@ -110,19 +78,21 @@ export function RadarPowerup({
         <button
           onClick={() => setDistanceIndex(Math.max(0, distanceIndex - 1))}
           disabled={distanceIndex === 0 || disabled}
-          className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-lg"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-lg border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: "var(--pastel-butter)", borderColor: "var(--pastel-border)" }}
         >
           −
         </button>
         
         <div className="text-center min-w-[80px]">
-          <div className="text-lg font-semibold">{selectedDistance}m</div>
+          <div className="text-lg font-semibold" style={{ color: "var(--pastel-ink)" }}>{selectedDistance}m</div>
         </div>
         
         <button
           onClick={() => setDistanceIndex(Math.min(RADAR_DISTANCES.length - 1, distanceIndex + 1))}
           disabled={distanceIndex === RADAR_DISTANCES.length - 1 || disabled}
-          className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-lg"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-lg border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: "var(--pastel-butter)", borderColor: "var(--pastel-border)" }}
         >
           +
         </button>
@@ -133,13 +103,23 @@ export function RadarPowerup({
         <button
           onClick={handleCastRadar}
           disabled={disabled || loading}
-          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg"
+          className="btn-pastel-sky w-full touch-manipulation"
         >
           {loading ? 'Getting location...' : `Cast Radar (${powerupCastingSeconds}s)`}
         </button>
       </div>
 
-      <div className="text-xs text-gray-500 text-center">
+      {/* Inline result */}
+      {lastYesNo !== null && (
+        <div
+          className="text-center text-lg font-bold"
+          style={{ color: "var(--pastel-ink)" }}
+        >
+          {lastYesNo ? "Yes — you're within range." : "No — you're not within range."}
+        </div>
+      )}
+
+      <div className="text-xs text-center" style={{ color: "var(--pastel-ink-muted)" }}>
         Takes {powerupCastingSeconds} seconds to cast
       </div>
     </div>

@@ -54,7 +54,7 @@ export async function PATCH(
   let updatedNote = hint.note;
 
   // If completing, process the result based on hint type
-  if (status === "completed" && resultData) {
+  if (status === "completed") {
     let noteData: Record<string, unknown> = {};
     try {
       noteData = hint.note ? JSON.parse(hint.note) : {};
@@ -63,7 +63,11 @@ export async function PATCH(
     }
 
     if (hint.type === "radar") {
-      const { lat, lng, distanceMeters } = resultData;
+      // Use resultData if provided, otherwise use initialData from note (stored when hint was created)
+      const fromResult = resultData as { lat?: number; lng?: number; distanceMeters?: number } | undefined;
+      const lat = fromResult?.lat ?? noteData.lat;
+      const lng = fromResult?.lng ?? noteData.lng;
+      const distanceMeters = fromResult?.distanceMeters ?? noteData.distanceMeters;
       if (typeof lat === "number" && typeof lng === "number" && typeof distanceMeters === "number") {
         // Get target's hiding photo location
         const { data: player, error: playerError } = await supabase
@@ -93,13 +97,13 @@ export async function PATCH(
           }
         }
       }
-    } else if (hint.type === "thermometer") {
+    } else if (hint.type === "thermometer" && resultData) {
       const { result } = resultData;
       if (typeof result === 'string' && ['hotter', 'colder', 'same'].includes(result)) {
         const thermoNote: ThermometerHintNote = { ...noteData, result: result as 'hotter' | 'colder' | 'same' } as ThermometerHintNote;
         updatedNote = JSON.stringify(thermoNote);
       }
-    } else if (hint.type === "photo") {
+    } else if (hint.type === "photo" && resultData) {
       const { unlocked } = resultData;
       if (typeof unlocked === "boolean") {
         const photoNote = { ...noteData, unlocked } as PhotoHintNote;
