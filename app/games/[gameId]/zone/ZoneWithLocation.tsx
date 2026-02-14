@@ -25,6 +25,8 @@ type Props = {
   onOutsideZoneChange?: (outside: boolean) => void;
   /** Thermometer history pins (red=hotter, blue=colder, numbered 1 & 2) */
   thermometerPins?: ThermometerPin[];
+  /** Radar cast circles for the selected target (center + radius per completed radar hint) */
+  radarCircles?: { lat: number; lng: number; radiusMeters: number }[];
 };
 
 type UserPosition = {
@@ -41,6 +43,7 @@ export function ZoneWithLocation({
   onCountdownChange,
   onOutsideZoneChange,
   thermometerPins = [],
+  radarCircles = [],
 }: Props) {
   const [userPosition, setUserPosition] = useState<UserPosition>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL_SECONDS);
@@ -179,7 +182,7 @@ export function ZoneWithLocation({
       )}
 
       <div className="relative min-h-0 min-w-0 flex-1 w-full overflow-hidden">
-        <ZoneMapView zone={zone} fullSize userPosition={userPosition} thermometerPins={thermometerPins} />
+        <ZoneMapView zone={zone} fullSize userPosition={userPosition} thermometerPins={thermometerPins} radarCircles={radarCircles} />
       </div>
     </>
   );

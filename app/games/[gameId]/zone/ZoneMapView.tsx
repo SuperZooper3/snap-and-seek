@@ -38,9 +38,11 @@ type Props = {
   userPosition?: UserPosition;
   /** Pins for completed thermometer readings (1 = start, 2 = end) */
   thermometerPins?: ThermometerPin[];
+  /** Radar cast circles (center + radius per completed radar hint for selected target) */
+  radarCircles?: { lat: number; lng: number; radiusMeters: number }[];
 };
 
-export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [] }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], radarCircles = [] }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
   const { isLoaded, loadError } = useGoogleMapsLoader();
@@ -217,6 +219,20 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
             clickable: false,
           }}
         />
+        {radarCircles.map((circle, i) => (
+          <Circle
+            key={`radar-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
+            center={{ lat: circle.lat, lng: circle.lng }}
+            radius={circle.radiusMeters}
+            options={{
+              strokeColor: "#0ea5e9",
+              strokeWeight: 2,
+              fillColor: "#0ea5e9",
+              fillOpacity: 0.15,
+              clickable: false,
+            }}
+          />
+        ))}
         {userPosition && (
           <Marker
             key="user-marker"

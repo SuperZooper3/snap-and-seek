@@ -108,9 +108,13 @@ export interface PowerupCastingState {
 }
 
 /**
- * Radar hint result data stored in note field
+ * Radar hint result data stored in note field.
+ * lat/lng are set from initialData at cast time and preserved on completion.
  */
 export interface RadarHintNote {
+  /** Seeker position when radar was cast (from initialData) */
+  lat?: number;
+  lng?: number;
   distanceMeters: number;
   result?: {
     withinDistance: boolean;

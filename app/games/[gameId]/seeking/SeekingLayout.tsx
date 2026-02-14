@@ -74,17 +74,17 @@ export function SeekingLayout({
   // Power-up and hint state (thermometer hints with pin data for map; merged with session completions)
   const [hintResults, setHintResults] = useState<Hint[]>([]);
 
-  // Load completed thermometer hints on mount so map pins show after refresh
+  // Load completed hints (thermometer + radar) on mount so map pins and radar circles show after refresh
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/games/${gameId}/hints?seekerId=${playerId}&status=completed`)
       .then((res) => res.json())
       .then((data: { hints?: Hint[] }) => {
         if (cancelled || !Array.isArray(data.hints)) return;
-        const thermos = data.hints.filter((h) => h.type === "thermometer");
+        const forMap = data.hints.filter((h) => h.type === "thermometer" || h.type === "radar");
         setHintResults((prev) => {
           const byId = new Map(prev.map((h) => [h.id, h]));
-          thermos.forEach((h) => byId.set(h.id, h));
+          forMap.forEach((h) => byId.set(h.id, h));
           return Array.from(byId.values());
         });
       })
@@ -385,6 +385,25 @@ export function SeekingLayout({
     return pins;
   }, [hintResults, activeThermometerHint]);
 
+  // Radar circles: completed radar hints for the selected target only (center = cast position, radius = distanceMeters)
+  const radarCircles = useMemo((): { lat: number; lng: number; radiusMeters: number }[] => {
+    if (!selectedTarget) return [];
+    const circles: { lat: number; lng: number; radiusMeters: number }[] = [];
+    for (const hint of hintResults) {
+      if (hint.type !== "radar" || hint.hider_id !== selectedTarget.playerId || !hint.note) continue;
+      try {
+        const note = JSON.parse(hint.note) as { lat?: number; lng?: number; distanceMeters?: number };
+        const { lat, lng, distanceMeters } = note;
+        if (typeof lat === "number" && typeof lng === "number" && typeof distanceMeters === "number") {
+          circles.push({ lat, lng, radiusMeters: distanceMeters });
+        }
+      } catch {
+        // skip invalid note
+      }
+    }
+    return circles;
+  }, [hintResults, selectedTarget]);
+
   // Submission-derived state for selected target
   const isTargetFound = selectedTarget ? foundHiderIds.has(selectedTarget.playerId) : false;
   const selectedSubmission = selectedTarget ? getMySubmissionForHider(selectedTarget.playerId) : undefined;
@@ -421,6 +440,7 @@ export function SeekingLayout({
           hideRefreshBar
           onCountdownChange={handleCountdownChange}
           thermometerPins={thermometerPins}
+          radarCircles={radarCircles}
         />
         {/* Dynamic island style pill on top of map */}
         <div
