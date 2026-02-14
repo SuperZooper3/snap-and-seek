@@ -323,23 +323,22 @@ export function SeekingLayout({
     : undefined;
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] bg-gradient-to-b from-sky-50 to-sky-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
-      {/* Top bar: You are NAME, Back to game, Refresh — all inline */}
-      <header className="shrink-0 flex items-center justify-between gap-3 border-b border-sky-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top bg-sky-50/95 dark:bg-zinc-900/95">
+    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] font-sans" style={{ background: "var(--background)" }}>
+      <header
+        className="shrink-0 flex items-center justify-between gap-3 border-b-[3px] px-4 py-2.5 safe-area-inset-top"
+        style={{ borderColor: "var(--pastel-border)", background: "var(--pastel-paper)" }}
+      >
         <div className="flex items-center gap-2 min-w-0">
-          <Link
-            href={`/games/${gameId}`}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-sky-800 dark:text-sky-200 bg-sky-100/80 dark:bg-sky-900/30 hover:bg-sky-200/80 dark:hover:bg-sky-800/40 transition-colors shrink-0"
-          >
+          <Link href={`/games/${gameId}`} className="btn-ghost inline-flex items-center gap-1.5 shrink-0">
             <BackArrowIcon />
             Back to game
           </Link>
-          <span className="text-sm text-sky-700 dark:text-sky-300 shrink-0">
-            You are: <strong className="font-semibold text-sky-900 dark:text-sky-100">{playerName}</strong>
+          <span className="text-sm shrink-0" style={{ color: "var(--pastel-ink-muted)" }}>
+            You are: <strong style={{ color: "var(--foreground)" }}>{playerName}</strong>
           </span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-sky-700 dark:text-sky-300 shrink-0">
-          <span className="font-medium tabular-nums">Refresh in {refreshCountdown}s</span>
+        <div className="text-sm font-bold tabular-nums shrink-0" style={{ color: "var(--pastel-ink-muted)" }}>
+          Refresh in {refreshCountdown}s
         </div>
       </header>
 
@@ -364,13 +363,15 @@ export function SeekingLayout({
       {/* Bottom pull-up tray */}
       {targets.length > 0 && selectedTarget && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white dark:bg-zinc-800 border-t border-sky-200/50 dark:border-zinc-700 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-inset-bottom"
+          className="fixed bottom-0 left-0 right-0 z-20 flex flex-col rounded-t-2xl border-t-[3px] safe-area-inset-bottom"
           style={{
             height: `${trayHeightPx}px`,
             transition: isDragging ? "none" : "height 300ms ease-out",
+            background: "var(--pastel-paper)",
+            borderColor: "var(--pastel-border)",
+            boxShadow: "0 -4px 0 var(--pastel-border-subtle)",
           }}
         >
-          {/* Drag handle */}
           <button
             type="button"
             onClick={handleTrayClick}
@@ -383,49 +384,40 @@ export function SeekingLayout({
             aria-expanded={trayExpanded}
             aria-label={trayExpanded ? "Collapse target tray" : "Expand target tray"}
           >
-            <span className="w-10 h-1 rounded-full bg-sky-300 dark:bg-zinc-500" aria-hidden />
+            <span className="w-10 h-1.5 rounded-full" style={{ background: "var(--pastel-border)" }} aria-hidden />
           </button>
 
           {/* Tray content */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-4">
-            {/* Target pills */}
             <div className="flex items-center gap-2 flex-wrap mb-3">
-              <span className="text-sm font-medium text-sky-700 dark:text-sky-300 shrink-0">Targets:</span>
+              <span className="text-sm font-bold shrink-0" style={{ color: "var(--pastel-ink-muted)" }}>Targets:</span>
               {targets.map((t, i) => {
                 const isFound = foundHiderIds.has(t.playerId);
                 const triedButNotFound = triedButNotFoundHiderIds.has(t.playerId);
                 const isSelected = selectedIndex === i;
-                let pillClass: string;
-                if (isFound && isSelected) {
-                  pillClass = "bg-emerald-500 text-white dark:bg-emerald-600";
-                } else if (isFound) {
-                  pillClass =
-                    "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-800/50";
-                } else if (triedButNotFound && isSelected) {
-                  pillClass = "bg-amber-500 text-white dark:bg-amber-600";
-                } else if (triedButNotFound) {
-                  pillClass =
-                    "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-800/50";
-                } else if (isSelected) {
-                  pillClass = "bg-sky-600 text-white dark:bg-sky-500";
-                } else {
-                  pillClass =
-                    "bg-sky-100/80 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200 hover:bg-sky-200/80 dark:hover:bg-sky-800/40";
-                }
+                let bg: string;
+                if (isFound && isSelected) bg = "var(--pastel-mint)";
+                else if (isFound) bg = "var(--pastel-mint)";
+                else if (triedButNotFound && isSelected) bg = "var(--pastel-peach)";
+                else if (triedButNotFound) bg = "var(--pastel-peach)";
+                else if (isSelected) bg = "var(--pastel-sky)";
+                else bg = "var(--pastel-paper)";
                 return (
                   <button
                     key={t.playerId}
                     type="button"
                     onClick={() => handleSelectTarget(i)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors touch-manipulation flex items-center gap-1.5 ${pillClass}`}
+                    className="rounded-full px-3 py-1.5 text-sm font-bold border-2 transition-all touch-manipulation flex items-center gap-1.5"
+                    style={{
+                      background: bg,
+                      borderColor: "var(--pastel-border)",
+                      color: "var(--pastel-ink)",
+                      boxShadow: "2px 2px 0 var(--pastel-border-subtle)",
+                    }}
                   >
                     {isFound && (
                       <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     )}
                     {t.name}
@@ -434,19 +426,20 @@ export function SeekingLayout({
               })}
             </div>
 
-            {/* Selected target heading */}
-            <h2 className="text-lg font-semibold text-sky-900 dark:text-sky-100 mt-1 mb-3">
+            <h2 className="text-lg font-bold mt-1 mb-3" style={{ color: "var(--foreground)" }}>
               {selectedTarget.name}&apos;s target
               {isTargetFound && (
-                <span className="ml-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <span className="ml-2 text-sm font-bold" style={{ color: "var(--pastel-ink-muted)" }}>
                   Found!
                 </span>
               )}
             </h2>
 
-            {/* Hider's hiding photo */}
             {selectedTarget.photoUrl ? (
-              <div className="relative w-full aspect-[4/3] max-h-[40dvh] rounded-xl overflow-hidden bg-sky-100 dark:bg-zinc-700">
+              <div
+                className="relative w-full aspect-[4/3] max-h-[40dvh] rounded-xl overflow-hidden border-2"
+                style={{ background: "var(--pastel-sky)", borderColor: "var(--pastel-border)" }}
+              >
                 <Image
                   src={selectedTarget.photoUrl}
                   alt={`${selectedTarget.name}'s hiding spot`}
@@ -457,11 +450,10 @@ export function SeekingLayout({
                 />
               </div>
             ) : (
-              <p className="text-sm text-sky-600 dark:text-sky-400 py-4">No target photo</p>
+              <p className="text-sm py-4" style={{ color: "var(--pastel-ink-muted)" }}>No target photo</p>
             )}
 
-            {/* Power-ups section */}
-            <section className="mt-4 pt-3 border-t border-sky-200/60 dark:border-zinc-600" aria-label="Power-ups">
+            <section className="mt-4 pt-3 border-t-[3px]" style={{ borderColor: "var(--pastel-border)" }} aria-label="Power-ups">
               <PowerupTabs
                 gameId={gameId}
                 playerId={playerId}
@@ -472,13 +464,15 @@ export function SeekingLayout({
               />
             </section>
 
-            {/* Matched photo — shown when found */}
             {isTargetFound && selectedSubmissionPhotoUrl && (
               <div className="mt-4">
-                <h3 className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">
+                <h3 className="text-sm font-bold mb-2" style={{ color: "var(--pastel-ink-muted)" }}>
                   Your match
                 </h3>
-                <div className="relative w-full aspect-[4/3] max-h-[30dvh] rounded-xl overflow-hidden bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700">
+                <div
+                  className="relative w-full aspect-[4/3] max-h-[30dvh] rounded-xl overflow-hidden border-[3px]"
+                  style={{ background: "var(--pastel-mint)", borderColor: "var(--pastel-border)" }}
+                >
                   <Image
                     src={selectedSubmissionPhotoUrl}
                     alt="Your matching photo"
@@ -491,22 +485,23 @@ export function SeekingLayout({
               </div>
             )}
 
-            {/* Submit button or status */}
             <div className="mt-4">
               {submitting && (
-                <div className="text-center py-3 text-sky-700 dark:text-sky-300 font-medium animate-pulse">
+                <div className="text-center py-3 font-bold animate-pulse" style={{ color: "var(--pastel-ink-muted)" }}>
                   {submitStatus || "Processing..."}
                 </div>
               )}
               {!submitting && submitStatus && (
                 <div
-                  className={`text-center py-3 font-medium ${
-                    submitStatus === "Found!" || submitStatus.includes("win")
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : submitStatus === "Not close enough."
-                        ? "text-amber-600 dark:text-amber-400"
-                        : "text-red-600 dark:text-red-400"
-                  }`}
+                  className="text-center py-3 font-bold"
+                  style={{
+                    color:
+                      submitStatus === "Found!" || submitStatus.includes("win")
+                        ? "var(--pastel-ink)"
+                        : submitStatus === "Not close enough."
+                          ? "var(--pastel-ink-muted)"
+                          : "var(--pastel-error)",
+                  }}
                 >
                   {submitStatus}
                 </div>
@@ -515,10 +510,8 @@ export function SeekingLayout({
                 <button
                   type="button"
                   onClick={() => handleOpenCamera(selectedTarget.playerId)}
-                  className={`touch-manipulation block w-full rounded-xl text-white font-semibold px-6 py-3.5 text-center transition-colors ${
-                    triedButNotFoundHiderIds.has(selectedTarget.playerId)
-                      ? "bg-amber-500 hover:bg-amber-600"
-                      : "bg-sky-600 hover:bg-sky-700"
+                  className={`touch-manipulation block w-full text-center ${
+                    triedButNotFoundHiderIds.has(selectedTarget.playerId) ? "btn-pastel-peach" : "btn-pastel-sky"
                   }`}
                 >
                   I found {selectedTarget.name}!
@@ -535,29 +528,29 @@ export function SeekingLayout({
       {/* Camera modal */}
       <CameraModal isOpen={cameraOpen} onClose={handleCameraClose} onCapture={handleCameraCapture} />
 
-      {/* Win modal overlay */}
       {winnerId != null && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: "rgba(0,0,0,0.5)" }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="win-modal-title"
         >
-          <div className="rounded-2xl bg-white dark:bg-zinc-800 shadow-xl border border-emerald-200/50 dark:border-zinc-600 p-8 max-w-sm w-full text-center space-y-5">
+          <div className="sketch-card p-8 max-w-sm w-full text-center space-y-5">
             <div className="text-5xl" aria-hidden>
               {winnerId === playerId ? "🏆" : "🎉"}
             </div>
-            <h2 id="win-modal-title" className="text-2xl font-bold text-emerald-800 dark:text-emerald-100">
+            <h2 id="win-modal-title" className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
               {winnerId === playerId ? "You won!" : `${winnerName ?? "Someone"} won!`}
             </h2>
-            <p className="text-emerald-700 dark:text-emerald-200">
+            <p style={{ color: "var(--pastel-ink-muted)" }}>
               {winnerId === playerId
                 ? "You found everyone's hiding spots first!"
                 : `${winnerName ?? "Another player"} found all the hiding spots before anyone else.`}
             </p>
             <Link
               href={`/games/${gameId}/summary`}
-              className="touch-manipulation block w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+              className="btn-pastel-mint touch-manipulation block w-full text-center"
             >
               View summary
             </Link>

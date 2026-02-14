@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 type Props = {
   seekingStartedAt: string | null;
-  /** "pill" = compact floating pill (dynamic island style); default = bar */
   variant?: "bar" | "pill";
 };
 
@@ -33,25 +32,32 @@ export function SeekingTimer({ seekingStartedAt, variant = "bar" }: Props) {
   if (variant === "pill") {
     return (
       <div
-        className="rounded-full bg-sky-500/90 dark:bg-sky-600/90 backdrop-blur-md px-5 py-2.5 shadow-lg border border-sky-400/50 dark:border-sky-300/30"
+        className="rounded-full border-[3px] px-5 py-2.5 font-bold tabular-nums text-lg"
+        style={{
+          background: "var(--pastel-sky)",
+          borderColor: "var(--pastel-border)",
+          color: "var(--pastel-ink)",
+          boxShadow: "4px 4px 0 var(--pastel-border-subtle)",
+        }}
         aria-live="polite"
       >
-        <span className="text-lg font-mono font-bold tabular-nums text-white">
-          {formatElapsed(elapsedSeconds)}
-        </span>
+        {formatElapsed(elapsedSeconds)}
       </div>
     );
   }
 
   return (
-    <div className="shrink-0 flex flex-col items-center justify-center gap-0.5 bg-sky-500/20 dark:bg-sky-900/30 border-b border-sky-300/50 dark:border-sky-700/50 px-4 py-3">
-      <span className="text-xs font-medium text-sky-800 dark:text-sky-200 uppercase tracking-wide">
+    <div
+      className="shrink-0 flex flex-col items-center justify-center gap-0.5 border-b-[3px] px-4 py-3"
+      style={{
+        borderColor: "var(--pastel-border)",
+        background: "var(--pastel-sky)",
+      }}
+    >
+      <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--pastel-ink-muted)" }}>
         Seeking time
       </span>
-      <span
-        className="text-2xl font-mono font-bold tabular-nums text-sky-900 dark:text-sky-100"
-        aria-live="polite"
-      >
+      <span className="text-2xl font-bold tabular-nums" style={{ color: "var(--pastel-ink)" }} aria-live="polite">
         {formatElapsed(elapsedSeconds)}
       </span>
     </div>

@@ -3,13 +3,13 @@ import CreateGameForm from "./CreateGameForm";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+    <div className="min-h-screen font-sans" style={{ background: "var(--background)" }}>
       <main className="mx-auto max-w-2xl px-6 py-16">
         <header className="text-center mb-10">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-amber-900 dark:text-amber-100">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
             Snap and Seek
           </h1>
-          <p className="mt-3 text-lg text-amber-800/80 dark:text-amber-200/80">
+          <p className="mt-3 text-lg" style={{ color: "var(--pastel-ink-muted)" }}>
             Hide. Seek. Snap. Find them all.
           </p>
         </header>
@@ -18,11 +18,11 @@ export default function Home() {
           <CreateGameForm />
         </section>
 
-        <footer className="text-center text-sm text-amber-800/60 dark:text-amber-200/60 space-x-4">
-          <Link href="/games" className="hover:underline">
+        <footer className="text-center text-sm space-x-4" style={{ color: "var(--pastel-ink-muted)" }}>
+          <Link href="/games" className="btn-ghost inline-flex">
             View all games
           </Link>
-          <Link href="/debug" className="hover:underline">
+          <Link href="/debug" className="btn-ghost inline-flex">
             Debug mode
           </Link>
         </footer>

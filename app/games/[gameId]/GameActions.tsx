@@ -151,7 +151,7 @@ export function GameActions({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
+        <p className="text-sm font-bold mb-1.5" style={{ color: "var(--foreground)" }}>
           Share this link for players to join
         </p>
         <div className="flex gap-2">
@@ -159,13 +159,10 @@ export function GameActions({
             type="text"
             readOnly
             value={joinUrl}
-            className="flex-1 rounded-lg border border-amber-200 dark:border-zinc-600 bg-amber-50/50 dark:bg-zinc-700/50 px-3 py-2 text-sm text-amber-900 dark:text-amber-100 font-mono"
+            className="sketch-input flex-1 px-3 py-2.5 text-sm min-h-0"
+            style={{ color: "var(--pastel-ink)" }}
           />
-          <button
-            type="button"
-            onClick={copyLink}
-            className="rounded-lg bg-amber-500 hover:bg-amber-600 text-amber-950 font-medium px-4 py-2 text-sm whitespace-nowrap transition-colors"
-          >
+          <button type="button" onClick={copyLink} className="btn-sm whitespace-nowrap">
             {copied ? "Copied!" : "Copy"}
           </button>
         </div>
@@ -176,7 +173,7 @@ export function GameActions({
           <button
             type="button"
             onClick={() => setTutorialOpen(true)}
-            className="touch-manipulation w-full rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium px-6 py-3 transition-colors flex items-center justify-center gap-2"
+            className="btn-pastel-sky touch-manipulation w-full flex items-center justify-center gap-2"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -184,14 +181,15 @@ export function GameActions({
             How to play <strong>Snap and Seek</strong>!
           </button>
           <div>
-            <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-1.5">
+            <label className="block text-sm font-bold mb-1.5" style={{ color: "var(--foreground)" }}>
               Hiding period
             </label>
             <select
               value={hidingDurationSeconds}
               onChange={(e) => setHidingDuration(Number(e.target.value))}
               disabled={savingDuration}
-              className="w-full rounded-lg border border-amber-200 dark:border-zinc-600 bg-amber-50/50 dark:bg-zinc-700/50 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+              className="sketch-input w-full px-3 py-2.5 text-sm min-h-[2.75rem]"
+              style={{ color: "var(--pastel-ink)" }}
             >
               {HIDING_DURATION_PRESETS.map(({ label, value }) => (
                 <option key={value} value={value}>
@@ -243,17 +241,17 @@ export function GameActions({
           <button
             type="button"
             onClick={() => setZoneModalOpen(true)}
-            className="touch-manipulation w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-semibold px-6 py-3 transition-colors"
+            className="btn-pastel-peach touch-manipulation w-full"
           >
             {hasZone ? "Edit game zone" : "Set game zone"}
           </button>
           {!hasZone && (
-            <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+            <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
               Set the play area on the map (required to start).
             </p>
           )}
           {!canStart && hasZone && (
-            <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+            <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
               Need at least 2 players to start.
             </p>
           )}
@@ -261,7 +259,7 @@ export function GameActions({
             type="button"
             onClick={startGame}
             disabled={starting || !canStart}
-            className="touch-manipulation w-full rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold px-6 py-3 transition-colors"
+            className="btn-primary touch-manipulation w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {starting ? "Starting…" : "Start game"}
           </button>
@@ -287,19 +285,23 @@ export function GameActions({
       {!isLobby && status && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+            <span className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
               Status
             </span>
             <span
-              className={
-                status === "completed"
-                  ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-green-200/90 dark:bg-green-800/50 text-green-900 dark:text-green-100"
-                  : status === "hiding"
-                    ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-200/90 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100"
-                    : status === "seeking"
-                      ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-sky-200/90 dark:bg-sky-800/50 text-sky-900 dark:text-sky-100"
-                      : "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-amber-200/90 dark:bg-amber-800/50 text-amber-900 dark:text-amber-100"
-              }
+              className="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold border-2"
+              style={{
+                borderColor: "var(--pastel-border)",
+                background:
+                  status === "completed"
+                    ? "var(--pastel-mint)"
+                    : status === "hiding"
+                      ? "var(--pastel-mint)"
+                      : status === "seeking"
+                        ? "var(--pastel-sky)"
+                        : "var(--pastel-peach)",
+                color: "var(--pastel-ink)",
+              }}
             >
               {status}
             </span>
@@ -307,19 +309,19 @@ export function GameActions({
           {status === "completed" ? (
             <a
               href={`/games/${gameId}/summary`}
-              className="touch-manipulation block w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 text-center transition-colors"
+              className="btn-pastel-mint touch-manipulation block w-full text-center"
             >
               View game summary
             </a>
           ) : currentPlayer ? (
             <a
               href={status === "seeking" ? `/games/${gameId}/seeking` : `/games/${gameId}/zone`}
-              className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 text-center transition-colors"
+              className="btn-primary touch-manipulation block w-full text-center"
             >
               {status === "seeking" ? "Go to seeking" : "Go to hiding"}
             </a>
           ) : (
-            <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+            <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
               {status === "seeking"
                 ? "Seeking in progress — join as a player to view the seeking map."
                 : "Join as a player below (tap a name) to start hiding."}

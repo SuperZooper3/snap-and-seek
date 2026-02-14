@@ -76,16 +76,16 @@ export default async function GodModePage({ params }: Props) {
   });
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] w-full max-w-[100vw] flex-col overflow-x-hidden bg-zinc-900 font-sans">
-      <header className="shrink-0 border-b border-white/10 bg-zinc-900 px-3 py-2 safe-area-inset-top">
-        <Link
-          href={`/games/${gameId}`}
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-200 bg-white/10 hover:bg-white/15 transition-colors"
-        >
+    <div className="flex min-h-screen min-h-[100dvh] w-full max-w-[100vw] flex-col overflow-x-hidden font-sans" style={{ background: "var(--background)" }}>
+      <header
+        className="shrink-0 border-b-[3px] px-3 py-2 safe-area-inset-top"
+        style={{ borderColor: "var(--pastel-border)", background: "var(--pastel-paper)" }}
+      >
+        <Link href={`/games/${gameId}`} className="btn-ghost inline-flex items-center gap-1.5">
           <BackArrowIcon className="h-4 w-4" />
           Back to game
         </Link>
-        <p className="mt-0.5 text-xs text-white/80">
+        <p className="mt-0.5 text-xs font-bold" style={{ color: "var(--pastel-ink-muted)" }}>
           God mode · {(game as { name: string | null }).name || "Unnamed game"}
         </p>
       </header>

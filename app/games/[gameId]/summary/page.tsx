@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { supabase } from "@/lib/supabase";
 import type { Submission } from "@/lib/types";
@@ -10,7 +10,6 @@ type Props = { params: Promise<{ gameId: string }> };
 export default async function SummaryPage({ params }: Props) {
   const { gameId } = await params;
 
-  // Fetch game (with fallback if winner columns don't exist yet)
   let game: Record<string, unknown> | null = null;
   {
     const { data, error } = await supabase
@@ -35,7 +34,6 @@ export default async function SummaryPage({ params }: Props) {
     notFound();
   }
 
-  // Fetch all players
   const { data: players } = await supabase
     .from("players")
     .select("id, name, hiding_photo")
@@ -44,7 +42,6 @@ export default async function SummaryPage({ params }: Props) {
 
   const allPlayers = (players ?? []) as { id: number; name: string; hiding_photo: number | null }[];
 
-  // Fetch all submissions including failed (so summary can show "tried but failed" with red outline)
   let allSubmissions: Submission[] = [];
   {
     const { data: submissionsData, error: subErr } = await supabase
@@ -57,7 +54,6 @@ export default async function SummaryPage({ params }: Props) {
     }
   }
 
-  // Collect all photo IDs we need to resolve (hiding photos + submission photos)
   const hidingPhotoIds = allPlayers
     .map((p) => p.hiding_photo)
     .filter((id): id is number => id != null);
@@ -79,7 +75,6 @@ export default async function SummaryPage({ params }: Props) {
     }
   }
 
-  // Resolve winner name
   let winnerName: string | null = null;
   if (game.winner_id != null) {
     const winner = allPlayers.find((p) => p.id === game.winner_id);
@@ -87,40 +82,40 @@ export default async function SummaryPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-emerald-50 to-green-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+    <div className="min-h-screen min-h-[100dvh] font-sans" style={{ background: "var(--background)" }}>
       <main className="mx-auto max-w-4xl px-4 sm:px-6 py-8 sm:py-12 pb-safe">
         <header className="mb-8">
-          <Link
-            href={`/games/${gameId}`}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-emerald-800 dark:text-emerald-200 bg-emerald-100/80 dark:bg-emerald-900/30 hover:bg-emerald-200/80 dark:hover:bg-emerald-800/40 transition-colors"
-          >
+          <Link href={`/games/${gameId}`} className="btn-ghost inline-flex items-center gap-1.5">
             <BackArrowIcon />
             Back to game
           </Link>
-          <h1 className="mt-4 text-3xl font-bold text-emerald-900 dark:text-emerald-100">
+          <h1 className="mt-4 text-3xl font-bold" style={{ color: "var(--foreground)" }}>
             Game Summary
           </h1>
-          <p className="mt-1 text-emerald-700 dark:text-emerald-300">
+          <p className="mt-1" style={{ color: "var(--pastel-ink-muted)" }}>
             {(game as { name: string | null }).name || "Unnamed game"}
           </p>
         </header>
 
-        {/* Winner banner */}
         {winnerName && (
-          <div className="mb-8 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/5 border border-emerald-300 dark:border-emerald-700 p-6 text-center">
+          <div
+            className="mb-8 sketch-card p-6 text-center"
+            style={{
+              background: "var(--pastel-mint)",
+            }}
+          >
             <div className="text-4xl mb-2" aria-hidden>🏆</div>
-            <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-100">
+            <h2 className="text-2xl font-bold" style={{ color: "var(--pastel-ink)" }}>
               {winnerName} wins!
             </h2>
             {game.finished_at ? (
-              <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400">
+              <p className="mt-1 text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
                 Game completed {new Date(game.finished_at as string).toLocaleString()}
               </p>
             ) : null}
           </div>
         )}
 
-        {/* Summary grid */}
         <SummaryGrid
           players={allPlayers}
           submissions={allSubmissions}

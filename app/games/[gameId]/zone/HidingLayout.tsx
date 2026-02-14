@@ -43,22 +43,23 @@ export function HidingLayout({
   }, []);
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
-      {/* Single top bar: Back left, Refresh right (same as seeking) */}
-      <header className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top bg-amber-50/95 dark:bg-zinc-900/95">
+    <div className="flex h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] font-sans" style={{ background: "var(--background)" }}>
+      <header
+        className="shrink-0 flex items-center justify-between gap-3 border-b-[3px] px-4 py-2.5 safe-area-inset-top"
+        style={{ borderColor: "var(--pastel-border)", background: "var(--pastel-paper)" }}
+      >
         <Link
           href={`/games/${gameId}`}
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
+          className="btn-ghost inline-flex items-center gap-1.5 shrink-0"
         >
           <BackArrowIcon />
           Back to game
         </Link>
-        <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
-          <span className="font-medium tabular-nums">Refresh in {refreshCountdown}s</span>
+        <div className="text-sm font-bold tabular-nums" style={{ color: "var(--pastel-ink-muted)" }}>
+          Refresh in {refreshCountdown}s
         </div>
       </header>
 
-      {/* Map area with floating time-remaining pill; main fills space so footer stays at bottom of viewport */}
       <main className="relative flex min-h-0 min-w-0 flex-1 flex-col w-full overflow-hidden">
         <ZoneWithLocation
           zone={zone}
@@ -68,10 +69,7 @@ export function HidingLayout({
           onCountdownChange={handleCountdownChange}
           onOutsideZoneChange={handleOutsideZoneChange}
         />
-        <div
-          className="absolute top-4 left-1/2 z-10 -translate-x-1/2 pointer-events-none"
-          aria-label="Time remaining"
-        >
+        <div className="absolute top-4 left-1/2 z-10 -translate-x-1/2 pointer-events-none" aria-label="Time remaining">
           <HidingTimeRemaining
             hidingStartedAt={hidingStartedAt}
             hidingDurationSeconds={hidingDurationSeconds}
@@ -81,14 +79,21 @@ export function HidingLayout({
         </div>
       </main>
 
-      {/* Footer: pinned to bottom of viewport (100dvh) so "Go to photo capture" is always reachable without scroll */}
-      <footer className="shrink-0 border-t border-amber-200/50 dark:border-zinc-700 px-4 py-3 pb-safe space-y-2 bg-amber-50/80 dark:bg-zinc-900/80">
-        <p className="text-xs text-amber-700 dark:text-amber-300">
+      <footer
+        className="shrink-0 border-t-[3px] px-4 py-3 pb-safe space-y-2 font-sans"
+        style={{ borderColor: "var(--pastel-border)", background: "var(--pastel-paper)" }}
+      >
+        <p className="text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
           Play area: inside the circle ({Math.round(zone.radius_meters)} m). Red = out of bounds.
         </p>
         {outsideZone ? (
           <span
-            className="touch-manipulation block w-full rounded-xl bg-amber-400/70 dark:bg-amber-500/50 text-amber-900/80 dark:text-amber-100/80 font-semibold px-6 py-3.5 text-center cursor-not-allowed"
+            className="touch-manipulation block w-full rounded-xl border-[3px] font-bold px-6 py-3.5 text-center cursor-not-allowed"
+            style={{
+              background: "var(--pastel-warn)",
+              borderColor: "var(--pastel-border)",
+              color: "var(--pastel-ink)",
+            }}
             aria-disabled="true"
           >
             Go to photo capture — get inside the zone first
@@ -96,36 +101,43 @@ export function HidingLayout({
         ) : (
           <Link
             href={`/games/${gameId}/setup`}
-            className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+            className="btn-primary touch-manipulation block w-full text-center"
           >
             Go to photo capture
           </Link>
         )}
       </footer>
 
-      {/* Popup when time hits 0 */}
       {showPhotoPopup && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: "rgba(0,0,0,0.4)" }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="photo-popup-title"
         >
-          <div className="rounded-2xl bg-white dark:bg-zinc-800 shadow-xl border border-amber-200/50 dark:border-zinc-600 p-6 max-w-sm w-full text-center space-y-4">
-            <h2 id="photo-popup-title" className="text-xl font-bold text-amber-900 dark:text-amber-100">
+          <div className="sketch-card p-6 max-w-sm w-full text-center space-y-4">
+            <h2 id="photo-popup-title" className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
               Time’s up!
             </h2>
-            <p className="text-amber-800 dark:text-amber-200">
+            <p style={{ color: "var(--pastel-ink-muted)" }}>
               Take a picture right now and submit it of something!
             </p>
             {outsideZone ? (
-              <span className="touch-manipulation block w-full rounded-xl bg-amber-400/70 text-amber-900/80 font-semibold px-6 py-3.5 text-center cursor-not-allowed">
+              <span
+                className="touch-manipulation block w-full rounded-xl border-[3px] font-bold px-6 py-3.5 text-center cursor-not-allowed"
+                style={{
+                  background: "var(--pastel-warn)",
+                  borderColor: "var(--pastel-border)",
+                  color: "var(--pastel-ink)",
+                }}
+              >
                 Get inside the zone first
               </span>
             ) : (
               <Link
                 href={`/games/${gameId}/setup`}
-                className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+                className="btn-primary touch-manipulation block w-full text-center"
               >
                 Take photo
               </Link>

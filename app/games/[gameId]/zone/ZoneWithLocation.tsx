@@ -133,24 +133,44 @@ export function ZoneWithLocation({
   return (
     <>
       {!hideRefreshBar && (
-        <div className="shrink-0 flex flex-col items-center justify-center gap-0.5 bg-amber-200/60 dark:bg-zinc-700/60 px-4 py-2 text-sm">
-          <span className="text-amber-900 dark:text-amber-100 font-medium">
+        <div
+          className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-4 py-2 text-sm border-b-[3px]"
+          style={{
+            background: "var(--pastel-butter)",
+            borderColor: "var(--pastel-border)",
+          }}
+        >
+          <span className="font-bold" style={{ color: "var(--pastel-ink)" }}>
             Next refresh in {countdown}s
           </span>
-          <span className="text-xs text-amber-800/80 dark:text-amber-200/80">
+          <span className="text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
             Blue is where you are
           </span>
         </div>
       )}
 
       {outsideZone && (
-        <div className="shrink-0 bg-red-600 text-white px-4 py-3 text-center text-sm font-medium">
+        <div
+          className="shrink-0 px-4 py-3 text-center text-sm font-bold border-b-[3px]"
+          style={{
+            background: "var(--pastel-error)",
+            borderColor: "var(--pastel-border)",
+            color: "var(--pastel-ink)",
+          }}
+        >
           You’re outside the zone — get back inside the play area.
         </div>
       )}
 
       {locationError && (
-        <div className="shrink-0 bg-amber-200/80 dark:bg-zinc-700/80 text-amber-900 dark:text-amber-100 px-4 py-2 text-sm text-center">
+        <div
+          className="shrink-0 px-4 py-2 text-sm text-center font-bold border-b-[3px]"
+          style={{
+            background: "var(--pastel-warn)",
+            borderColor: "var(--pastel-border)",
+            color: "var(--pastel-ink)",
+          }}
+        >
           {locationError}
         </div>
       )}

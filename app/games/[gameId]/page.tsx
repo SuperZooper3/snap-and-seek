@@ -64,28 +64,32 @@ export default async function GamePage({ params, searchParams }: Props) {
   const currentPlayer = getPlayerForGame(decoded, gameId);
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+    <div className="min-h-screen min-h-[100dvh] font-sans" style={{ background: "var(--background)" }}>
       <GamePageRefresh />
       <main className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-16 pb-safe">
         <header className="mb-10">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
-          >
+          <Link href="/" className="btn-ghost inline-flex items-center gap-1.5">
             <BackArrowIcon />
             Create game
           </Link>
-          <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">
+          <h1 className="mt-4 text-3xl font-bold" style={{ color: "var(--foreground)" }}>
             {(game as Game).name || "Unnamed game"}
           </h1>
         </header>
 
         {zoneRequired && (
-          <div className="mb-6 rounded-xl bg-amber-100 dark:bg-amber-900/40 border border-amber-400 dark:border-amber-600 px-4 py-3 text-amber-900 dark:text-amber-100 text-sm">
+          <div
+            className="mb-6 sketch-card p-4 text-sm"
+            style={{
+              background: "var(--pastel-warn)",
+              borderColor: "var(--pastel-border)",
+              color: "var(--pastel-ink)",
+            }}
+          >
             <strong>Set the play area first.</strong> Open &quot;Set game zone&quot; and choose the map area before starting the hiding phase.
           </div>
         )}
-        <section className="rounded-2xl bg-white/80 dark:bg-zinc-800/80 shadow-lg border border-amber-200/50 dark:border-zinc-700 p-6 space-y-6">
+        <section className="sketch-card p-6 space-y-6">
           <GameActions
             gameId={gameId}
             status={(game as Game).status}
@@ -105,13 +109,13 @@ export default async function GamePage({ params, searchParams }: Props) {
           />
 
           {zone && !currentPlayer && (
-          <Link
-            href={`/games/${gameId}/god`}
-            className="touch-manipulation block w-full rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold px-6 py-3 text-center transition-colors"
-          >
-            God mode — view all positions on map
-          </Link>
-        )}
+            <Link
+              href={`/games/${gameId}/god`}
+              className="btn-pastel-lavender touch-manipulation block w-full text-center"
+            >
+              God mode — view all positions on map
+            </Link>
+          )}
 
           <PlayerList
             gameId={gameId}

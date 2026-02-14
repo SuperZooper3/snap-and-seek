@@ -19,16 +19,22 @@ export function ItemBar({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-xl border-2 transition-colors text-left
-        ${
-          uploaded
-            ? "border-amber-300 dark:border-amber-600 bg-amber-50/80 dark:bg-zinc-800/80"
-            : "border-dashed border-amber-300/60 dark:border-zinc-600 bg-white/60 dark:bg-zinc-800/40 hover:border-amber-400 dark:hover:border-zinc-500"
-        }
-        p-3 flex items-center gap-3`}
+      className={`w-full rounded-xl border-[3px] transition-all text-left p-3 flex items-center gap-3 touch-manipulation ${
+        uploaded ? "" : "border-dashed"
+      }`}
+      style={{
+        borderColor: "var(--pastel-border)",
+        background: uploaded ? "var(--pastel-mint)" : "var(--pastel-paper)",
+        boxShadow: "3px 3px 0 var(--pastel-border-subtle)",
+      }}
     >
-      {/* Photo thumbnail or camera icon */}
-      <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-amber-100/80 dark:bg-zinc-700/80 border border-amber-200/50 dark:border-zinc-600">
+      <div
+        className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center border-2"
+        style={{
+          background: "var(--pastel-butter)",
+          borderColor: "var(--pastel-border)",
+        }}
+      >
         {photoUrl ? (
           <img
             src={photoUrl}
@@ -37,7 +43,8 @@ export function ItemBar({
           />
         ) : uploading ? (
           <svg
-            className="w-6 h-6 text-amber-500 dark:text-amber-400 animate-spin"
+            className="w-6 h-6 animate-spin"
+            style={{ color: "var(--pastel-ink-muted)" }}
             fill="none"
             viewBox="0 0 24 24"
           >
@@ -57,7 +64,8 @@ export function ItemBar({
           </svg>
         ) : (
           <svg
-            className="w-6 h-6 text-amber-400 dark:text-amber-500"
+            className="w-6 h-6"
+            style={{ color: "var(--pastel-ink-muted)" }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -78,18 +86,24 @@ export function ItemBar({
         )}
       </div>
 
-      {/* Label + status */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
+        <p className="text-sm font-bold truncate" style={{ color: "var(--pastel-ink)" }}>
           {label}
         </p>
         {uploading && (
-          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+          <p className="text-xs mt-0.5" style={{ color: "var(--pastel-ink-muted)" }}>
             Uploading...
           </p>
         )}
         {uploaded && !uploading && (
-          <span className="inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full mt-0.5">
+          <span
+            className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full mt-0.5 border-2"
+            style={{
+              background: "var(--pastel-mint)",
+              borderColor: "var(--pastel-border)",
+              color: "var(--pastel-ink)",
+            }}
+          >
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -101,15 +115,15 @@ export function ItemBar({
           </span>
         )}
         {!uploaded && !uploading && (
-          <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-0.5">
+          <p className="text-xs mt-0.5" style={{ color: "var(--pastel-ink-muted)" }}>
             Tap to take photo
           </p>
         )}
       </div>
 
-      {/* Chevron */}
       <svg
-        className="w-5 h-5 text-amber-400 dark:text-amber-500 flex-shrink-0"
+        className="w-5 h-5 flex-shrink-0"
+        style={{ color: "var(--pastel-ink-muted)" }}
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"

@@ -28,33 +28,33 @@ export function PlayerList({ gameId, players, currentPlayer }: Props) {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-3">
+      <h2 className="text-lg font-bold mb-3" style={{ color: "var(--foreground)" }}>
         Players ({players.length})
       </h2>
       {currentPlayer && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-amber-700 dark:text-amber-300">
-            You are: <strong>{currentPlayer.name}</strong>
+          <span className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
+            You are: <strong style={{ color: "var(--foreground)" }}>{currentPlayer.name}</strong>
           </span>
           <button
             type="button"
             onClick={releaseIdentity}
-            className="text-xs rounded-lg px-3 py-1.5 bg-amber-200/80 dark:bg-zinc-600/80 text-amber-900 dark:text-amber-100 hover:bg-amber-300/80 dark:hover:bg-zinc-500/80 transition-colors"
+            className="btn-sm !min-h-0 !py-1.5 !text-xs"
           >
             Release my identity
           </button>
         </div>
       )}
       {players.length === 0 && (
-        <p className="text-amber-800/70 dark:text-amber-200/70 text-sm">
+        <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
           No players yet. Share the link above so others can join.
         </p>
       )}
       {!currentPlayer && (
-        <div className="mb-3 p-2">
+        <div className="mb-3">
           <Link
             href={`/join/${gameId}`}
-            className="touch-manipulation block w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-semibold px-6 py-3 text-center transition-colors"
+            className="btn-pastel-peach touch-manipulation block w-full text-center"
           >
             Join as a player
           </Link>
@@ -67,11 +67,14 @@ export function PlayerList({ gameId, players, currentPlayer }: Props) {
             return (
               <li
                 key={p.id}
-                className={`rounded-lg px-4 py-2 ${
-                  isYou
-                    ? "bg-amber-200/60 dark:bg-amber-600/30 text-amber-900 dark:text-amber-100 font-medium"
-                    : "bg-amber-50/80 dark:bg-zinc-700/80 text-amber-900 dark:text-amber-100"
-                } ${!isYou && !currentPlayer ? "cursor-pointer hover:bg-amber-100 dark:hover:bg-zinc-600/80 transition-colors" : ""}`}
+                className="rounded-xl border-[3px] px-4 py-2.5 transition-all"
+                style={{
+                  background: isYou ? "var(--pastel-butter)" : "var(--pastel-paper)",
+                  borderColor: "var(--pastel-border)",
+                  color: "var(--pastel-ink)",
+                  cursor: !isYou && !currentPlayer ? "pointer" : undefined,
+                  boxShadow: "3px 3px 0 var(--pastel-border-subtle)",
+                }}
                 onClick={
                   !isYou && !currentPlayer
                     ? () => assumePlayer(p)
@@ -81,12 +84,12 @@ export function PlayerList({ gameId, players, currentPlayer }: Props) {
               >
                 {p.name}
                 {isYou && (
-                  <span className="ml-2 text-xs text-amber-700 dark:text-amber-300">
+                  <span className="ml-2 text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
                     (you)
                   </span>
                 )}
                 {!isYou && !currentPlayer && (
-                  <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                  <span className="ml-2 text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
                     — tap to join as this player
                   </span>
                 )}

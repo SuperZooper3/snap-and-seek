@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Patrick_Hand } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const patrickHand = Patrick_Hand({
+  weight: "400",
+  variable: "--font-hand",
   subsets: ["latin"],
 });
 
@@ -32,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
+        className={`${patrickHand.variable} font-sans antialiased overflow-x-hidden`}
       >
         {children}
       </body>

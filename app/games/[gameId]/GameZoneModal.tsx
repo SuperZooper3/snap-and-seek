@@ -178,22 +178,25 @@ export function GameZoneModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex min-h-screen min-h-[100dvh] flex-col bg-amber-50/95 dark:bg-zinc-900/95 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex min-h-screen min-h-[100dvh] flex-col backdrop-blur-sm font-sans"
+      style={{ background: "var(--background)" }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="zone-modal-title"
     >
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-200/60 dark:border-zinc-700 px-4 py-3 safe-area-inset-top">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b-[3px] px-4 py-3 safe-area-inset-top" style={{ borderColor: "var(--pastel-border)", background: "var(--pastel-paper)" }}>
         <h2
           id="zone-modal-title"
-          className="text-lg font-semibold text-amber-900 dark:text-amber-100"
+          className="text-lg font-bold"
+          style={{ color: "var(--foreground)" }}
         >
           Set game zone
         </h2>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full p-2 text-amber-700 dark:text-amber-300 hover:bg-amber-200/50 dark:hover:bg-zinc-700"
+          className="rounded-full p-2 transition-colors hover:opacity-80"
+          style={{ color: "var(--pastel-ink-muted)" }}
           aria-label="Close"
         >
           <span className="sr-only">Close</span>
@@ -206,23 +209,23 @@ export function GameZoneModal({
       <div className="flex flex-1 flex-col min-h-0">
         <div className="shrink-0 px-4 py-3 space-y-2">
           {location.status === "loading" && (
-            <p className="text-sm text-amber-800 dark:text-amber-200">
+            <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
               Getting your location…
             </p>
           )}
           {location.status === "error" && (
-            <p className="text-sm text-red-600 dark:text-red-400">
+            <p className="text-sm" style={{ color: "var(--pastel-error)" }}>
               {location.message}
             </p>
           )}
           {location.status === "success" && (
             <>
-              <p className="text-sm text-amber-800 dark:text-amber-200">
+              <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
                 Center: {location.coords.latitude.toFixed(5)},{" "}
                 {location.coords.longitude.toFixed(5)} · Accuracy ~
                 {Math.round(location.coords.accuracy)} m
                 {isRefreshingLocation && (
-                  <span className="ml-2 text-amber-600 dark:text-amber-400">· Updating…</span>
+                  <span className="ml-2">· Updating…</span>
                 )}
               </p>
               <div className="flex flex-wrap items-center gap-3">
@@ -230,12 +233,12 @@ export function GameZoneModal({
                   type="button"
                   onClick={getLocation}
                   disabled={isRefreshingLocation}
-                  className="touch-manipulation shrink-0 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-amber-950 font-medium px-4 py-2 text-sm transition-colors"
+                  className="btn-sm shrink-0"
                 >
                   {isRefreshingLocation ? "Updating…" : "Refresh location"}
                 </button>
                 <div className="flex-1 min-w-[120px]">
-                  <label className="block text-xs font-medium text-amber-900 dark:text-amber-100 mb-1">
+                  <label className="block text-xs font-bold mb-1" style={{ color: "var(--foreground)" }}>
                     Zone radius: {radiusMeters} m
                   </label>
                   <input
@@ -245,12 +248,17 @@ export function GameZoneModal({
                     step={RADIUS_STEP_M}
                     value={radiusMeters}
                     onChange={(e) => setRadiusMeters(Number(e.target.value))}
-                    className="w-full h-2.5 rounded-full appearance-none bg-amber-200 dark:bg-zinc-600 accent-amber-600"
+                    className="w-full h-3 rounded-full appearance-none border-2"
+                    style={{
+                      background: "var(--pastel-butter)",
+                      borderColor: "var(--pastel-border)",
+                      accentColor: "var(--pastel-border)",
+                    }}
                     aria-valuemin={RADIUS_MIN_M}
                     aria-valuemax={RADIUS_MAX_M}
                     aria-valuenow={radiusMeters}
                   />
-                  <div className="flex justify-between text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                  <div className="flex justify-between text-xs mt-0.5" style={{ color: "var(--pastel-ink-muted)" }}>
                     <span>{RADIUS_MIN_M} m</span>
                     <span>{RADIUS_MAX_M} m</span>
                   </div>
@@ -261,13 +269,13 @@ export function GameZoneModal({
         </div>
 
         {loadError && (
-          <div className="shrink-0 mx-4 mb-2 rounded-lg bg-red-50 dark:bg-red-900/20 p-3 text-red-700 dark:text-red-300 text-sm">
+          <div className="shrink-0 mx-4 mb-2 rounded-xl border-2 p-3 text-sm" style={{ background: "var(--pastel-error)", borderColor: "var(--pastel-border)", color: "var(--pastel-ink)" }}>
             Failed to load map. Check your API key.
           </div>
         )}
 
         {!isLoaded && !loadError && !showMap && (
-          <div className="flex-1 min-h-0 flex items-center justify-center text-amber-800 dark:text-amber-200 text-sm px-4">
+          <div className="flex-1 min-h-0 flex items-center justify-center text-sm px-4" style={{ color: "var(--pastel-ink-muted)" }}>
             Loading map…
           </div>
         )}
@@ -295,7 +303,6 @@ export function GameZoneModal({
                 minZoom: 12,
               }}
             >
-              {/* Red shaded area outside the zone (polygon with hole) */}
               <Polygon
                 paths={polygonPaths}
                 options={{
@@ -307,7 +314,6 @@ export function GameZoneModal({
                   zIndex: 1,
                 }}
               />
-              {/* Zone boundary: red circle, empty inside */}
               <Circle
                 center={center}
                 radius={radiusMeters}
@@ -320,7 +326,6 @@ export function GameZoneModal({
                   zIndex: 2,
                 }}
               />
-              {/* Accuracy circle around player (light blue/gray) */}
               {location.status === "success" && location.coords.accuracy > 0 && (
                 <Circle
                   center={center}
@@ -345,19 +350,19 @@ export function GameZoneModal({
           </div>
         )}
 
-        <div className="shrink-0 px-4 py-3 pb-safe border-t border-amber-200/60 dark:border-zinc-700 space-y-2">
+        <div className="shrink-0 px-4 py-3 pb-safe border-t-[3px] space-y-2" style={{ borderColor: "var(--pastel-border)", background: "var(--pastel-paper)" }}>
           {saveError && (
-            <p className="text-sm text-red-600 dark:text-red-400">{saveError}</p>
+            <p className="text-sm" style={{ color: "var(--pastel-error)" }}>{saveError}</p>
           )}
           <button
             type="button"
             onClick={handleSave}
             disabled={!canSave || saving}
-            className="touch-manipulation w-full rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold px-6 py-3.5 text-base transition-colors"
+            className="btn-primary touch-manipulation w-full disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save game zone"}
           </button>
-          <p className="text-xs text-amber-700 dark:text-amber-300">
+          <p className="text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
             Inside the circle = play area. Outside = out of bounds (red).
           </p>
         </div>
