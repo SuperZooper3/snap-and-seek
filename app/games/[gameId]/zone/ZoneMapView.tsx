@@ -164,6 +164,7 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
           fullscreenControl: true,
           streetViewControl: false,
           gestureHandling: "cooperative",
+          minZoom: 12,
         }}
       >
         <Polygon

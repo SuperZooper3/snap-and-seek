@@ -81,6 +81,7 @@ export function MapDisplay({ locations, countdownSeconds }: MapDisplayProps) {
           mapTypeControl: true,
           fullscreenControl: true,
           streetViewControl: false,
+          minZoom: 12,
         }}
       >
         {locations.map((point, i) => (

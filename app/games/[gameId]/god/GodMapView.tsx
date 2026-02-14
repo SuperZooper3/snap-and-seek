@@ -102,6 +102,7 @@ export function GodMapView({ zone, playerMarkers }: Props) {
           fullscreenControl: true,
           streetViewControl: false,
           gestureHandling: "cooperative",
+          minZoom: 12,
         }}
       >
         <Polygon

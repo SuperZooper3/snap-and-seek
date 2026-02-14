@@ -293,6 +293,7 @@ export function GameZoneModal({
                 fullscreenControl: true,
                 streetViewControl: false,
                 gestureHandling: "cooperative",
+                minZoom: 12,
               }}
             >
               {/* Red shaded area outside the zone (polygon with hole) */}
