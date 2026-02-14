@@ -12,8 +12,9 @@ type CameraModalProps = {
 export function CameraModal({ isOpen, onClose, onCapture }: CameraModalProps) {
   const handleCapture = useCallback(
     (blob: Blob) => {
-      onCapture(blob);
+      // Close first so the camera view is not shown again during upload
       onClose();
+      onCapture(blob);
     },
     [onCapture, onClose]
   );

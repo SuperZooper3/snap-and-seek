@@ -7,6 +7,8 @@ import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/ma
 
 const ZONE_FIT_PADDING_PX = 8;
 const BLUE_DOT_ICON_URL = "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+const RED_DOT_ICON_URL = "https://maps.google.com/mapfiles/ms/icons/red-dot.png";
+const GREY_DOT_ICON_URL = "https://maps.google.com/mapfiles/ms/icons/grey-dot.png";
 
 type Zone = {
   center_lat: number;
@@ -20,15 +22,25 @@ type UserPosition = {
   accuracy: number;
 } | null;
 
+/** Thermometer history pin: 1 = start, 2 = end; color by result (red=hotter, blue=colder) */
+export type ThermometerPin = {
+  lat: number;
+  lng: number;
+  number: 1 | 2;
+  color: "red" | "blue" | "gray";
+};
+
 type Props = {
   zone: Zone;
   /** When true, map fills container (height 100%) for full-screen zone view */
   fullSize?: boolean;
   /** Current user location for blue pin + accuracy circle */
   userPosition?: UserPosition;
+  /** Pins for completed thermometer readings (1 = start, 2 = end) */
+  thermometerPins?: ThermometerPin[];
 };
 
-export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [] }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
   const { isLoaded, loadError } = useGoogleMapsLoader();
@@ -106,6 +118,23 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
       scaledSize: new window.google.maps.Size(32, 32),
     };
   }, [isLoaded]);
+
+  const thermometerPinIcon = useCallback(
+    (color: "red" | "blue" | "gray") => {
+      if (typeof window === "undefined" || !window.google) return undefined;
+      const url =
+        color === "red"
+          ? RED_DOT_ICON_URL
+          : color === "blue"
+            ? BLUE_DOT_ICON_URL
+            : GREY_DOT_ICON_URL;
+      return {
+        url,
+        scaledSize: new window.google.maps.Size(28, 28),
+      };
+    },
+    [isLoaded]
+  );
 
   if (loadError) {
     return (
@@ -196,6 +225,20 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
             title="You are here"
           />
         )}
+        {thermometerPins.map((pin, i) => (
+          <Marker
+            key={`thermo-${i}-${pin.lat}-${pin.lng}-${pin.number}`}
+            position={{ lat: pin.lat, lng: pin.lng }}
+            icon={thermometerPinIcon(pin.color)}
+            label={{
+              text: String(pin.number),
+              color: "white",
+              fontWeight: "bold",
+              fontSize: "12px",
+            }}
+            title={pin.number === 1 ? "Thermometer start" : pin.number === 2 ? "Thermometer end" : undefined}
+          />
+        ))}
       </GoogleMap>
     </div>
   );
