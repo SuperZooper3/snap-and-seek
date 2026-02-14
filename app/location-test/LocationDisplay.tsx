@@ -1,7 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import Link from "next/link";
+
+const MapDisplay = dynamic(
+  () => import("./MapDisplay").then((mod) => ({ default: mod.MapDisplay })),
+  { ssr: false }
+);
 
 type LocationState =
   | { status: "idle" }
@@ -84,13 +90,19 @@ export function LocationDisplay() {
                     ±{location.coords.accuracy.toFixed(0)} m
                   </p>
                 </div>
+                <div className="w-full">
+                  <MapDisplay
+                    lat={location.coords.latitude}
+                    lng={location.coords.longitude}
+                  />
+                </div>
                 <a
                   href={`https://www.google.com/maps?q=${location.coords.latitude},${location.coords.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium transition-colors"
                 >
-                  Show on Google Maps →
+                  Open in Google Maps →
                 </a>
               </div>
             )}
