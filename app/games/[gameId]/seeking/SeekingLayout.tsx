@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { ZoneWithLocation } from "../zone/ZoneWithLocation";
 import { SeekingTimer } from "./SeekingTimer";
+
+const TRAY_COLLAPSED_PX = 72;
+
+function getExpandedHeightPx(): number {
+  if (typeof window === "undefined") return 600;
+  const h = window.visualViewport?.height ?? window.innerHeight;
+  return Math.round(h * 0.8);
+}
 
 type Zone = {
   center_lat: number;
@@ -37,9 +45,24 @@ export function SeekingLayout({
   seekingStartedAt,
   targets,
 }: Props) {
-  const [refreshCountdown, setRefreshCountdown] = useState(10);
+  const [refreshCountdown, setRefreshCountdown] = useState(5);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [trayExpanded, setTrayExpanded] = useState(false);
+  const [expandedHeightPx, setExpandedHeightPx] = useState(600);
+  const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
+  const dragStartRef = useRef<{ y: number; height: number } | null>(null);
+  const didDragRef = useRef(false);
+
+  useEffect(() => {
+    setExpandedHeightPx(getExpandedHeightPx());
+    const onResize = () => setExpandedHeightPx(getExpandedHeightPx());
+    window.visualViewport?.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
 
   const handleCountdownChange = useCallback((countdown: number) => {
     setRefreshCountdown(countdown);
@@ -50,6 +73,50 @@ export function SeekingLayout({
   const handleSelectTarget = useCallback((index: number) => {
     setSelectedIndex(index);
     setTrayExpanded(true);
+  }, []);
+
+  const trayHeightPx = dragHeightPx ?? (trayExpanded ? expandedHeightPx : TRAY_COLLAPSED_PX);
+  const isDragging = dragHeightPx !== null;
+
+  const handleTrayPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      didDragRef.current = false;
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      dragStartRef.current = { y: e.clientY, height: trayHeightPx };
+      setDragHeightPx(trayHeightPx);
+    },
+    [trayHeightPx]
+  );
+
+  const handleTrayPointerMove = useCallback((e: React.PointerEvent) => {
+    const start = dragStartRef.current;
+    if (start == null) return;
+    const dy = start.y - e.clientY;
+    if (Math.abs(dy) > 5) didDragRef.current = true;
+    const next = Math.max(TRAY_COLLAPSED_PX, Math.min(expandedHeightPx, start.height + dy));
+    setDragHeightPx(next);
+  }, [expandedHeightPx]);
+
+  const handleTrayPointerUp = useCallback(() => {
+    const start = dragStartRef.current;
+    dragStartRef.current = null;
+    if (start == null) return;
+    if (didDragRef.current) {
+      const current = dragHeightPx ?? start.height;
+      const mid = TRAY_COLLAPSED_PX + (expandedHeightPx - TRAY_COLLAPSED_PX) * 0.5;
+      setTrayExpanded(current >= mid);
+    }
+    setDragHeightPx(null);
+  }, [expandedHeightPx, dragHeightPx]);
+
+  const handleTrayPointerCancel = useCallback(() => {
+    dragStartRef.current = null;
+    setDragHeightPx(null);
+  }, []);
+
+  const handleTrayClick = useCallback((e: React.MouseEvent) => {
+    if (didDragRef.current) e.preventDefault();
+    else setTrayExpanded((prev) => !prev);
   }, []);
 
   return (
@@ -89,16 +156,24 @@ export function SeekingLayout({
         </div>
       </main>
 
-      {/* Bottom pull-up tray: target list (pills) + selected target photo + handle to expand/collapse */}
+      {/* Bottom pull-up tray: target list (pills) + selected target photo + handle to expand/collapse (slideable) */}
       {targets.length > 0 && selectedTarget && (
         <div
-          className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white dark:bg-zinc-800 border-t border-sky-200/50 dark:border-zinc-700 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-inset-bottom transition-[height] duration-300 ease-out"
-          style={{ height: trayExpanded ? "80dvh" : "72px" }}
+          className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white dark:bg-zinc-800 border-t border-sky-200/50 dark:border-zinc-700 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-inset-bottom"
+          style={{
+            height: `${trayHeightPx}px`,
+            transition: isDragging ? "none" : "height 300ms ease-out",
+          }}
         >
           <button
             type="button"
-            onClick={() => setTrayExpanded((e) => !e)}
-            className="shrink-0 flex flex-col items-center pt-2 pb-1 px-4 touch-manipulation cursor-grab active:cursor-grabbing"
+            onClick={handleTrayClick}
+            onPointerDown={handleTrayPointerDown}
+            onPointerMove={handleTrayPointerMove}
+            onPointerUp={handleTrayPointerUp}
+            onPointerCancel={handleTrayPointerCancel}
+            className="shrink-0 flex flex-col items-center pt-2 pb-1 px-4 touch-manipulation cursor-grab active:cursor-grabbing touch-none"
+            style={{ touchAction: "none" }}
             aria-expanded={trayExpanded}
             aria-label={trayExpanded ? "Collapse target tray" : "Expand target tray"}
           >

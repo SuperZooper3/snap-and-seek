@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ZoneMapView } from "./ZoneMapView";
 import { isEntirelyOutsideZone } from "@/lib/map-utils";
 
-const MIN_PING_INTERVAL_MS = 8_000;
+const REFRESH_INTERVAL_SECONDS = 5;
+const MIN_PING_INTERVAL_MS = (REFRESH_INTERVAL_SECONDS - 1) * 1000;
 
 type Zone = {
   center_lat: number;
@@ -35,7 +36,7 @@ export function ZoneWithLocation({
   onCountdownChange,
 }: Props) {
   const [userPosition, setUserPosition] = useState<UserPosition>(null);
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(REFRESH_INTERVAL_SECONDS);
   const [locationError, setLocationError] = useState<string | null>(null);
   const lastPingAtRef = useRef<number>(0);
 
@@ -68,12 +69,12 @@ export function ZoneWithLocation({
           lng,
           accuracy: position.coords.accuracy ?? 30,
         });
-        setCountdown(10);
+        setCountdown(REFRESH_INTERVAL_SECONDS);
         uploadPing(lat, lng);
       },
       () => {
         setLocationError("Could not get location");
-        setCountdown(10);
+        setCountdown(REFRESH_INTERVAL_SECONDS);
       },
       { enableHighAccuracy: true }
     );
@@ -92,7 +93,7 @@ export function ZoneWithLocation({
       setCountdown((c) => {
         if (c <= 1) {
           refreshLocation();
-          return 10;
+          return REFRESH_INTERVAL_SECONDS;
         }
         return c - 1;
       });

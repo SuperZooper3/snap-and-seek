@@ -25,7 +25,7 @@ export function HidingLayout({
   hidingStartedAt,
   hidingDurationSeconds,
 }: Props) {
-  const [refreshCountdown, setRefreshCountdown] = useState(10);
+  const [refreshCountdown, setRefreshCountdown] = useState(5);
   const [showPhotoPopup, setShowPhotoPopup] = useState(false);
 
   const handleCountdownChange = useCallback((countdown: number) => {
