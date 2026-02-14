@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ZoneWithLocation } from "../zone/ZoneWithLocation";
 import { SeekingTimer } from "./SeekingTimer";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { CameraModal } from "@/components/CameraModal";
 import type { Submission } from "@/lib/types";
 
@@ -379,7 +380,7 @@ export function SeekingLayout({
             href={`/games/${gameId}`}
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-sky-800 dark:text-sky-200 bg-sky-100/80 dark:bg-sky-900/30 hover:bg-sky-200/80 dark:hover:bg-sky-800/40 transition-colors shrink-0"
           >
-            <span aria-hidden>←</span>
+            <BackArrowIcon />
             Back to game
           </Link>
           <span className="text-sm text-sky-700 dark:text-sky-300 shrink-0">

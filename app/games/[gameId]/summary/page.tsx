@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { supabase } from "@/lib/supabase";
 import type { Submission } from "@/lib/types";
 import { SummaryGrid } from "./SummaryGrid";
@@ -43,14 +44,13 @@ export default async function SummaryPage({ params }: Props) {
 
   const allPlayers = (players ?? []) as { id: number; name: string; hiding_photo: number | null }[];
 
-  // Fetch all submissions (gracefully handles missing table)
+  // Fetch all submissions including failed (so summary can show "tried but failed" with red outline)
   let allSubmissions: Submission[] = [];
   {
     const { data: submissionsData, error: subErr } = await supabase
       .from("submissions")
       .select("*")
       .eq("game_id", gameId)
-      .eq("status", "success")
       .order("created_at", { ascending: true });
     if (!subErr && submissionsData) {
       allSubmissions = submissionsData as Submission[];
@@ -94,7 +94,7 @@ export default async function SummaryPage({ params }: Props) {
             href={`/games/${gameId}`}
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-emerald-800 dark:text-emerald-200 bg-emerald-100/80 dark:bg-emerald-900/30 hover:bg-emerald-200/80 dark:hover:bg-emerald-800/40 transition-colors"
           >
-            <span aria-hidden>←</span>
+            <BackArrowIcon />
             Back to game
           </Link>
           <h1 className="mt-4 text-3xl font-bold text-emerald-900 dark:text-emerald-100">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import { GodMapWithPings } from "./GodMapWithPings";
@@ -81,7 +82,7 @@ export default async function GodModePage({ params }: Props) {
           href={`/games/${gameId}`}
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-200 bg-white/10 hover:bg-white/15 transition-colors"
         >
-          <span aria-hidden>←</span>
+          <BackArrowIcon className="h-4 w-4" />
           Back to game
         </Link>
         <p className="mt-0.5 text-xs text-white/80">

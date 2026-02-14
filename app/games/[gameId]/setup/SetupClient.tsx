@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { CameraModal } from "@/components/CameraModal";
 import { ItemBar } from "@/components/ItemBar";
 
@@ -194,9 +195,9 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
         <header className="mb-8">
           <Link
             href={`/games/${gameId}`}
-            className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
           >
-            &larr; Back to game
+            <BackArrowIcon /> Back to game
           </Link>
           <h1 className="mt-3 text-2xl font-bold text-amber-900 dark:text-amber-100">
             {gameName}

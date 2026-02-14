@@ -24,13 +24,17 @@ type Props = {
  * Diagonal = the player's own hiding photo (same as column header for that player).
  */
 export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Props) {
-  // Build a lookup: submissions[seekerId][hiderId] = submission
+  // Build a lookup: submissions[seekerId][hiderId] = submission (prefer success; else latest fail so we can show "tried but failed")
   const submissionMap: Record<number, Record<number, Submission>> = {};
   for (const s of submissions) {
-    if (s.status !== "success") continue;
+    if (s.status !== "success" && s.status !== "fail") continue;
     if (!submissionMap[s.seeker_id]) submissionMap[s.seeker_id] = {};
-    // Keep the first successful one (earliest)
-    if (!submissionMap[s.seeker_id][s.hider_id]) {
+    const existing = submissionMap[s.seeker_id][s.hider_id];
+    if (!existing) {
+      submissionMap[s.seeker_id][s.hider_id] = s;
+    } else if (s.status === "success") {
+      submissionMap[s.seeker_id][s.hider_id] = s;
+    } else if (existing.status === "fail" && s.status === "fail") {
       submissionMap[s.seeker_id][s.hider_id] = s;
     }
   }
@@ -147,6 +151,7 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     );
                   }
 
+                  const isFail = submission?.status === "fail";
                   return (
                     <td
                       key={hider.id}
@@ -155,14 +160,21 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                       {submissionPhotoUrl ? (
                         <div
                           className={`relative w-16 h-12 mx-auto rounded-lg overflow-hidden ${
-                            isWinner
-                              ? "bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-400 dark:border-amber-500 shadow-md"
-                              : "bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700"
+                            isFail
+                              ? "bg-red-50 dark:bg-red-950/30 border-2 border-red-400 dark:border-red-500 shadow-md"
+                              : isWinner
+                                ? "bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-400 dark:border-amber-500 shadow-md"
+                                : "bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700"
                           }`}
+                          title={isFail ? "Tried but not close enough" : undefined}
                         >
                           <Image
                             src={submissionPhotoUrl}
-                            alt={`${seeker.name}'s photo of ${hider.name}'s spot`}
+                            alt={
+                              isFail
+                                ? `${seeker.name} tried but wasn't close enough to ${hider.name}'s spot`
+                                : `${seeker.name}'s photo of ${hider.name}'s spot`
+                            }
                             fill
                             className="object-cover"
                             sizes="64px"

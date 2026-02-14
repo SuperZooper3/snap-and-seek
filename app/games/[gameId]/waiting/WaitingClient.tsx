@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 
 type PlayerReadiness = {
   id: number;
@@ -98,9 +99,9 @@ export function WaitingClient({
         <header className="mb-8">
           <Link
             href={`/games/${gameId}/setup`}
-            className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
           >
-            &larr; Back to setup
+            <BackArrowIcon /> Back to setup
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-amber-900 dark:text-amber-100">
             {allReady

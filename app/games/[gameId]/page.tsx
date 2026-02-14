@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers, cookies } from "next/headers";
+import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import type { Game, Player } from "@/lib/types";
@@ -9,7 +10,10 @@ import { GameActions } from "./GameActions";
 import { PlayerList } from "./PlayerList";
 import { GamePageRefresh } from "./GamePageRefresh";
 
-type Props = { params: Promise<{ gameId: string }> };
+type Props = {
+  params: Promise<{ gameId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
 async function getBaseUrl() {
   const url = process.env.NEXT_PUBLIC_APP_URL;
@@ -20,8 +24,10 @@ async function getBaseUrl() {
   return host ? `${proto}://${host}` : "http://localhost:3000";
 }
 
-export default async function GamePage({ params }: Props) {
+export default async function GamePage({ params, searchParams }: Props) {
   const { gameId } = await params;
+  const search = await searchParams;
+  const zoneRequired = search?.zone_required === "1";
 
   const { data: game, error: gameError } = await supabase
     .from("games")
@@ -66,7 +72,7 @@ export default async function GamePage({ params }: Props) {
             href="/"
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
           >
-            <span aria-hidden>←</span>
+            <BackArrowIcon />
             Create game
           </Link>
           <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">
@@ -74,6 +80,11 @@ export default async function GamePage({ params }: Props) {
           </h1>
         </header>
 
+        {zoneRequired && (
+          <div className="mb-6 rounded-xl bg-amber-100 dark:bg-amber-900/40 border border-amber-400 dark:border-amber-600 px-4 py-3 text-amber-900 dark:text-amber-100 text-sm">
+            <strong>Set the play area first.</strong> Open &quot;Set game zone&quot; and choose the map area before starting the hiding phase.
+          </div>
+        )}
         <section className="rounded-2xl bg-white/80 dark:bg-zinc-800/80 shadow-lg border border-amber-200/50 dark:border-zinc-700 p-6 space-y-6">
           <GameActions
             gameId={gameId}

@@ -34,7 +34,7 @@ export default async function GameZonePage({ params }: Props) {
     game.zone_radius_meters != null;
 
   if (!zoneSet) {
-    notFound();
+    redirect(`/games/${gameId}?zone_required=1`);
   }
 
   const zone = {
