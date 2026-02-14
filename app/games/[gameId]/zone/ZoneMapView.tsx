@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { GoogleMap, useJsApiLoader, Circle, Polygon, Marker } from "@react-google-maps/api";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
-const ZONE_FIT_PADDING_PX = 16;
+const ZONE_FIT_PADDING_PX = 8;
 const BLUE_DOT_ICON_URL = "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
 
 type Zone = {
@@ -87,9 +87,6 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
       { lat: b.south, lng: b.west },
       { lat: b.north, lng: b.east }
     );
-    if (userPosition) {
-      bounds.extend({ lat: userPosition.lat, lng: userPosition.lng });
-    }
     map.fitBounds(bounds, ZONE_FIT_PADDING_PX);
     if (fullSize) {
       window.setTimeout(() => {
@@ -97,13 +94,7 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
         map.fitBounds(bounds, ZONE_FIT_PADDING_PX);
       }, 100);
     }
-  }, [zone.center_lat, zone.center_lng, zone.radius_meters, fullSize, userPosition]);
-
-  useEffect(() => {
-    if (mapRef.current && userPosition) {
-      fitMapToZone(mapRef.current);
-    }
-  }, [userPosition, fitMapToZone]);
+  }, [zone.center_lat, zone.center_lng, zone.radius_meters, fullSize]);
 
   useEffect(() => {
     if (mapRef.current && typeof google !== "undefined") {
