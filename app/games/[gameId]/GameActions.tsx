@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GameZoneModal } from "./GameZoneModal";
+import { TutorialModal } from "@/components/TutorialModal";
 
 type GameZone = {
   center_lat: number;
@@ -47,6 +48,7 @@ export function GameActions({
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
   const [zoneModalOpen, setZoneModalOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [savingDuration, setSavingDuration] = useState(false);
   const isLobby = status === "lobby";
   const hasZone = zone != null;
@@ -116,6 +118,16 @@ export function GameActions({
 
       {isLobby && (
         <>
+          <button
+            type="button"
+            onClick={() => setTutorialOpen(true)}
+            className="touch-manipulation w-full rounded-xl bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-medium px-6 py-3 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            How to play
+          </button>
           <div>
             <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-1.5">
               Hiding period
@@ -171,6 +183,10 @@ export function GameActions({
           }}
           onClose={() => setZoneModalOpen(false)}
         />
+      )}
+
+      {tutorialOpen && (
+        <TutorialModal onClose={() => setTutorialOpen(false)} />
       )}
 
       {!isLobby && status && (
