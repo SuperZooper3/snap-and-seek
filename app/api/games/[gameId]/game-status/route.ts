@@ -52,6 +52,17 @@ export async function GET(
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 
+  // If there's a winner but status wasn't set to completed (e.g. older bug or race), repair it now
+  const winnerId = game.winner_id ?? null;
+  if (winnerId != null && game.status !== "completed") {
+    const finishedAt = game.finished_at ?? new Date().toISOString();
+    await supabase
+      .from("games")
+      .update({ status: "completed", finished_at: finishedAt })
+      .eq("id", gameId);
+    game = { ...game, status: "completed", finished_at: finishedAt };
+  }
+
   // Fetch all submissions for this game
   const { data: submissions, error: subError } = await supabase
     .from("submissions")
@@ -63,7 +74,6 @@ export async function GET(
     return NextResponse.json({ error: subError.message }, { status: 500 });
   }
 
-  const winnerId = game.winner_id ?? null;
   let winnerName: string | null = null;
   if (winnerId != null) {
     const { data: winner } = await supabase

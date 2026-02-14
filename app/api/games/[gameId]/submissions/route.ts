@@ -192,14 +192,14 @@ export async function POST(
     distinctHiders.size >= neededFinds;
 
   if (isWinner) {
+    const finishedAt = new Date().toISOString();
     // Atomic: only set winner if no winner already exists (WHERE winner_id IS NULL).
-    // Skip update if winner_id column doesn't exist yet (migration not run); still return isWinner.
     const updateResult = await supabase
       .from("games")
       .update({
         winner_id: seekerId,
         status: "completed",
-        finished_at: new Date().toISOString(),
+        finished_at: finishedAt,
       })
       .eq("id", gameId)
       .is("winner_id", null)
@@ -215,6 +215,11 @@ export async function POST(
       return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
     }
     if (!updated || updated.winner_id !== seekerId) {
+      // Another request may have set winner first; ensure game status is completed so it doesn't stay "seeking"
+      await supabase
+        .from("games")
+        .update({ status: "completed", finished_at: finishedAt })
+        .eq("id", gameId);
       return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
     }
   }
