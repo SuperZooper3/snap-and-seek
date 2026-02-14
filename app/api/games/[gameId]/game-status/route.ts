@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase";
 /**
  * GET /api/games/[gameId]/game-status
  * Returns game status, winner info, and all submissions.
- * Used by the 5s poll on the seeking page.
+ * Used by the 3s poll on the seeking page.
+ * Tolerates missing winner_id/finished_at columns (returns null until migration is run).
  */
 export async function GET(
   _request: NextRequest,
@@ -12,18 +13,43 @@ export async function GET(
 ) {
   const { gameId } = await params;
 
-  // Fetch game status + winner info
-  const { data: game, error: gameError } = await supabase
+  // Fetch game status; include winner columns if they exist (migration may not be run yet)
+  type GameRow = { id: string; status: string; winner_id?: number | null; finished_at?: string | null };
+  let game: GameRow | null = null;
+
+  const withWinner = await supabase
     .from("games")
     .select("id, status, winner_id, finished_at")
     .eq("id", gameId)
     .single();
 
-  if (gameError || !game) {
-    return NextResponse.json(
-      { error: gameError?.message ?? "Game not found" },
-      { status: gameError ? 500 : 404 }
-    );
+  if (withWinner.error) {
+    const msg = withWinner.error.message ?? "";
+    if (msg.includes("winner_id") || msg.includes("does not exist")) {
+      const fallback = await supabase
+        .from("games")
+        .select("id, status")
+        .eq("id", gameId)
+        .single();
+      if (fallback.error || !fallback.data) {
+        return NextResponse.json(
+          { error: fallback.error?.message ?? "Game not found" },
+          { status: fallback.error ? 500 : 404 }
+        );
+      }
+      game = { ...fallback.data, winner_id: null, finished_at: null };
+    } else {
+      return NextResponse.json(
+        { error: withWinner.error.message ?? "Game not found" },
+        { status: 500 }
+      );
+    }
+  } else if (withWinner.data) {
+    game = withWinner.data as GameRow;
+  }
+
+  if (!game) {
+    return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 
   // Fetch all submissions for this game
@@ -37,22 +63,22 @@ export async function GET(
     return NextResponse.json({ error: subError.message }, { status: 500 });
   }
 
-  // If there's a winner, fetch their name
+  const winnerId = game.winner_id ?? null;
   let winnerName: string | null = null;
-  if (game.winner_id != null) {
+  if (winnerId != null) {
     const { data: winner } = await supabase
       .from("players")
       .select("name")
-      .eq("id", game.winner_id)
+      .eq("id", winnerId)
       .single();
     winnerName = winner?.name ?? null;
   }
 
   return NextResponse.json({
     status: game.status,
-    winner_id: game.winner_id,
+    winner_id: winnerId,
     winner_name: winnerName,
-    finished_at: game.finished_at,
+    finished_at: game.finished_at ?? null,
     submissions: submissions ?? [],
   });
 }

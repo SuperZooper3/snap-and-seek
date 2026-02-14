@@ -79,13 +79,17 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
             return (
               <tr
                 key={seeker.id}
-                className={isWinner ? "bg-emerald-50/60 dark:bg-emerald-900/10" : ""}
+                className={
+                  isWinner
+                    ? "bg-amber-50/80 dark:bg-amber-950/40 ring-2 ring-amber-400 dark:ring-amber-500 ring-inset"
+                    : ""
+                }
               >
                 {/* Row header: seeker name */}
                 <td
                   className={`p-2 sticky left-0 z-10 min-w-[100px] ${
                     isWinner
-                      ? "bg-emerald-50/80 dark:bg-emerald-900/20"
+                      ? "bg-amber-50/95 dark:bg-amber-950/50 ring-1 ring-amber-400/50 dark:ring-amber-500/50"
                       : "bg-white/80 dark:bg-zinc-800/80"
                   }`}
                 >
@@ -94,7 +98,7 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     <span
                       className={`text-sm font-medium truncate max-w-[80px] ${
                         isWinner
-                          ? "text-emerald-800 dark:text-emerald-200 font-semibold"
+                          ? "text-amber-800 dark:text-amber-200 font-semibold"
                           : "text-emerald-700 dark:text-emerald-300"
                       }`}
                     >
@@ -102,7 +106,7 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     </span>
                   </div>
                 </td>
-                {/* Cells: seeker's submission for each hider */}
+                {/* Cells: seeker's submission for each hider — winner row shows full set of found images */}
                 {players.map((hider) => {
                   const isDiagonal = seeker.id === hider.id;
                   const submission = submissionMap[seeker.id]?.[hider.id];
@@ -110,9 +114,11 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     submission?.photo_id != null ? photoUrlById[submission.photo_id] : undefined;
 
                   if (isDiagonal) {
-                    // Diagonal: player's own hiding photo
                     return (
-                      <td key={hider.id} className="p-2 text-center">
+                      <td
+                        key={hider.id}
+                        className={`p-2 text-center ${isWinner ? "bg-amber-50/60 dark:bg-amber-950/30" : ""}`}
+                      >
                         <div className="w-16 h-12 mx-auto rounded-lg bg-zinc-200/50 dark:bg-zinc-600/30 flex items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-600">
                           <span className="text-xs text-zinc-400 dark:text-zinc-500">self</span>
                         </div>
@@ -121,9 +127,18 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                   }
 
                   return (
-                    <td key={hider.id} className="p-2 text-center">
+                    <td
+                      key={hider.id}
+                      className={`p-2 text-center ${isWinner ? "bg-amber-50/60 dark:bg-amber-950/30" : ""}`}
+                    >
                       {submissionPhotoUrl ? (
-                        <div className="relative w-16 h-12 mx-auto rounded-lg overflow-hidden bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700">
+                        <div
+                          className={`relative w-16 h-12 mx-auto rounded-lg overflow-hidden ${
+                            isWinner
+                              ? "bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-400 dark:border-amber-500 shadow-md"
+                              : "bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700"
+                          }`}
+                        >
                           <Image
                             src={submissionPhotoUrl}
                             alt={`${seeker.name}'s photo of ${hider.name}'s spot`}

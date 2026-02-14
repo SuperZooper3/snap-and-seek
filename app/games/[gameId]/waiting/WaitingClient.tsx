@@ -35,7 +35,7 @@ export function WaitingClient({
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(3);
 
   const fetchReadiness = useCallback(async () => {
     try {
@@ -49,16 +49,16 @@ export function WaitingClient({
     }
   }, [gameId]);
 
-  // Poll every 5 seconds with visible countdown
+  // Poll every 3 seconds with visible countdown
   useEffect(() => {
     fetchReadiness();
-    setCountdown(5);
+    setCountdown(3);
 
     const id = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           fetchReadiness();
-          return 5;
+          return 3;
         }
         return prev - 1;
       });

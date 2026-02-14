@@ -95,19 +95,17 @@ export function SeekingLayout({
     };
   }, []);
 
-  // 5s polling for game status + submissions.
-  // Once a winner is detected, we keep polling briefly but never clear the winner.
+  // Poll game status regularly while seeking so everyone sees wins (and latest submissions).
+  // First poll after 1s, then every 3s. Stop once a winner is detected.
   useEffect(() => {
-    // Stop polling entirely once we've confirmed a winner
     if (winnerId != null) return;
 
-    const interval = setInterval(async () => {
+    const poll = async () => {
       try {
         const res = await fetch(`/api/games/${gameId}/game-status`);
         if (!res.ok) return;
         const data = await res.json();
         setSubmissions(data.submissions ?? []);
-        // Only set winner, never unset — once set it's permanent
         if (data.winner_id != null) {
           setWinnerId(data.winner_id);
           setWinnerName(data.winner_name ?? null);
@@ -115,8 +113,14 @@ export function SeekingLayout({
       } catch {
         // Silently ignore polling errors
       }
-    }, 5000);
-    return () => clearInterval(interval);
+    };
+
+    const t = setTimeout(poll, 1000);
+    const interval = setInterval(poll, 3000);
+    return () => {
+      clearTimeout(t);
+      clearInterval(interval);
+    };
   }, [gameId, winnerId]);
 
   const handleCountdownChange = useCallback((countdown: number) => {

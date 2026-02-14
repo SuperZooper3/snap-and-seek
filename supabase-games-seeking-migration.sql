@@ -18,5 +18,10 @@ ALTER TABLE public.games
 ALTER TABLE public.games
   ADD COLUMN IF NOT EXISTS seeking_started_at timestamp with time zone NULL;
 
+-- 4) Winner and game end (set when a seeker finds everyone else)
+ALTER TABLE public.games
+  ADD COLUMN IF NOT EXISTS winner_id INTEGER REFERENCES public.players(id),
+  ADD COLUMN IF NOT EXISTS finished_at TIMESTAMPTZ;
+
 -- No RLS changes required if you're not using RLS on games.
 -- If you use RLS, ensure your existing policies still allow read/update as before.

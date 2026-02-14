@@ -112,7 +112,7 @@ export default async function SummaryPage({ params }: Props) {
             <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-100">
               {winnerName} wins!
             </h2>
-            {game.finished_at && (
+            {game.finished_at != null && (
               <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400">
                 Game completed {new Date(game.finished_at as string).toLocaleString()}
               </p>

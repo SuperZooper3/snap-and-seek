@@ -48,15 +48,24 @@ export async function POST(
   }
 
   // Reject submissions if game is already completed (someone already won)
-  const { data: currentGame } = await supabase
+  let currentGame: { status: string; winner_id?: number | null } | null = null;
+  const gameWithWinner = await supabase
     .from("games")
     .select("status, winner_id")
     .eq("id", gameId)
     .single();
-
+  if (gameWithWinner.error) {
+    const msg = gameWithWinner.error.message ?? "";
+    if (msg.includes("winner_id") || msg.includes("does not exist")) {
+      const fallback = await supabase.from("games").select("status").eq("id", gameId).single();
+      if (fallback.data) currentGame = { ...fallback.data, winner_id: null };
+    }
+  } else if (gameWithWinner.data) {
+    currentGame = gameWithWinner.data as { status: string; winner_id?: number | null };
+  }
   if (currentGame?.status === "completed" || currentGame?.winner_id != null) {
     return NextResponse.json(
-      { error: "Game is already completed", winner_id: currentGame.winner_id },
+      { error: "Game is already completed", winner_id: currentGame?.winner_id ?? null },
       { status: 409 }
     );
   }
@@ -127,8 +136,8 @@ export async function POST(
 
   if (isWinner) {
     // Atomic: only set winner if no winner already exists (WHERE winner_id IS NULL).
-    // This prevents two concurrent winners — only the first UPDATE to match wins.
-    const { data: updated } = await supabase
+    // Skip update if winner_id column doesn't exist yet (migration not run); still return isWinner.
+    const updateResult = await supabase
       .from("games")
       .update({
         winner_id: seekerId,
@@ -140,7 +149,15 @@ export async function POST(
       .select("winner_id")
       .single();
 
-    // If someone else already won (our update matched 0 rows), we're not the winner
+    const updated = updateResult.data;
+    const updateError = updateResult.error;
+    if (updateError && (updateError.message?.includes("winner_id") || updateError.message?.includes("does not exist"))) {
+      // Columns missing; winner still counts for this response so client shows win modal
+      return NextResponse.json({ submission, isWinner: true });
+    }
+    if (updateError) {
+      return NextResponse.json({ submission, isWinner: false });
+    }
     if (!updated || updated.winner_id !== seekerId) {
       return NextResponse.json({ submission, isWinner: false });
     }
