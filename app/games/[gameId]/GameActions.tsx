@@ -181,17 +181,26 @@ export function GameActions({
             </span>
             <span
               className={
-                status === "hiding"
-                  ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-200/90 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100"
-                  : status === "seeking"
-                    ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-sky-200/90 dark:bg-sky-800/50 text-sky-900 dark:text-sky-100"
-                    : "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-amber-200/90 dark:bg-amber-800/50 text-amber-900 dark:text-amber-100"
+                status === "completed"
+                  ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-green-200/90 dark:bg-green-800/50 text-green-900 dark:text-green-100"
+                  : status === "hiding"
+                    ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-200/90 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100"
+                    : status === "seeking"
+                      ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-sky-200/90 dark:bg-sky-800/50 text-sky-900 dark:text-sky-100"
+                      : "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-amber-200/90 dark:bg-amber-800/50 text-amber-900 dark:text-amber-100"
               }
             >
               {status}
             </span>
           </div>
-          {currentPlayer ? (
+          {status === "completed" ? (
+            <a
+              href={`/games/${gameId}/summary`}
+              className="touch-manipulation block w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 text-center transition-colors"
+            >
+              View game summary
+            </a>
+          ) : currentPlayer ? (
             <a
               href={status === "seeking" ? `/games/${gameId}/seeking` : `/games/${gameId}/zone`}
               className="touch-manipulation block w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 text-center transition-colors"

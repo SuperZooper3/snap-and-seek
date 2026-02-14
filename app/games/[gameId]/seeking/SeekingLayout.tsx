@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ZoneWithLocation } from "../zone/ZoneWithLocation";
 import { SeekingTimer } from "./SeekingTimer";
+import { CameraModal } from "@/components/CameraModal";
+import type { Submission } from "@/lib/types";
 
 const TRAY_COLLAPSED_PX = 72;
 
@@ -36,6 +38,10 @@ type Props = {
   playerName: string;
   seekingStartedAt: string | null;
   targets: SeekingTarget[];
+  initialSubmissions: Submission[];
+  initialSubmissionPhotoUrls: Record<number, string>;
+  initialWinnerId: number | null;
+  initialWinnerName: string | null;
 };
 
 export function SeekingLayout({
@@ -46,6 +52,10 @@ export function SeekingLayout({
   playerName,
   seekingStartedAt,
   targets,
+  initialSubmissions,
+  initialSubmissionPhotoUrls,
+  initialWinnerId,
+  initialWinnerName,
 }: Props) {
   const [refreshCountdown, setRefreshCountdown] = useState(5);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -62,6 +72,18 @@ export function SeekingLayout({
   } | null>(null);
   const [radarLoading, setRadarLoading] = useState(false);
 
+  // Submission state
+  const [submissions, setSubmissions] = useState<Submission[]>(initialSubmissions);
+  const [submissionPhotoUrls, setSubmissionPhotoUrls] = useState<Record<number, string>>(initialSubmissionPhotoUrls);
+  const [winnerId, setWinnerId] = useState<number | null>(initialWinnerId);
+  const [winnerName, setWinnerName] = useState<string | null>(initialWinnerName);
+
+  // Camera + submit flow state
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [submitTargetId, setSubmitTargetId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+
   useEffect(() => {
     setExpandedHeightPx(getExpandedHeightPx());
     const onResize = () => setExpandedHeightPx(getExpandedHeightPx());
@@ -73,11 +95,49 @@ export function SeekingLayout({
     };
   }, []);
 
+  // 5s polling for game status + submissions.
+  // Once a winner is detected, we keep polling briefly but never clear the winner.
+  useEffect(() => {
+    // Stop polling entirely once we've confirmed a winner
+    if (winnerId != null) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/games/${gameId}/game-status`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setSubmissions(data.submissions ?? []);
+        // Only set winner, never unset — once set it's permanent
+        if (data.winner_id != null) {
+          setWinnerId(data.winner_id);
+          setWinnerName(data.winner_name ?? null);
+        }
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [gameId, winnerId]);
+
   const handleCountdownChange = useCallback((countdown: number) => {
     setRefreshCountdown(countdown);
   }, []);
 
   const selectedTarget = targets[selectedIndex];
+
+  // Determine which targets have been found by the current player
+  const foundHiderIds = new Set(
+    submissions
+      .filter((s) => s.seeker_id === playerId && s.status === "success")
+      .map((s) => s.hider_id)
+  );
+
+  // Get the submission photo URL for a specific hider (from current player's submissions)
+  const getMySubmissionForHider = (hiderId: number): Submission | undefined => {
+    return submissions.find(
+      (s) => s.seeker_id === playerId && s.hider_id === hiderId && s.status === "success"
+    );
+  };
 
   const handleSelectTarget = useCallback((index: number) => {
     setSelectedIndex(index);
@@ -85,6 +145,111 @@ export function SeekingLayout({
     setRadarResult(null);
   }, []);
 
+  // Game is frozen once a winner exists
+  const gameOver = winnerId != null;
+
+  // --- Camera + Submission flow ---
+  const handleOpenCamera = useCallback((targetPlayerId: number) => {
+    if (gameOver) return; // Block new submissions after game ends
+    setSubmitTargetId(targetPlayerId);
+    setSubmitStatus(null);
+    setCameraOpen(true);
+  }, [gameOver]);
+
+  const handleCameraCapture = useCallback(
+    async (blob: Blob) => {
+      if (!submitTargetId) return;
+      // Double-check: if a winner was set while camera was open, abort
+      if (winnerId != null) {
+        setCameraOpen(false);
+        return;
+      }
+      setCameraOpen(false);
+      setSubmitting(true);
+      setSubmitStatus("Uploading photo...");
+
+      try {
+        // Step 1: Upload photo
+        const formData = new FormData();
+        formData.append("file", blob, "submission.jpg");
+        formData.append("game_id", gameId);
+        formData.append("player_id", String(playerId));
+
+        // Get current location for the photo
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+            });
+          });
+          formData.append("latitude", String(pos.coords.latitude));
+          formData.append("longitude", String(pos.coords.longitude));
+        } catch {
+          // Continue without location if geolocation fails
+        }
+
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!uploadRes.ok) {
+          setSubmitStatus("Upload failed!");
+          setSubmitting(false);
+          return;
+        }
+        const uploadData = await uploadRes.json();
+        const photoId = uploadData.photo?.id;
+        const photoUrl = uploadData.photo?.url;
+
+        // Step 2: Create submission
+        setSubmitStatus("Submitting...");
+        const submitRes = await fetch(`/api/games/${gameId}/submissions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            seeker_id: playerId,
+            hider_id: submitTargetId,
+            photo_id: photoId,
+          }),
+        });
+
+        if (!submitRes.ok) {
+          const errData = await submitRes.json().catch(() => ({}));
+          setSubmitStatus(errData.error ?? "Submission failed!");
+          setSubmitting(false);
+          return;
+        }
+
+        const submitData = await submitRes.json();
+
+        // Update local state immediately
+        setSubmissions((prev) => [...prev, submitData.submission]);
+        if (photoId && photoUrl) {
+          setSubmissionPhotoUrls((prev) => ({ ...prev, [photoId]: photoUrl }));
+        }
+
+        if (submitData.isWinner) {
+          setWinnerId(playerId);
+          setWinnerName(playerName);
+          setSubmitStatus("You found everyone! You win!");
+        } else {
+          setSubmitStatus("Found!");
+        }
+      } catch {
+        setSubmitStatus("Something went wrong!");
+      } finally {
+        setSubmitting(false);
+        // Clear status after 3 seconds
+        setTimeout(() => setSubmitStatus(null), 3000);
+      }
+    },
+    [submitTargetId, gameId, playerId, playerName, winnerId]
+  );
+
+  const handleCameraClose = useCallback(() => {
+    setCameraOpen(false);
+    setSubmitTargetId(null);
+  }, []);
+
+  // --- Tray drag handlers (unchanged) ---
   const trayHeightPx = dragHeightPx ?? (trayExpanded ? expandedHeightPx : TRAY_COLLAPSED_PX);
   const isDragging = dragHeightPx !== null;
 
@@ -98,14 +263,17 @@ export function SeekingLayout({
     [trayHeightPx]
   );
 
-  const handleTrayPointerMove = useCallback((e: React.PointerEvent) => {
-    const start = dragStartRef.current;
-    if (start == null) return;
-    const dy = start.y - e.clientY;
-    if (Math.abs(dy) > 5) didDragRef.current = true;
-    const next = Math.max(TRAY_COLLAPSED_PX, Math.min(expandedHeightPx, start.height + dy));
-    setDragHeightPx(next);
-  }, [expandedHeightPx]);
+  const handleTrayPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const start = dragStartRef.current;
+      if (start == null) return;
+      const dy = start.y - e.clientY;
+      if (Math.abs(dy) > 5) didDragRef.current = true;
+      const next = Math.max(TRAY_COLLAPSED_PX, Math.min(expandedHeightPx, start.height + dy));
+      setDragHeightPx(next);
+    },
+    [expandedHeightPx]
+  );
 
   const handleTrayPointerUp = useCallback(() => {
     const start = dragStartRef.current;
@@ -129,6 +297,7 @@ export function SeekingLayout({
     else setTrayExpanded((prev) => !prev);
   }, []);
 
+  // Radar proximity search
   const radarDistanceMeters = RADAR_DISTANCES[radarDistanceIndex];
   const handleRadarSearch = useCallback(() => {
     if (!selectedTarget) return;
@@ -176,6 +345,13 @@ export function SeekingLayout({
     );
   }, [gameId, selectedTarget, radarDistanceMeters]);
 
+  // Submission-derived state for selected target
+  const isTargetFound = selectedTarget ? foundHiderIds.has(selectedTarget.playerId) : false;
+  const selectedSubmission = selectedTarget ? getMySubmissionForHider(selectedTarget.playerId) : undefined;
+  const selectedSubmissionPhotoUrl = selectedSubmission?.photo_id
+    ? submissionPhotoUrls[selectedSubmission.photo_id]
+    : undefined;
+
   return (
     <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] bg-gradient-to-b from-sky-50 to-sky-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
       {/* Top bar: You are NAME, Back to game, Refresh — all inline */}
@@ -188,7 +364,9 @@ export function SeekingLayout({
             <span aria-hidden>←</span>
             Back to game
           </Link>
-          <span className="text-sm text-sky-700 dark:text-sky-300 shrink-0">You are: <strong className="font-semibold text-sky-900 dark:text-sky-100">{playerName}</strong></span>
+          <span className="text-sm text-sky-700 dark:text-sky-300 shrink-0">
+            You are: <strong className="font-semibold text-sky-900 dark:text-sky-100">{playerName}</strong>
+          </span>
         </div>
         <div className="flex items-center gap-2 text-sm text-sky-700 dark:text-sky-300 shrink-0">
           <span className="font-medium tabular-nums">Refresh in {refreshCountdown}s</span>
@@ -213,7 +391,7 @@ export function SeekingLayout({
         </div>
       </main>
 
-      {/* Bottom pull-up tray: target list (pills) + selected target photo + handle to expand/collapse (slideable) */}
+      {/* Bottom pull-up tray */}
       {targets.length > 0 && selectedTarget && (
         <div
           className="fixed bottom-0 left-0 right-0 z-20 flex flex-col bg-white dark:bg-zinc-800 border-t border-sky-200/50 dark:border-zinc-700 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-inset-bottom"
@@ -222,6 +400,7 @@ export function SeekingLayout({
             transition: isDragging ? "none" : "height 300ms ease-out",
           }}
         >
+          {/* Drag handle */}
           <button
             type="button"
             onClick={handleTrayClick}
@@ -236,29 +415,62 @@ export function SeekingLayout({
           >
             <span className="w-10 h-1 rounded-full bg-sky-300 dark:bg-zinc-500" aria-hidden />
           </button>
+
+          {/* Tray content */}
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-4">
+            {/* Target pills */}
             <div className="flex items-center gap-2 flex-wrap mb-3">
               <span className="text-sm font-medium text-sky-700 dark:text-sky-300 shrink-0">Targets:</span>
-              {targets.map((t, i) => (
-                <button
-                  key={t.playerId}
-                  type="button"
-                  onClick={() => handleSelectTarget(i)}
-                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors touch-manipulation ${
-                    selectedIndex === i
-                      ? "bg-sky-600 text-white dark:bg-sky-500"
-                      : "bg-sky-100/80 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200 hover:bg-sky-200/80 dark:hover:bg-sky-800/40"
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
+              {targets.map((t, i) => {
+                const isFound = foundHiderIds.has(t.playerId);
+                const isSelected = selectedIndex === i;
+                let pillClass: string;
+                if (isFound && isSelected) {
+                  pillClass = "bg-emerald-500 text-white dark:bg-emerald-600";
+                } else if (isFound) {
+                  pillClass =
+                    "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-800/50";
+                } else if (isSelected) {
+                  pillClass = "bg-sky-600 text-white dark:bg-sky-500";
+                } else {
+                  pillClass =
+                    "bg-sky-100/80 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200 hover:bg-sky-200/80 dark:hover:bg-sky-800/40";
+                }
+                return (
+                  <button
+                    key={t.playerId}
+                    type="button"
+                    onClick={() => handleSelectTarget(i)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors touch-manipulation flex items-center gap-1.5 ${pillClass}`}
+                  >
+                    {isFound && (
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                    {t.name}
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Selected target heading */}
             <h2 className="text-lg font-semibold text-sky-900 dark:text-sky-100 mt-1 mb-3">
               {selectedTarget.name}&apos;s target
+              {isTargetFound && (
+                <span className="ml-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  Found!
+                </span>
+              )}
             </h2>
+
+            {/* Hider's hiding photo */}
             {selectedTarget.photoUrl ? (
-              <div className="relative w-full aspect-[4/3] max-h-[60dvh] rounded-xl overflow-hidden bg-sky-100 dark:bg-zinc-700">
+              <div className="relative w-full aspect-[4/3] max-h-[40dvh] rounded-xl overflow-hidden bg-sky-100 dark:bg-zinc-700">
                 <Image
                   src={selectedTarget.photoUrl}
                   alt={`${selectedTarget.name}'s hiding spot`}
@@ -330,6 +542,93 @@ export function SeekingLayout({
                 </span>
               )}
             </section>
+
+            {/* Matched photo — shown when found */}
+            {isTargetFound && selectedSubmissionPhotoUrl && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">
+                  Your match
+                </h3>
+                <div className="relative w-full aspect-[4/3] max-h-[30dvh] rounded-xl overflow-hidden bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-300 dark:border-emerald-700">
+                  <Image
+                    src={selectedSubmissionPhotoUrl}
+                    alt="Your matching photo"
+                    fill
+                    className="object-contain"
+                    sizes="100vw"
+                    unoptimized
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Submit button or status */}
+            <div className="mt-4">
+              {submitting && (
+                <div className="text-center py-3 text-sky-700 dark:text-sky-300 font-medium animate-pulse">
+                  {submitStatus || "Processing..."}
+                </div>
+              )}
+              {!submitting && submitStatus && (
+                <div
+                  className={`text-center py-3 font-medium ${
+                    submitStatus === "Found!" || submitStatus.includes("win")
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {submitStatus}
+                </div>
+              )}
+              {!isTargetFound && !submitting && !gameOver && (
+                <button
+                  type="button"
+                  onClick={() => handleOpenCamera(selectedTarget.playerId)}
+                  className="touch-manipulation block w-full rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+                >
+                  I found {selectedTarget.name}!
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Camera modal */}
+      <CameraModal isOpen={cameraOpen} onClose={handleCameraClose} onCapture={handleCameraCapture} />
+
+      {/* Win modal overlay */}
+      {winnerId != null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="win-modal-title"
+        >
+          <div className="rounded-2xl bg-white dark:bg-zinc-800 shadow-xl border border-emerald-200/50 dark:border-zinc-600 p-8 max-w-sm w-full text-center space-y-5">
+            <div className="text-5xl" aria-hidden>
+              {winnerId === playerId ? "🏆" : "🎉"}
+            </div>
+            <h2 id="win-modal-title" className="text-2xl font-bold text-emerald-800 dark:text-emerald-100">
+              {winnerId === playerId ? "You won!" : `${winnerName ?? "Someone"} won!`}
+            </h2>
+            <p className="text-emerald-700 dark:text-emerald-200">
+              {winnerId === playerId
+                ? "You found everyone's hiding spots first!"
+                : `${winnerName ?? "Another player"} found all the hiding spots before anyone else.`}
+            </p>
+            <Link
+              href={`/games/${gameId}/summary`}
+              className="touch-manipulation block w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3.5 text-center transition-colors"
+            >
+              View summary
+            </Link>
+            <Link
+              href={`/games/${gameId}`}
+              className="block text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              Back to game
+            </Link>
           </div>
         </div>
       )}

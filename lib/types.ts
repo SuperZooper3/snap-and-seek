@@ -39,6 +39,23 @@ export interface Game {
   hiding_started_at: string | null;
   /** Set when status becomes 'seeking' */
   seeking_started_at: string | null;
+  /** FK to players.id — the winner of the game */
+  winner_id: number | null;
+  /** Set when game status becomes 'completed' */
+  finished_at: string | null;
+}
+
+/**
+ * Submission record from the database
+ */
+export interface Submission {
+  id: string;
+  game_id: string;
+  seeker_id: number;
+  hider_id: number;
+  photo_id: number | null;
+  status: "pending" | "success" | "fail";
+  created_at: string;
 }
 
 /**

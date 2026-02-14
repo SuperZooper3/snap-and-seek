@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
+import type { Submission } from "@/lib/types";
 import { SeekingLayout } from "./SeekingLayout";
 
 type Props = { params: Promise<{ gameId: string }> };
@@ -17,13 +18,29 @@ export default async function SeekingPage({ params }: Props) {
     redirect(`/games/${gameId}`);
   }
 
-  const { data: game, error } = await supabase
-    .from("games")
-    .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at")
-    .eq("id", gameId)
-    .single();
+  // Try with winner_id first; fall back to without if column doesn't exist yet
+  let game: Record<string, unknown> | null = null;
+  {
+    const { data, error } = await supabase
+      .from("games")
+      .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id")
+      .eq("id", gameId)
+      .single();
+    if (!error && data) {
+      game = data;
+    } else {
+      // Fallback: winner_id column may not exist yet
+      const { data: fallback, error: fallbackErr } = await supabase
+        .from("games")
+        .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at")
+        .eq("id", gameId)
+        .single();
+      if (fallbackErr || !fallback) notFound();
+      game = { ...fallback, winner_id: null };
+    }
+  }
 
-  if (error || !game) {
+  if (!game) {
     notFound();
   }
 
@@ -61,6 +78,45 @@ export default async function SeekingPage({ params }: Props) {
     };
   });
 
+  // Load initial submissions for this game (gracefully handles missing table)
+  let initialSubmissions: Submission[] = [];
+  {
+    const { data: submissionsData, error: subErr } = await supabase
+      .from("submissions")
+      .select("*")
+      .eq("game_id", gameId)
+      .order("created_at", { ascending: true });
+    if (!subErr && submissionsData) {
+      initialSubmissions = submissionsData as Submission[];
+    }
+  }
+
+  // Resolve photo URLs for successful submissions (the seeker's matched photos)
+  const submissionPhotoIds = initialSubmissions
+    .filter((s) => s.photo_id != null && s.status === "success")
+    .map((s) => s.photo_id as number);
+  const submissionPhotoIdSet = [...new Set(submissionPhotoIds)];
+
+  let submissionPhotoUrlById: Record<number, string> = {};
+  if (submissionPhotoIdSet.length > 0) {
+    const { data: subPhotos } = await supabase
+      .from("photos")
+      .select("id, url")
+      .in("id", submissionPhotoIdSet);
+    if (subPhotos) {
+      for (const p of subPhotos) {
+        submissionPhotoUrlById[p.id as number] = (p as { url: string }).url;
+      }
+    }
+  }
+
+  // If there's a winner, resolve their name
+  let winnerName: string | null = null;
+  if (game.winner_id != null) {
+    const winner = (players ?? []).find((p) => p.id === game.winner_id);
+    winnerName = winner ? (winner as { name: string }).name : null;
+  }
+
   const zoneSet =
     game.zone_center_lat != null &&
     game.zone_center_lng != null &&
@@ -85,6 +141,10 @@ export default async function SeekingPage({ params }: Props) {
       playerName={currentPlayer.name}
       seekingStartedAt={(game as { seeking_started_at: string | null }).seeking_started_at}
       targets={targets}
+      initialSubmissions={initialSubmissions}
+      initialSubmissionPhotoUrls={submissionPhotoUrlById}
+      initialWinnerId={game.winner_id as number | null}
+      initialWinnerName={winnerName}
     />
   );
 }

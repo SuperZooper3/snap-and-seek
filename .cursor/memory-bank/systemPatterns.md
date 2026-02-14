@@ -49,10 +49,26 @@
 - **Release identity:** When currentPlayer, "Release my identity" → `clearPlayerForGame(gameId)`, router.refresh(). User no longer that player; "Start hiding" hidden until they assume or join again.
 - **Route protection:** Zone page and capture page (server): read cookie, if !getPlayerForGame(decoded, gameId) redirect to `/games/[gameId]`. "Start hiding" link only rendered when currentPlayer.
 
+## Submission flow (`/games/[gameId]/seeking`)
+1. Seeking page loads: server fetches game, players, hiding photos, existing submissions.
+2. `SeekingLayout` renders pull-up tray with target pills (blue=unfound, green=found).
+3. User taps "I found [Name]!" → `submitTargetId` set → `CameraModal` opens.
+4. Camera capture → blob returned → upload to `/api/upload` with `game_id`, `player_id`, lat/lng.
+5. Upload returns `{ id, url }` → POST to `/api/games/[gameId]/submissions` with `seeker_id`, `hider_id`, `photo_id`.
+6. Backend: insert submission (default `'success'`), check win condition (distinct hider count = total players - 1), set winner if first to complete.
+7. Response: `{ submission, isWinner }`. Client updates local state → pill turns green, matched photo shown.
+8. Every 5s: poll `GET /api/games/[gameId]/game-status` → update submissions + check for winner → show win modal if detected.
+9. Win modal: full-screen overlay, "You won!" / "[Name] won!", link to summary page.
+
+## Summary page (`/games/[gameId]/summary`)
+- Server fetches all players, successful submissions, photo URLs.
+- `SummaryGrid`: 2D table (seekers × hiders). Column headers = hider's hiding photo. Cells = seeker's submitted match photo. Diagonal = "self". Winner row highlighted with trophy.
+
 ## Data types
 - `LocationPoint`: `{ lat, lng, timestamp }`. Exported from `LocationDisplay.tsx`, used by `MapDisplay.tsx`.
-- `Photo`: `{ id, url, storage_path, created_at, latitude, longitude, location_name, game_id, player_id, label, is_main }`. Defined in `lib/types.ts`.
-- `Game`: `{ id, name, status, created_at, zone_center_lat, zone_center_lng, zone_radius_meters }`. Defined in `lib/types.ts`.
+- `Photo`: `{ id, url, storage_path, created_at, latitude, longitude, location_name, game_id, player_id }`. Defined in `lib/types.ts`.
+- `Game`: `{ id, name, status, created_at, zone fields, hiding/seeking timestamps, winner_id, finished_at }`. Defined in `lib/types.ts`.
 - `GameZone`: `{ center_lat, center_lng, radius_meters }`. Defined in `lib/types.ts`.
-- `Player`: `{ id, created_at, name, game_id }`. Defined in `lib/types.ts`.
+- `Player`: `{ id, created_at, name, game_id, hiding_photo, tree_photo, building_photo, path_photo }`. Defined in `lib/types.ts`.
+- `Submission`: `{ id, game_id, seeker_id, hider_id, photo_id, status, created_at }`. Defined in `lib/types.ts`.
 - `lib/map-utils.ts`: `circleToPolygonPoints`, `outerBounds`, `getBoundsForCircle`, `distanceMeters`, `isEntirelyOutsideZone`.

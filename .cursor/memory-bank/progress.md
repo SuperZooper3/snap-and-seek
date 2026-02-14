@@ -15,6 +15,7 @@
 
 ### Game management & zone (implemented)
 - **Games list** (`/games`), **create game** (`/games/new`), **game page** (`/games/[gameId]`): join link, players list (with assume/release identity), Set/Edit game zone button, Start game (requires zone + 2+ players).
+- **GamePageRefresh:** Auto-refreshes game page every 3s so new players stream in without manual refresh.
 - **Set game zone modal:** Current location, slider 50m–1km, map with red shaded outside (polygon with hole), single red zone circle (empty inside), blue pin + light blue accuracy circle. Refresh location; save zone via PATCH. Map fills modal; fitBounds to zone (~90% fill). Zone required before start.
 - **Start game:** PATCH status to `hiding` (sets `hiding_started_at`); redirects to `/games/[gameId]/zone`. Lobby shows "Start hiding" button linking to zone.
 - **Player identity:** Cookie `sas_players` stores per-game `{ id, name }`. "Start hiding" only shown when `currentPlayer` is set. PlayerList: tap player to assume identity; "Release my identity" to clear. Zone/capture pages redirect if !currentPlayer.
@@ -23,19 +24,24 @@
 - **DB:** Run `docs/supabase-game-zone.sql` in Supabase to add zone columns.
 
 ### Seeking phase (implemented)
-- **Seeking page** (`/games/[gameId]/seeking`): `SeekingLayout` with map (reuses `ZoneWithLocation`) + floating `SeekingTimer` pill showing elapsed time since `seeking_started_at`.
+- **Seeking page** (`/games/[gameId]/seeking`): `SeekingLayout` with map (reuses `ZoneWithLocation`) + floating `SeekingTimer` pill showing elapsed time since `seeking_started_at`. Pull-up bottom tray with color-coded target pills (blue=unfound, green=found with checkmark). "I found [Name]!" button per target opens camera modal. Photo upload + submission flow. 5s polling for game status updates.
+- **Radar proximity search:** In seeking tray — compact UI with distance stepper (10/25/50/100/200/500m) and Search button. Backend: `POST /api/games/[gameId]/radar` compares seeker GPS vs. hider's hiding photo GPS using `distanceMeters()` from `map-utils`. Returns Yes/No with color-coded badge.
+- **Submissions system:** `submissions` table with `game_id`, `seeker_id`, `hider_id`, `photo_id`, `status`. POST API creates submission and checks win condition. GET API returns all submissions. Game-status polling API returns game state + submissions.
+- **Win detection:** When a player has successful submissions for all other players, game status → `'completed'`, `winner_id` set, `finished_at` recorded. Win modal overlay on seeking page. First to complete wins (natural tiebreaker). Race condition protection: atomic `WHERE winner_id IS NULL` on DB update; frontend disables UI + stops polling once winner detected.
+- **Summary page** (`/games/[gameId]/summary`): 2D grid (seekers × hiders) with photo thumbnails. Winner banner with trophy. Column headers show hider's hiding photo. Diagonal cells marked "self". Scrollable on mobile.
+- **Completed badge:** Games list and game detail pages show green "completed" status badge. Game detail links to summary page when completed.
 - **Game page auto-redirect:** If currentPlayer and status is "seeking" → redirect to seeking page. If "hiding" → redirect to zone. Bypass with `?manage=1`.
-- **God mode** (`/games/[gameId]/god`): View all player positions on map (visible when not a player).
+- **God mode** (`/games/[gameId]/god`): Spectator-only view (redirects players). Map shows live player pings (color-coded circle markers with initials) + hiding photo locations (default markers with name labels). Draggable bottom photo tray shows all players' hiding photos. Color-coded legend. 5s auto-refresh for positions.
 - **Player pings:** POST/GET `/api/games/[gameId]/pings` + GET `/api/games/[gameId]/pings/latest`. `player_pings` table.
 
 ## What's left
-- **DB migration required:** `ALTER TABLE photos ADD COLUMN game_id/player_id/label/is_main` must be run manually in Supabase SQL Editor (see `docs/supabase-schema-changes.sql`).
+- **DB migration required:** Run `docs/supabase-submissions.sql` in Supabase SQL Editor to create submissions table and add winner columns to games.
+- GPS proximity check for submissions (compare seeker GPS vs. hider photo GPS) — currently all submissions default to `'success'`.
+- Claude image recognition for visual similarity — deferred.
 - Google Geocoding API must be enabled in Cloud Console for reverse geocoding to work.
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` must be in `.env.local`.
-- Make "Visible from" items dynamic (currently hardcoded to "Tree" and "Rock").
-- Waiting/ready-up page — done.
-- Photo lock-in flow — done.
-- Teams, results — not started.
+- Make "Visible from" items dynamic (currently hardcoded to Tree, Building, Path).
+- Teams — not started.
 
 ## Known issues
 - Desktop front-facing webcam appears "flipped" — expected; rear camera on mobile is correct.
@@ -50,5 +56,6 @@
 - Game management: added games/players, join link, Set game zone modal (geolocation + slider + map with red outside/zone circle). Zone stored on games; required before start. Start game → redirect to zone view.
 - Zone view: full-screen map, live location 10s refresh, countdown, single blue pin + single accuracy circle (imperative Circle to avoid stacking), outside-zone warning. Hiding time remaining. "Go to photo capture" → setup page. "Start seeking (test)" link.
 - Player identity: only active players (cookie) can use "Start hiding"; game page PlayerList allows assume and release identity; zone and capture routes redirect if not a player.
-- Setup page: wireframe-driven design (from hand-drawn mockups). Main photo + optional "visible from" items with per-item camera modal + upload callbacks.
-- Seeking phase: seeking page with map + elapsed timer, god mode for spectators, player pings for location tracking.
+- Setup page: wireframe-driven design (from hand-drawn mockups). Main photo + optional "visible from" items with per-item camera modal + upload callbacks. Grew from 2 items (Tree, Rock) to 3 (Tree, Building, Path).
+- Seeking phase: seeking page with map + elapsed timer, god mode for spectators, player pings for location tracking. Added radar proximity search (hand-built), submissions + win detection + summary page (AI-built).
+- God mode: started as simple map with pings → enhanced with photo location markers, color-coded player icons, draggable photo tray.
