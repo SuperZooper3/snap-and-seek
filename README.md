@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Snap and Seek
 
-## Getting Started
+Hide. Seek. Snap. Find them all. — Landing + Supabase for hackathon.
 
-First, run the development server:
+## Quick start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Create a Supabase project
 
-## Learn More
+- Go to [supabase.com](https://supabase.com) and create a project.
+- Wait for the DB to be ready.
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Create the `games` table
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+In the Supabase **SQL Editor**, run:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```sql
+create table if not exists public.games (
+  id uuid primary key default gen_random_uuid(),
+  name text,
+  status text default 'active',
+  created_at timestamptz default now()
+);
 
-## Deploy on Vercel
+-- Optional: insert a couple of rows
+insert into public.games (name, status) values
+  ('First game', 'active'),
+  ('Second game', 'pending');
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+You can change columns as you like; the app will show whatever you return from `games`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 3. Get your API keys
+
+- In Supabase: **Project Settings** → **API**.
+- Copy:
+  - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+  - **service_role** key (under "Project API keys") → `SUPABASE_SERVICE_ROLE_KEY`
+
+**Important:** The service role key bypasses Row Level Security (RLS). Use it only on the server (we do). Don’t expose it in client-side code or commit it.
+
+### 4. Env file
+
+Copy the example env and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+- `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL (public is fine).
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only; used in `lib/supabase.ts` to read from `games` with full access (no RLS).
+
+Restart the dev server after changing env vars.
+
+## What’s in the repo
+
+- **Landing page:** `app/page.tsx` — Snap and Seek hero + list of games from Supabase.
+- **Supabase client:** `lib/supabase.ts` — server-side client using the service role key; reads from the `games` table.
+- **No RLS:** We’re using the service role key so the app can read all rows in `games` without setting up RLS (hackathon shortcut).
+
+## Scripts
+
+- `npm run dev` — dev server
+- `npm run build` — production build
+- `npm run start` — run production build
