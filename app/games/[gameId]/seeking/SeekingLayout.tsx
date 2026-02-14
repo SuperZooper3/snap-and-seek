@@ -627,12 +627,6 @@ export function SeekingLayout({
             >
               View summary
             </Link>
-            <Link
-              href={`/games/${gameId}`}
-              className="block text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
-            >
-              Back to game
-            </Link>
           </div>
         </div>
       )}

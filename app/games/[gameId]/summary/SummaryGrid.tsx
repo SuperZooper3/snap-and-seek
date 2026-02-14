@@ -21,7 +21,7 @@ type Props = {
  * Columns = each player (hider) with their hiding photo as header.
  * Rows = each player (seeker).
  * Cells = the seeker's submitted photo for that hider.
- * Diagonal = the player's own hiding photo (can't find yourself).
+ * Diagonal = the player's own hiding photo (same as column header for that player).
  */
 export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Props) {
   // Build a lookup: submissions[seekerId][hiderId] = submission
@@ -114,14 +114,35 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
                     submission?.photo_id != null ? photoUrlById[submission.photo_id] : undefined;
 
                   if (isDiagonal) {
+                    const selfPhotoUrl =
+                      seeker.hiding_photo != null ? photoUrlById[seeker.hiding_photo] : undefined;
                     return (
                       <td
                         key={hider.id}
                         className={`p-2 text-center ${isWinner ? "bg-amber-50/60 dark:bg-amber-950/30" : ""}`}
                       >
-                        <div className="w-16 h-12 mx-auto rounded-lg bg-zinc-200/50 dark:bg-zinc-600/30 flex items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-600">
-                          <span className="text-xs text-zinc-400 dark:text-zinc-500">self</span>
-                        </div>
+                        {selfPhotoUrl ? (
+                          <div
+                            className={`relative w-16 h-12 mx-auto rounded-lg overflow-hidden border-2 border-dashed ${
+                              isWinner
+                                ? "bg-amber-100 dark:bg-amber-900/40 border-amber-400 dark:border-amber-500 shadow-md"
+                                : "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-600"
+                            }`}
+                          >
+                            <Image
+                              src={selfPhotoUrl}
+                              alt={`${seeker.name}'s hiding spot (self)`}
+                              fill
+                              className="object-cover"
+                              sizes="64px"
+                              unoptimized
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-12 mx-auto rounded-lg bg-zinc-200/50 dark:bg-zinc-600/30 flex items-center justify-center border border-dashed border-zinc-300 dark:border-zinc-600">
+                            <span className="text-xs text-zinc-400 dark:text-zinc-500">self</span>
+                          </div>
+                        )}
                       </td>
                     );
                   }
