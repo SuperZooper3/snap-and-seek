@@ -39,11 +39,11 @@ export function HidingLayout({
   }, []);
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
       {/* Single top bar: Back left, Refresh right (same as seeking) */}
       <header className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top bg-amber-50/95 dark:bg-zinc-900/95">
         <Link
-          href={`/games/${gameId}?manage=1`}
+          href={`/games/${gameId}`}
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
         >
           <span aria-hidden>←</span>
@@ -55,7 +55,7 @@ export function HidingLayout({
       </header>
 
       {/* Map area with floating time-remaining pill */}
-      <main className="relative flex min-h-0 flex-1 flex-col w-full">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col w-full overflow-hidden">
         <ZoneWithLocation
           zone={zone}
           gameId={gameId}

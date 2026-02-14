@@ -43,7 +43,7 @@ export default async function GodModePage({ params }: Props) {
   };
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] w-full flex-col bg-zinc-900 font-sans">
+    <div className="flex min-h-screen min-h-[100dvh] w-full max-w-[100vw] flex-col overflow-x-hidden bg-zinc-900 font-sans">
       <header className="shrink-0 border-b border-white/10 bg-zinc-900 px-3 py-2 safe-area-inset-top">
         <Link
           href={`/games/${gameId}`}
@@ -56,7 +56,7 @@ export default async function GodModePage({ params }: Props) {
           God mode · {(game as { name: string | null }).name || "Unnamed game"}
         </p>
       </header>
-      <main className="flex min-h-0 flex-1 flex-col w-full">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col w-full overflow-hidden">
         <GodMapWithPings gameId={gameId} zone={zone} />
       </main>
     </div>

@@ -137,8 +137,8 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
     <div
       className={
         fullSize
-          ? "absolute inset-0 h-full w-full"
-          : "w-full overflow-hidden rounded-xl border border-amber-200/50 dark:border-zinc-600"
+          ? "absolute inset-0 h-full w-full min-w-0 overflow-hidden"
+          : "w-full min-w-0 overflow-hidden rounded-xl border border-amber-200/50 dark:border-zinc-600"
       }
     >
       <GoogleMap

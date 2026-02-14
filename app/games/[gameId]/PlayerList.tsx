@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setPlayerInCookie, clearPlayerForGame } from "@/lib/player-cookie";
 import type { Player } from "@/lib/types";
@@ -48,6 +49,16 @@ export function PlayerList({ gameId, players, currentPlayer }: Props) {
         <p className="text-amber-800/70 dark:text-amber-200/70 text-sm">
           No players yet. Share the link above so others can join.
         </p>
+      )}
+      {!currentPlayer && (
+        <div className="mb-3 p-2">
+          <Link
+            href={`/join/${gameId}`}
+            className="touch-manipulation block w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-semibold px-6 py-3 text-center transition-colors"
+          >
+            Join as a player
+          </Link>
+        </div>
       )}
       {players.length > 0 && (
         <ul className="space-y-2">

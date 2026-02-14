@@ -1,9 +1,9 @@
 -- Migration: add hiding and seeking phase fields to games
 -- Run this in Supabase SQL Editor (or your migration workflow).
 
--- 1) Hiding duration in seconds (default 10 min = 600, min 30)
+-- 1) Hiding duration in seconds (default 1 min = 60, min 30)
 ALTER TABLE public.games
-  ADD COLUMN IF NOT EXISTS hiding_duration_seconds integer NOT NULL DEFAULT 600;
+  ADD COLUMN IF NOT EXISTS hiding_duration_seconds integer NOT NULL DEFAULT 60;
 
 -- Optional: constrain in app (30–86400); DB check if you want:
 -- ALTER TABLE public.games

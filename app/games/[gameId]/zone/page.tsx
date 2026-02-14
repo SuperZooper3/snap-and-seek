@@ -48,7 +48,7 @@ export default async function GameZonePage({ params }: Props) {
       zone={zone}
       playerId={currentPlayer.id}
       hidingStartedAt={(game as { hiding_started_at: string | null }).hiding_started_at}
-      hidingDurationSeconds={(game as { hiding_duration_seconds: number | null }).hiding_duration_seconds ?? 600}
+      hidingDurationSeconds={(game as { hiding_duration_seconds: number | null }).hiding_duration_seconds ?? 60}
     />
   );
 }

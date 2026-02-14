@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { headers, cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
@@ -7,10 +7,7 @@ import type { Game, Player } from "@/lib/types";
 import { GameActions } from "./GameActions";
 import { PlayerList } from "./PlayerList";
 
-type Props = {
-  params: Promise<{ gameId: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-};
+type Props = { params: Promise<{ gameId: string }> };
 
 async function getBaseUrl() {
   const url = process.env.NEXT_PUBLIC_APP_URL;
@@ -21,10 +18,8 @@ async function getBaseUrl() {
   return host ? `${proto}://${host}` : "http://localhost:3000";
 }
 
-export default async function GamePage({ params, searchParams }: Props) {
+export default async function GamePage({ params }: Props) {
   const { gameId } = await params;
-  const query = await searchParams;
-  const skipRedirect = query?.manage === "1";
 
   const { data: game, error: gameError } = await supabase
     .from("games")
@@ -60,14 +55,6 @@ export default async function GamePage({ params, searchParams }: Props) {
   const decoded = playersCookie ? decodeURIComponent(playersCookie) : undefined;
   const currentPlayer = getPlayerForGame(decoded, gameId);
 
-  const status = (game as Game).status;
-  if (!skipRedirect && currentPlayer && status === "seeking") {
-    redirect(`/games/${gameId}/seeking`);
-  }
-  if (!skipRedirect && currentPlayer && status === "hiding") {
-    redirect(`/games/${gameId}/zone`);
-  }
-
   return (
     <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
       <main className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-16 pb-safe">
@@ -92,9 +79,10 @@ export default async function GamePage({ params, searchParams }: Props) {
             playerCount={(players as Player[])?.length ?? 0}
             zone={zone}
             currentPlayer={currentPlayer}
-            hidingDurationSeconds={
-              (game as Game).hiding_duration_seconds ?? 600
-            }
+            hidingDurationSeconds={(() => {
+              const d = (game as Game).hiding_duration_seconds;
+              return d === null || d === undefined || d === 600 ? 60 : d;
+            })()}
           />
 
           {zone && !currentPlayer && (
