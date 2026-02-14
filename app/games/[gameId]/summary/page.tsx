@@ -66,7 +66,7 @@ export default async function SummaryPage({ params }: Props) {
     .filter((id): id is number => id != null);
   const allPhotoIds = [...new Set([...hidingPhotoIds, ...submissionPhotoIds])];
 
-  let photoUrlById: Record<number, string> = {};
+  const photoUrlById: Record<number, string> = {};
   if (allPhotoIds.length > 0) {
     const { data: photos } = await supabase
       .from("photos")

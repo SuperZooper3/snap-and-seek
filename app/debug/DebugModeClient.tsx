@@ -31,6 +31,7 @@ export function DebugModeClient() {
   // Sync from cookie on mount (client-side only)
   useEffect(() => {
     const loc = getDebugLocation();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync external cookie to state on mount
     setDebugLocationState(loc);
   }, []);
 

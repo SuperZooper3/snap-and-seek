@@ -7,12 +7,18 @@ export async function PATCH(
 ) {
   const { gameId } = await params;
 
+  const VALID_PHOTO_TYPES = ['tree', 'building', 'path'] as const;
+
   const body = await request.json().catch(() => ({}));
   const playerId = body?.player_id;
   const hidingPhoto = body?.hiding_photo;
   const treePhoto = body?.tree_photo ?? null;
   const buildingPhoto = body?.building_photo ?? null;
   const pathPhoto = body?.path_photo ?? null;
+  const rawUnavailable = body?.unavailable_photo_types;
+  const unavailablePhotoTypes = Array.isArray(rawUnavailable)
+    ? rawUnavailable.filter((t: string) => VALID_PHOTO_TYPES.includes(t as typeof VALID_PHOTO_TYPES[number]))
+    : [];
 
   if (!playerId || typeof playerId !== "number") {
     return NextResponse.json(
@@ -43,12 +49,13 @@ export async function PATCH(
     );
   }
 
-  // Update the player's photo columns
-  const updates: Record<string, number | null> = {
+  // Update the player's photo columns and unavailable hint types
+  const updates: Record<string, number | null | string[]> = {
     hiding_photo: hidingPhoto,
     tree_photo: treePhoto,
     building_photo: buildingPhoto,
     path_photo: pathPhoto,
+    unavailable_hint_photo_types: unavailablePhotoTypes,
   };
 
   const { data, error } = await supabase

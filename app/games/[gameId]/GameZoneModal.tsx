@@ -5,9 +5,7 @@ import { GoogleMap, Marker, Circle, Polygon } from "@react-google-maps/api";
 import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import { getLocation as resolveLocation } from "@/lib/get-location";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
-
 const ZONE_FIT_PADDING_PX = 16;
-
 
 const BLUE_DOT_ICON_URL =
   "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";

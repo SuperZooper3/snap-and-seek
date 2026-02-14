@@ -53,7 +53,7 @@ export default async function GodModePage({ params }: Props) {
     .map((p) => (p as { hiding_photo: number | null }).hiding_photo)
     .filter((id): id is number => id != null);
   const photoIdSet = [...new Set(photoIds)];
-  let photoUrlById: Record<number, string> = {};
+  const photoUrlById: Record<number, string> = {};
   if (photoIdSet.length > 0) {
     const { data: photos } = await supabase
       .from("photos")

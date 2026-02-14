@@ -5,7 +5,7 @@ import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import type { Game, Player } from "@/lib/types";
-import { getHidingDurationSeconds } from "@/lib/game-config";
+import { getHidingDurationSeconds, getPowerupCastingSeconds } from "@/lib/game-config";
 import { GameActions } from "./GameActions";
 import { PlayerList } from "./PlayerList";
 import { GamePageRefresh } from "./GamePageRefresh";
@@ -95,6 +95,9 @@ export default async function GamePage({ params, searchParams }: Props) {
             currentPlayer={currentPlayer}
             hidingDurationSeconds={getHidingDurationSeconds(
               (game as Game).hiding_duration_seconds
+            )}
+            powerupCastingSeconds={getPowerupCastingSeconds(
+              (game as Game).powerup_casting_duration_seconds
             )}
           />
 

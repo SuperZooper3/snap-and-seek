@@ -2,6 +2,7 @@
 
 import { Photo } from "@/lib/types";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { CameraCapture } from "./CameraCapture";
 import { getLocation } from "@/lib/get-location";
 
@@ -298,12 +299,12 @@ export default function TestUploadPage() {
         </section>
 
         <div className="mt-8 text-center">
-          <a
+          <Link
             href="/"
             className="text-amber-600 dark:text-amber-400 hover:underline text-sm"
           >
             ← Back to Home
-          </a>
+          </Link>
         </div>
       </main>
     </div>

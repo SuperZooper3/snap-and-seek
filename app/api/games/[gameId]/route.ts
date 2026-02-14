@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import {
   MIN_HIDING_DURATION_SECONDS,
   MAX_HIDING_DURATION_SECONDS,
+  MIN_POWERUP_CASTING_SECONDS,
+  MAX_POWERUP_CASTING_SECONDS,
 } from "@/lib/game-config";
 
 export async function PATCH(
@@ -17,6 +19,7 @@ export async function PATCH(
   const zoneCenterLng = body?.zone_center_lng;
   const zoneRadiusMeters = body?.zone_radius_meters;
   const hidingDurationSeconds = body?.hiding_duration_seconds;
+  const powerupCastingSeconds = body?.powerup_casting_duration_seconds;
 
   const isZoneUpdate =
     typeof zoneCenterLat === "number" &&
@@ -30,18 +33,25 @@ export async function PATCH(
     hidingDurationSeconds >= MIN_HIDING_DURATION_SECONDS &&
     hidingDurationSeconds <= MAX_HIDING_DURATION_SECONDS;
 
+  const isPowerupCastingUpdate =
+    typeof powerupCastingSeconds === "number" &&
+    powerupCastingSeconds >= MIN_POWERUP_CASTING_SECONDS &&
+    powerupCastingSeconds <= MAX_POWERUP_CASTING_SECONDS;
+
   const validUpdate =
     isZoneUpdate ||
     isStartHiding ||
     isStartSeeking ||
-    isHidingDurationUpdate;
+    isHidingDurationUpdate ||
+    isPowerupCastingUpdate;
 
   if (!validUpdate) {
     return NextResponse.json(
       {
         error:
           "Send zone (zone_center_lat, zone_center_lng, zone_radius_meters), " +
-          `status: 'hiding' | 'seeking', or hiding_duration_seconds (${MIN_HIDING_DURATION_SECONDS}–${MAX_HIDING_DURATION_SECONDS})`,
+          `status: 'hiding' | 'seeking', hiding_duration_seconds (${MIN_HIDING_DURATION_SECONDS}–${MAX_HIDING_DURATION_SECONDS}), ` +
+          `or powerup_casting_duration_seconds (${MIN_POWERUP_CASTING_SECONDS}–${MAX_POWERUP_CASTING_SECONDS})`,
       },
       { status: 400 }
     );
@@ -55,6 +65,9 @@ export async function PATCH(
   }
   if (isHidingDurationUpdate) {
     updates.hiding_duration_seconds = hidingDurationSeconds;
+  }
+  if (isPowerupCastingUpdate) {
+    updates.powerup_casting_duration_seconds = powerupCastingSeconds;
   }
   if (isStartHiding) {
     updates.status = "hiding";
