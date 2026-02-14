@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
-import { JoinForm } from "./JoinForm";
+import { JoinWithTutorial } from "./JoinWithTutorial";
 
 type Props = { params: Promise<{ gameId: string }> };
 
@@ -61,9 +61,7 @@ export default async function JoinPage({ params }: Props) {
           </p>
         </header>
 
-        <section className="rounded-2xl bg-white/80 dark:bg-zinc-800/80 shadow-lg border border-amber-200/50 dark:border-zinc-700 p-6">
-          <JoinForm gameId={gameId} />
-        </section>
+        <JoinWithTutorial gameId={gameId} />
       </main>
     </div>
   );
