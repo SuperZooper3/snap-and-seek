@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { CameraModal } from "@/components/CameraModal";
 import { ItemBar } from "@/components/ItemBar";
+import { getLocation } from "@/lib/get-location";
 
 /** The three optional "visible from" items. IDs match the player column names. */
 const VISIBLE_FROM_ITEMS: { id: string; label: string }[] = [
@@ -51,28 +52,12 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
       formData.append("player_id", String(playerId));
 
       // Get current position so we save lat/lng to the photos table (used by Radar).
-      if (typeof navigator !== "undefined" && navigator.geolocation) {
-        try {
-          const coords = await new Promise<{ latitude: number; longitude: number } | null>(
-            (resolve) => {
-              navigator.geolocation.getCurrentPosition(
-                (pos) =>
-                  resolve({
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude,
-                  }),
-                () => resolve(null),
-                { enableHighAccuracy: true }
-              );
-            }
-          );
-          if (coords) {
-            formData.append("latitude", String(coords.latitude));
-            formData.append("longitude", String(coords.longitude));
-          }
-        } catch {
-          // Proceed without location
-        }
+      try {
+        const coords = await getLocation();
+        formData.append("latitude", String(coords.latitude));
+        formData.append("longitude", String(coords.longitude));
+      } catch {
+        // Proceed without location
       }
 
       try {

@@ -3,9 +3,21 @@
 ## Current focus
 - Submissions system, win detection, and game summary page (AI-built).
 - Radar proximity search and enhanced god mode (hand-built).
+- Debug mode for location override (testing), zone enforcement (block photo capture when outside), and vibration feedback.
 - Game flow: lobby → hiding (zone + photo setup) → waiting (ready-up) → seeking (radar + submissions) → completed (summary).
 
 ## Recent changes
+
+### Debug mode (hand-built)
+- **Debug location cookie:** `lib/debug-location-cookie.ts` — `sas_debug_location` cookie stores `{ lat, lng }`. `getDebugLocation()`, `setDebugLocation()`, `clearDebugLocation()`.
+- **getLocation helper:** `lib/get-location.ts` — single `getLocation()` Promise. If debug cookie present → use it; else → `navigator.geolocation.getCurrentPosition`.
+- **All location consumers** use `getLocation()`: ZoneWithLocation, SeekingLayout (camera + radar), SetupClient, GameZoneModal, test-upload, LocationDisplay.
+- **Debug page** (`/debug`): Start debug mode (uses current GPS as initial location), map with click-to-set location, End debug mode (clears cookie). Link in home footer.
+- **Persistence:** Cookie persists across tabs. Ending debug mode clears cookie; location reverts to real GPS.
+
+### Zone enforcement (hand-built)
+- **Outside-zone blocking:** "Go to photo capture" button and time's-up popup "Take photo" link disabled when user is outside zone. `ZoneWithLocation` reports via `onOutsideZoneChange`; `HidingLayout` blocks the links.
+- **Vibration when outside:** When user is outside zone, phone vibrates continuously (double-pulse pattern every 2.5s) via `navigator.vibrate()`. Stops when back inside. Implemented in `ZoneWithLocation`.
 
 ### Submissions & win system (AI-built)
 - **Submissions table:** New `submissions` table with `id`, `game_id`, `seeker_id`, `hider_id`, `photo_id`, `status`, `created_at`. Unique constraint on `(game_id, seeker_id, hider_id)` for successful submissions. Migration: `docs/supabase-submissions.sql`.
@@ -46,8 +58,9 @@
 - God mode: spectators only (redirect if you're a player in the game).
 
 ## Important patterns
+- **Location resolution:** Always use `getLocation()` from `lib/get-location.ts`. It checks debug cookie first, then falls back to `navigator.geolocation`.
 - **Submission flow:** Tap "I found [Name]!" → camera modal → capture → upload to `/api/upload` → POST `/api/games/[gameId]/submissions` → local state update → pill turns green.
-- **Radar flow:** Select target → adjust distance stepper → "Search" → browser geolocation → POST `/api/games/[gameId]/radar` → Yes/No badge.
+- **Radar flow:** Select target → adjust distance stepper → "Search" → `getLocation()` → POST `/api/games/[gameId]/radar` → Yes/No badge.
 - **Polling flow:** Every 5s, fetch `/api/games/[gameId]/game-status` → update submissions state, check for winner → show win modal if winner detected.
 - **Game status flow:** `"lobby"` → `"hiding"` → `"seeking"` → `"completed"`.
 - **Draggable tray pattern:** Used in both SeekingLayout and GodPhotoTray — pointer events for drag, collapsed/expanded heights, snap-to-state on release.

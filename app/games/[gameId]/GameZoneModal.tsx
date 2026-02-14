@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, Marker, Circle, Polygon } from "@react-google-maps/api";
 import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
+import { getLocation as resolveLocation } from "@/lib/get-location";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
 const ZONE_FIT_PADDING_PX = 16;
@@ -84,13 +85,6 @@ export function GameZoneModal({
   }, [center.lat, center.lng, radiusMeters]);
 
   const getLocation = useCallback(() => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setLocation({
-        status: "error",
-        message: "Geolocation is not supported.",
-      });
-      return;
-    }
     const alreadyHaveLocation = location.status === "success";
     if (!alreadyHaveLocation) {
       setLocation({ status: "loading" });
@@ -98,30 +92,25 @@ export function GameZoneModal({
       setIsRefreshingLocation(true);
     }
     setSaveError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    resolveLocation()
+      .then((pos) => {
         setLocation({
           status: "success",
           coords: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy ?? 30,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            accuracy: pos.accuracy,
           },
         });
         setIsRefreshingLocation(false);
-      },
-      (err) => {
+      })
+      .catch((err) => {
         setLocation({
           status: "error",
-          message:
-            err.code === 1
-              ? "Location permission denied."
-              : "Could not get location.",
+          message: err instanceof Error ? err.message : "Could not get location.",
         });
         setIsRefreshingLocation(false);
-      },
-      { enableHighAccuracy: true }
-    );
+      });
   }, [location.status]);
 
   useEffect(() => {

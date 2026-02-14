@@ -18,9 +18,12 @@ export default function Home() {
           <CreateGameForm />
         </section>
 
-        <footer className="text-center text-sm text-amber-800/60 dark:text-amber-200/60">
+        <footer className="text-center text-sm text-amber-800/60 dark:text-amber-200/60 space-x-4">
           <Link href="/games" className="hover:underline">
             View all games
+          </Link>
+          <Link href="/debug" className="hover:underline">
+            Debug mode
           </Link>
         </footer>
       </main>

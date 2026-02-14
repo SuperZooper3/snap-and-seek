@@ -12,8 +12,12 @@
 - **CameraModal:** Fixed full-screen overlay (z-50, bg-black). Header with close button, CameraCapture with `autoStart fullScreen`, flex layout pins controls at bottom. Props: `isOpen`, `onClose`, `onCapture(blob)`. Calls `onCapture` then `onClose` on use-photo.
 - **ItemBar:** Clickable bar with label, photo thumbnail, upload status badge. Props: `label`, `photoUrl`, `uploading`, `uploaded`, `onClick`.
 
+## Location flow
+- **Central helper:** `getLocation()` from `lib/get-location.ts`. Checks `sas_debug_location` cookie first; if present, returns that. Else uses `navigator.geolocation.getCurrentPosition`. All location consumers (ZoneWithLocation, SeekingLayout, SetupClient, GameZoneModal, test-upload, LocationDisplay) use this.
+- **Debug mode:** `/debug` page. Start → sets cookie with current GPS. Click map → updates cookie. End → clears cookie.
+
 ## Location flow (location-test)
-1. User clicks "Get my location" → `navigator.geolocation.getCurrentPosition` (one-shot).
+1. User clicks "Get my location" → `getLocation()` (one-shot).
 2. On success: push point to `locationHistory`, set `secondsUntilNextPing` to 10, start 10s interval for `pollLocation`.
 3. Every 10s: `getCurrentPosition` again → push to history, reset countdown to 10.
 4. 1s interval updates `secondsUntilNextPing` for countdown display.
@@ -41,6 +45,7 @@
 - **MapDisplay** (location-test): receives `locations: LocationPoint[]` and `countdownSeconds: number | null`. Renders one `GoogleMap`, multiple `Marker`s. No fitBounds.
 - **Game zone modal:** Single zone Circle + Polygon (red outside with hole); no keys so they update in place. Zone overlays drawn after one rAF (`showZoneOverlays`). Blue pin + accuracy circle; fitBounds to zone with padding.
 - **Zone view:** `ZoneMapView` gets zone + optional `userPosition`. Zone = Polygon + Circle (library). User = one Marker (library) + one accuracy circle via **imperative** `google.maps.Circle` (ref: create once, `setCenter`/`setRadius` on update) to avoid stacking. Map fitBounds to zone (+ user when present). `fullSize` prop: map fills container (min-height 50vh, resize trigger after load).
+- **ZoneWithLocation:** Uses `getLocation()` for 5s refresh. Computes `outsideZone` via `isEntirelyOutsideZone`. Reports via `onOutsideZoneChange`. When outside: red banner, vibrates (double-pulse every 2.5s via `navigator.vibrate`), `HidingLayout` blocks photo capture button.
 
 ## Player identity (no auth)
 - **Cookie** `sas_players`: JSON object `Record<gameId, { id, name }>`. Read via `getPlayerForGame(cookieValue, gameId)` (server or client). Write from client only: `setPlayerInCookie(gameId, { id, name })` (join or assume), `clearPlayerForGame(gameId)` (release).

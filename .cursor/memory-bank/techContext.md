@@ -13,7 +13,7 @@
 - Google key: used client-side for maps, server-side for Geocoding API.
 
 ## Key paths
-- `app/page.tsx` — home (games list + CreateGameForm).
+- `app/page.tsx` — home (games list + CreateGameForm, footer links: View all games, Debug mode).
 - `app/games/page.tsx` — game management list. Status badges: lobby (gray), hiding (amber), seeking (sky), completed (green).
 - `app/games/new/page.tsx` — create game form → POST `/api/games` → redirect to game page.
 - `app/games/[gameId]/page.tsx` — server: game + players, join URL, zone, currentPlayer (from cookie); renders `GameActions` + `PlayerList` + `GamePageRefresh`. Auto-redirects to seeking/zone if game active (bypass with `?manage=1`).
@@ -21,10 +21,12 @@
 - `app/games/[gameId]/GamePageRefresh.tsx` — client: auto-refreshes game page every 3s for real-time player updates.
 - `app/games/[gameId]/GameZoneModal.tsx` — client: full-screen modal, geolocation, slider 50m–1km, map with zone overlays, save via PATCH.
 - `app/games/[gameId]/PlayerList.tsx` — client: player list with assume/release identity.
-- `app/games/[gameId]/zone/page.tsx` — server: checks currentPlayer, fetches game + zone + hiding timestamps, renders header + `HidingTimeRemaining` + `ZoneWithLocation` + footer with "Go to photo capture" + `StartSeekingTestLink`.
-- `app/games/[gameId]/zone/ZoneWithLocation.tsx` — client: 10s location refresh, countdown, outside-zone warning, wraps `ZoneMapView`. Supports `hideRefreshBar` and `onCountdownChange` props for seeking layout.
+- `app/debug/page.tsx` — debug mode page. Renders `DebugModeClient` (client).
+- `app/debug/DebugModeClient.tsx` — client: Start debug (uses getLocation), map click-to-set, End debug. Cookie-based location override.
+- `app/games/[gameId]/zone/page.tsx` — server: checks currentPlayer, fetches game + zone + hiding timestamps, renders header + `HidingTimeRemaining` + `ZoneWithLocation` + footer with "Go to photo capture" (blocked when outside) + `StartSeekingTestLink`.
+- `app/games/[gameId]/zone/ZoneWithLocation.tsx` — client: 5s location refresh via `getLocation`, countdown, outside-zone warning, vibration when outside, `onOutsideZoneChange` callback. Wraps `ZoneMapView`.
 - `app/games/[gameId]/zone/ZoneMapView.tsx` — client: zone polygon + circle, user marker + imperative accuracy circle, fitBounds.
-- `app/games/[gameId]/zone/HidingLayout.tsx` — client: hiding layout wrapper.
+- `app/games/[gameId]/zone/HidingLayout.tsx` — client: hiding layout wrapper. Uses `onOutsideZoneChange` to block photo capture button when outside zone.
 - `app/games/[gameId]/zone/HidingTimeRemaining.tsx` — client: countdown timer based on `hiding_started_at` + `hiding_duration_seconds`.
 - `app/games/[gameId]/zone/StartSeekingTestLink.tsx` — client: button to PATCH status to "seeking" and navigate to seeking page.
 - `app/games/[gameId]/setup/page.tsx` — server: cookie check + game fetch → `SetupClient`.
@@ -59,6 +61,8 @@
 - `lib/types.ts` — `Photo`, `Game` (incl. zone, timestamps, `winner_id`, `finished_at`), `GameZone`, `Player`, `Submission`.
 - `lib/supabase.ts` — server-side Supabase client (service role).
 - `lib/player-cookie.ts` — cookie-based player identity (read/write/clear per game).
+- `lib/debug-location-cookie.ts` — debug location override. Cookie `sas_debug_location`, `getDebugLocation`, `setDebugLocation`, `clearDebugLocation`.
+- `lib/get-location.ts` — `getLocation()`: returns Promise with lat/lng. Cookie first (debug mode), else navigator.geolocation. Used by all location consumers.
 - `lib/map-utils.ts` — `circleToPolygonPoints`, `outerBounds`, `getBoundsForCircle`, `distanceMeters`, `isEntirelyOutsideZone`.
 - `lib/google-maps-loader.ts` — shared Google Maps JS API loader hook (`useGoogleMapsLoader`).
 - `docs/supabase-schema-changes.sql` — DB migration SQL (games defaults + players index + photos game columns).

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ZoneWithLocation } from "../zone/ZoneWithLocation";
+import { getLocation } from "@/lib/get-location";
 import { SeekingTimer } from "./SeekingTimer";
 import { CameraModal } from "@/components/CameraModal";
 import type { Submission } from "@/lib/types";
@@ -177,14 +178,9 @@ export function SeekingLayout({
 
         // Get current location for the photo
         try {
-          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 5000,
-            });
-          });
-          formData.append("latitude", String(pos.coords.latitude));
-          formData.append("longitude", String(pos.coords.longitude));
+          const pos = await getLocation();
+          formData.append("latitude", String(pos.latitude));
+          formData.append("longitude", String(pos.longitude));
         } catch {
           // Continue without location if geolocation fails
         }
@@ -303,46 +299,33 @@ export function SeekingLayout({
     if (!selectedTarget) return;
     setRadarLoading(true);
     setRadarResult(null);
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setRadarResult({ withinDistance: false, distanceMeters: null, error: "Location not available" });
-      setRadarLoading(false);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        fetch(`/api/games/${gameId}/radar`, {
+    getLocation()
+      .then((pos) => {
+        return fetch(`/api/games/${gameId}/radar`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            lat,
-            lng,
+            lat: pos.latitude,
+            lng: pos.longitude,
             targetPlayerId: selectedTarget.playerId,
             distanceMeters: radarDistanceMeters,
           }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.error && !("withinDistance" in data)) {
-              setRadarResult({ withinDistance: false, distanceMeters: null, error: data.error });
-              return;
-            }
-            setRadarResult({
-              withinDistance: data.withinDistance ?? false,
-              distanceMeters: data.distanceMeters ?? null,
-              error: data.error,
-            });
-          })
-          .catch(() => setRadarResult({ withinDistance: false, distanceMeters: null, error: "Request failed" }))
-          .finally(() => setRadarLoading(false));
-      },
-      () => {
-        setRadarResult({ withinDistance: false, distanceMeters: null, error: "Could not get your location" });
-        setRadarLoading(false);
-      },
-      { enableHighAccuracy: true }
-    );
+        });
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error && !("withinDistance" in data)) {
+          setRadarResult({ withinDistance: false, distanceMeters: null, error: data.error });
+          return;
+        }
+        setRadarResult({
+          withinDistance: data.withinDistance ?? false,
+          distanceMeters: data.distanceMeters ?? null,
+          error: data.error,
+        });
+      })
+      .catch(() => setRadarResult({ withinDistance: false, distanceMeters: null, error: "Could not get your location" }))
+      .finally(() => setRadarLoading(false));
   }, [gameId, selectedTarget, radarDistanceMeters]);
 
   // Submission-derived state for selected target

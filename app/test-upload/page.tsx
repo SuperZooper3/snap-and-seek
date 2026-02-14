@@ -3,6 +3,7 @@
 import { Photo } from "@/lib/types";
 import { useEffect, useRef, useState } from "react";
 import { CameraCapture } from "./CameraCapture";
+import { getLocation } from "@/lib/get-location";
 
 type LocationState =
   | { status: "idle" }
@@ -58,38 +59,23 @@ export default function TestUploadPage() {
   };
 
   function requestLocation() {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setLocation({
-        status: "error",
-        message: "Geolocation is not supported by your browser.",
-      });
-      return;
-    }
-
     setLocation({ status: "loading" });
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    getLocation()
+      .then((pos) => {
         setLocation({
           status: "success",
           coords: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy ?? 0,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            accuracy: pos.accuracy,
           },
         });
-      },
-      (err) => {
-        let message = err.message;
-        if (err.code === 1)
-          message =
-            "Permission denied. Allow location access so we can tag your photo.";
-        if (err.code === 2) message = "Position unavailable. Try again.";
-        if (err.code === 3) message = "Request timed out. Try again.";
+      })
+      .catch((err) => {
+        const message =
+          err instanceof Error ? err.message : "Could not get location.";
         setLocation({ status: "error", message });
-      },
-      { enableHighAccuracy: true }
-    );
+      });
   }
 
   const handleCapture = async (blob: Blob) => {
@@ -97,51 +83,27 @@ export default function TestUploadPage() {
     setMessage(null);
 
     // Refresh geolocation right before upload for maximum freshness
-    const freshCoords = await new Promise<{
-      latitude: number;
-      longitude: number;
-    } | null>((resolve) => {
-      if (typeof navigator === "undefined" || !navigator.geolocation) {
-        resolve(
-          locationRef.current.status === "success"
-            ? {
-                latitude: locationRef.current.coords.latitude,
-                longitude: locationRef.current.coords.longitude,
-              }
-            : null
-        );
-        return;
+    let freshCoords: { latitude: number; longitude: number } | null = null;
+    try {
+      const pos = await getLocation();
+      freshCoords = { latitude: pos.latitude, longitude: pos.longitude };
+      setLocation({
+        status: "success",
+        coords: {
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          accuracy: pos.accuracy,
+        },
+      });
+    } catch {
+      // Fall back to previously captured location
+      if (locationRef.current.status === "success") {
+        freshCoords = {
+          latitude: locationRef.current.coords.latitude,
+          longitude: locationRef.current.coords.longitude,
+        };
       }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          setLocation({
-            status: "success",
-            coords: {
-              ...coords,
-              accuracy: position.coords.accuracy ?? 0,
-            },
-          });
-          resolve(coords);
-        },
-        () => {
-          // Fall back to previously captured location
-          resolve(
-            locationRef.current.status === "success"
-              ? {
-                  latitude: locationRef.current.coords.latitude,
-                  longitude: locationRef.current.coords.longitude,
-                }
-              : null
-          );
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    });
+    }
 
     try {
       const formData = new FormData();
