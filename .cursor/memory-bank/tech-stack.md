@@ -41,6 +41,11 @@ Current schema:
 - `hints` (text or jsonb) - Additional hints for seekers
 - `metadata` (jsonb) - Flexible storage for game-specific data
 
+### Games table (game zone)
+- `id`, `name`, `status` (default `'lobby'`), `created_at`
+- **Zone (required before start):** `zone_center_lat`, `zone_center_lng`, `zone_radius_meters` (double precision, nullable). See `docs/supabase-game-zone.sql`.
+- Types in `lib/types.ts`: `Game`, `GameZone` (center_lat, center_lng, radius_meters).
+
 ---
 
 ## Google Maps Setup
@@ -75,6 +80,10 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_api_key_here
 - Use `next/dynamic` with `ssr: false` for map components
 - Supports touch (pan/zoom) by default on mobile
 - Container: `width: 100%` with `min-height: 300px` or `50vh` for mobile
+
+### Game zone maps
+- **Set zone modal:** Current location + slider (50m–1km), red shaded outside (Polygon with hole), single red zone circle (empty inside), blue pin + accuracy circle. Map fits zone with padding; no keys on zone Circle/Polygon so they update in place (avoids stacking). Zone overlays drawn after one rAF to avoid stuck initial circle.
+- **Zone view page:** Full-screen map; live location every 10s with "Next refresh in Xs" and "Blue is where you are". User pin = single Marker (library); user accuracy = single imperative `google.maps.Circle` (ref, create once, `setCenter`/`setRadius` on update) to avoid stacking. Outside-zone warning when `distance(user, zoneCenter) > zoneRadius + userAccuracy`. Helpers in `lib/map-utils.ts`: `getBoundsForCircle`, `distanceMeters`, `isEntirelyOutsideZone`, `circleToPolygonPoints`, `outerBounds`.
 
 ### References
 - [Maps JavaScript API Usage & Billing](https://developers.google.com/maps/documentation/javascript/usage-and-billing)

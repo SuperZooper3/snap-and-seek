@@ -14,28 +14,38 @@
 
 ## Key paths
 - `app/page.tsx` — home (games list + CreateGameForm).
-- `app/games/[gameId]/page.tsx` — game lobby (players list, share link, start game, "Set Up Hiding Spot" button).
-- `app/games/[gameId]/GameActions.tsx` — client: start game, copy join link.
+- `app/games/page.tsx` — game management list.
+- `app/games/new/page.tsx` — create game form.
+- `app/games/[gameId]/page.tsx` — server: game + players, join URL, zone; renders `GameActions` + `PlayerList`.
+- `app/games/[gameId]/GameActions.tsx` — client: copy join link, "Set/Edit game zone", "Start game" (requires zone + 2+ players). Opens `GameZoneModal`; on start → zone view.
+- `app/games/[gameId]/GameZoneModal.tsx` — client: full-screen modal, geolocation, slider 50m–1km, map with zone overlays, save via PATCH.
+- `app/games/[gameId]/PlayerList.tsx` — client: player list with assume/release identity.
+- `app/games/[gameId]/zone/page.tsx` — server: fetches game + zone, renders header + `ZoneWithLocation` + footer with "Go to photo capture" → `/games/[gameId]/setup`.
+- `app/games/[gameId]/zone/ZoneWithLocation.tsx` — client: 10s location refresh, countdown, outside-zone warning, wraps `ZoneMapView`.
+- `app/games/[gameId]/zone/ZoneMapView.tsx` — client: zone polygon + circle, user marker + imperative accuracy circle, fitBounds.
 - `app/games/[gameId]/setup/page.tsx` — server: cookie check + game fetch → `SetupClient`.
 - `app/games/[gameId]/setup/SetupClient.tsx` — client: main photo slot, 2 hardcoded items, CameraModal, per-item upload callbacks.
-- `app/join/[gameId]/page.tsx` — join game page; `JoinForm.tsx` — name input + cookie set.
+- `app/games/[gameId]/capture/page.tsx` — server: placeholder (superseded by setup page).
+- `app/join/[gameId]/page.tsx` — join game (name form → POST players → redirect to game page).
 - `app/location-test/page.tsx` — wraps `LocationDisplay`.
 - `app/location-test/LocationDisplay.tsx` — client: geolocation, 10s polling, history state, countdown, points list; loads `MapDisplay` via `next/dynamic` with `ssr: false`.
-- `app/location-test/MapDisplay.tsx` — client: `useJsApiLoader`, single map instance, markers from `locations` prop, blue-dot icon, countdown overlay; no fitBounds.
+- `app/location-test/MapDisplay.tsx` — client: `useJsApiLoader`, single map instance, markers, countdown overlay.
 - `app/test-upload/page.tsx` — client: camera + geolocation upload page.
 - `app/test-upload/CameraCapture.tsx` — re-exports from `components/CameraCapture.tsx`.
 - `components/CameraCapture.tsx` — shared: `getUserMedia` viewfinder, shutter, preview/retake/use-photo. Props: `onCapture`, `disabled`, `autoStart`, `fullScreen`.
 - `components/CameraModal.tsx` — shared: full-screen camera overlay. Props: `isOpen`, `onClose`, `onCapture`.
-- `components/ItemBar.tsx` — shared: clickable item bar with label, photo, status. Props: `label`, `photoUrl`, `uploading`, `uploaded`, `onClick`.
+- `components/ItemBar.tsx` — shared: clickable item bar with label, photo, status.
 - `app/api/upload/route.ts` — server: accepts file + optional lat/lng + optional game_id/player_id/label/is_main, reverse geocodes, uploads to Supabase Storage, inserts into `photos` table.
-- `app/api/games/route.ts` — server: GET/POST games.
-- `app/api/games/[gameId]/route.ts` — server: PATCH game status.
-- `app/api/games/[gameId]/players/route.ts` — server: POST add player.
-- `app/api/photos/route.ts` — server: returns all photos with `select("*")`.
-- `lib/types.ts` — `Photo`, `Game`, `Player` interfaces.
+- `app/api/games/route.ts` — POST: create game.
+- `app/api/games/[gameId]/route.ts` — PATCH: update zone and/or status (validates zone + 2+ players before start).
+- `app/api/games/[gameId]/players/route.ts` — POST: add player.
+- `app/api/photos/route.ts` — server: returns all photos.
+- `lib/types.ts` — `Photo`, `Game`, `GameZone`, `Player` interfaces.
 - `lib/supabase.ts` — server-side Supabase client (service role).
-- `lib/player-cookie.ts` — cookie-based player identity (read/write per game).
+- `lib/player-cookie.ts` — cookie-based player identity (read/write/clear per game).
+- `lib/map-utils.ts` — `circleToPolygonPoints`, `outerBounds`, `getBoundsForCircle`, `distanceMeters`, `isEntirelyOutsideZone`.
 - `docs/supabase-schema-changes.sql` — DB migration SQL (games defaults + players index + photos game columns).
+- `docs/supabase-game-zone.sql` — ALTER games add zone columns.
 - `docs/google-maps-in-app.md` — setup and cost notes for embedding Google Map.
 
 ## Cost (Google Maps)
