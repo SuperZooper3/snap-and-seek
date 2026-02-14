@@ -1,18 +1,27 @@
 # Active Context
 
 ## Current focus
-- Location test page is feature-complete for hackathon: GPS, 10s polling, history pins (numbered, blue), countdown on map, points list, no auto-zoom, no external map link or cost copy.
+- Camera-based photo upload with geolocation tagging on `/test-upload`.
+
+## Recent changes
+- Replaced file-input upload with in-app camera viewfinder (`getUserMedia`, rear camera via `facingMode: "environment"`).
+- New `CameraCapture` component: live viewfinder → shutter → preview → retake/use-photo flow.
+- Photos are geotagged at capture time using browser Geolocation API (same `getCurrentPosition` + `enableHighAccuracy` pattern as `LocationDisplay`).
+- Geolocation requested on page mount; refreshed at moment of capture for accuracy.
+- Upload API reverse-geocodes coordinates via Google Geocoding API → stores `latitude`, `longitude`, `location_name` in `photos` table.
+- Photo grid displays location: `location_name` if available, raw coords as fallback, "Location unavailable" if no location.
+- `photos` table schema extended: added `latitude` (double), `longitude` (double), `location_name` (text).
 
 ## Recent decisions
-- Map does not zoom/fitBounds when new points arrive — avoids annoying re-centering.
-- Markers use blue-dot icon (current-location style); labels show 1, 2, 3… for order.
-- Countdown shown on the map ("Next ping in Xs") rather than above.
-- Removed "Open in Google Maps" and cost note from location page.
+- Chose `getUserMedia` over `<input capture>` for in-app camera feel; tradeoff: no EXIF GPS, geolocation-only.
+- Single `<video>` element stays mounted across loading→streaming states to prevent `srcObject` loss on re-render (fixed black-box bug).
+- Reverse geocoding done server-side at upload time (not per-display) to avoid repeated API calls.
+- Front-camera mirror flip not added — rear camera is the intended use case for the game; desktop front-cam "flip" is expected behavior.
 
 ## Important patterns
-- All map/geolocation code is client-only (dynamic import + useJsApiLoader).
-- Location history and countdown state live in `LocationDisplay`; `MapDisplay` is presentational (locations + countdown props).
-- Env: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` must be set for map to load; user adds it to `.env.local` from `.env.example`.
+- Camera + geolocation permissions requested separately; each degrades gracefully if denied.
+- Geolocation state uses same discriminated union pattern as `LocationDisplay` (`idle | loading | success | error`).
+- `locationRef` keeps latest geolocation in a ref so the async capture callback always has fresh data.
 
 ## Next steps (not started)
-- Whatever the product needs next (e.g. persist locations, real game flow, etc.).
+- Game lobby system, teams, active play phase.

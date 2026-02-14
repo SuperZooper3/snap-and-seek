@@ -1,11 +1,16 @@
 "use client";
 
 import { Photo } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CameraCapture } from "./CameraCapture";
+
+type LocationState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; coords: { latitude: number; longitude: number; accuracy: number } }
+  | { status: "error"; message: string };
 
 export default function TestUploadPage() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -14,9 +19,24 @@ export default function TestUploadPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Geolocation state — mirrors patterns from LocationDisplay.tsx
+  const [location, setLocation] = useState<LocationState>({ status: "idle" });
+  const locationRef = useRef<LocationState>({ status: "idle" });
+
+  // Keep ref in sync so the capture callback always has the latest value
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
   // Fetch photos on mount
   useEffect(() => {
     fetchPhotos();
+  }, []);
+
+  // Request geolocation on mount (same pattern as LocationDisplay)
+  useEffect(() => {
+    requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPhotos = async () => {
@@ -37,30 +57,100 @@ export default function TestUploadPage() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setSelectedFile(file);
-    setMessage(null);
-
-    // Create preview URL
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      setMessage({ type: "error", text: "Please select a file first" });
+  function requestLocation() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocation({
+        status: "error",
+        message: "Geolocation is not supported by your browser.",
+      });
       return;
     }
 
+    setLocation({ status: "loading" });
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          status: "success",
+          coords: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy ?? 0,
+          },
+        });
+      },
+      (err) => {
+        let message = err.message;
+        if (err.code === 1)
+          message =
+            "Permission denied. Allow location access so we can tag your photo.";
+        if (err.code === 2) message = "Position unavailable. Try again.";
+        if (err.code === 3) message = "Request timed out. Try again.";
+        setLocation({ status: "error", message });
+      },
+      { enableHighAccuracy: true }
+    );
+  }
+
+  const handleCapture = async (blob: Blob) => {
     setUploading(true);
     setMessage(null);
 
+    // Refresh geolocation right before upload for maximum freshness
+    const freshCoords = await new Promise<{
+      latitude: number;
+      longitude: number;
+    } | null>((resolve) => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        resolve(
+          locationRef.current.status === "success"
+            ? {
+                latitude: locationRef.current.coords.latitude,
+                longitude: locationRef.current.coords.longitude,
+              }
+            : null
+        );
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setLocation({
+            status: "success",
+            coords: {
+              ...coords,
+              accuracy: position.coords.accuracy ?? 0,
+            },
+          });
+          resolve(coords);
+        },
+        () => {
+          // Fall back to previously captured location
+          resolve(
+            locationRef.current.status === "success"
+              ? {
+                  latitude: locationRef.current.coords.latitude,
+                  longitude: locationRef.current.coords.longitude,
+                }
+              : null
+          );
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    });
+
     try {
       const formData = new FormData();
-      formData.append("file", selectedFile);
+      formData.append("file", blob, `capture-${Date.now()}.jpg`);
+
+      if (freshCoords) {
+        formData.append("latitude", String(freshCoords.latitude));
+        formData.append("longitude", String(freshCoords.longitude));
+      }
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -74,9 +164,6 @@ export default function TestUploadPage() {
           type: "success",
           text: "Photo uploaded successfully!",
         });
-        // Clear selection
-        setSelectedFile(null);
-        setPreviewUrl(null);
         // Refresh photos list
         await fetchPhotos();
       } else {
@@ -104,84 +191,75 @@ export default function TestUploadPage() {
             Photo Upload Test
           </h1>
           <p className="mt-2 text-amber-800/80 dark:text-amber-200/80">
-            Test uploading and displaying photos from Supabase
+            Take a photo and upload it with your location
           </p>
         </header>
 
-        {/* Upload Section */}
+        {/* Camera + Upload Section */}
         <section className="rounded-2xl bg-white/80 dark:bg-zinc-800/80 shadow-lg border border-amber-200/50 dark:border-zinc-700 p-6 sm:p-8 mb-8">
           <h2 className="text-xl font-semibold text-amber-900 dark:text-amber-100 mb-4">
-            Upload Photo
+            Take Photo
           </h2>
 
-          <div className="space-y-4">
-            {/* File Input */}
-            <div>
-              <label
-                htmlFor="file-input"
-                className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-2"
-              >
-                Select Image
-              </label>
-              <input
-                id="file-input"
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                onChange={handleFileSelect}
-                disabled={uploading}
-                className="block w-full text-sm text-amber-900 dark:text-amber-100
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-lg file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-amber-100 dark:file:bg-zinc-700
-                  file:text-amber-900 dark:file:text-amber-100
-                  hover:file:bg-amber-200 dark:hover:file:bg-zinc-600
-                  file:cursor-pointer
-                  disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
+          <CameraCapture onCapture={handleCapture} disabled={uploading} />
 
-            {/* Preview */}
-            {previewUrl && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
-                  Preview
+          {/* Location status */}
+          <div className="mt-4">
+            {location.status === "loading" && (
+              <p className="text-sm text-amber-800/70 dark:text-amber-200/70">
+                Getting your location…
+              </p>
+            )}
+            {location.status === "success" && (
+              <div className="rounded-lg bg-amber-50/80 dark:bg-zinc-700/80 p-3 border border-amber-100 dark:border-zinc-600 font-mono text-xs text-amber-900 dark:text-amber-100 space-y-1">
+                <p>
+                  <span className="text-amber-700 dark:text-amber-300">
+                    Location:
+                  </span>{" "}
+                  {location.coords.latitude.toFixed(5)},{" "}
+                  {location.coords.longitude.toFixed(5)}
                 </p>
-                <div className="relative w-full max-w-md">
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="rounded-lg border border-amber-200 dark:border-zinc-600 w-full h-auto max-h-64 object-contain"
-                  />
-                </div>
+                <p>
+                  <span className="text-amber-700 dark:text-amber-300">
+                    Accuracy:
+                  </span>{" "}
+                  ±{location.coords.accuracy.toFixed(0)} m
+                </p>
               </div>
             )}
-
-            {/* Upload Button */}
-            <button
-              onClick={handleUpload}
-              disabled={!selectedFile || uploading}
-              className="px-6 py-2.5 rounded-lg font-semibold text-white
-                bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors"
-            >
-              {uploading ? "Uploading..." : "Upload Photo"}
-            </button>
-
-            {/* Message */}
-            {message && (
-              <div
-                className={`p-3 rounded-lg text-sm ${
-                  message.type === "success"
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                    : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-                }`}
-              >
-                {message.text}
+            {location.status === "error" && (
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {location.message}
+                </p>
+                <button
+                  type="button"
+                  onClick={requestLocation}
+                  className="text-sm text-amber-600 dark:text-amber-400 hover:underline"
+                >
+                  Retry
+                </button>
               </div>
             )}
           </div>
+
+          {/* Upload status message */}
+          {uploading && (
+            <p className="mt-4 text-sm text-amber-800/70 dark:text-amber-200/70">
+              Uploading…
+            </p>
+          )}
+          {message && (
+            <div
+              className={`mt-4 p-3 rounded-lg text-sm ${
+                message.type === "success"
+                  ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+                  : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
         </section>
 
         {/* Photos Display Section */}
@@ -198,7 +276,7 @@ export default function TestUploadPage() {
 
           {!loading && photos.length === 0 && (
             <p className="text-amber-800/70 dark:text-amber-200/70">
-              No photos yet. Upload your first photo above!
+              No photos yet. Take your first photo above!
             </p>
           )}
 
@@ -224,21 +302,28 @@ export default function TestUploadPage() {
 
                   {/* Metadata */}
                   <div className="p-3 space-y-1">
-                    <p className="text-xs text-amber-900/70 dark:text-amber-100/70">
-                      <span className="font-semibold">URL:</span>{" "}
-                      <a
-                        href={photo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-amber-600 dark:text-amber-400 hover:underline break-all"
+                    {/* Location */}
+                    <div className="flex items-start gap-1.5 text-xs text-amber-900/70 dark:text-amber-100/70">
+                      <svg
+                        className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
                       >
-                        {photo.url.split("/").pop()}
-                      </a>
-                    </p>
-                    <p className="text-xs text-amber-900/70 dark:text-amber-100/70">
-                      <span className="font-semibold">Path:</span>{" "}
-                      {photo.storage_path}
-                    </p>
+                        <path
+                          fillRule="evenodd"
+                          d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>
+                        {photo.location_name
+                          ? photo.location_name
+                          : photo.latitude != null && photo.longitude != null
+                            ? `${photo.latitude.toFixed(5)}, ${photo.longitude.toFixed(5)}`
+                            : "Location unavailable"}
+                      </span>
+                    </div>
+
                     <p className="text-xs text-amber-900/70 dark:text-amber-100/70">
                       <span className="font-semibold">Uploaded:</span>{" "}
                       {new Date(photo.created_at).toLocaleString()}

@@ -4,9 +4,12 @@
 
 ### Implemented
 1. **Photo Upload Test Page** (`/test-upload`)
-   - Upload images to Supabase Storage
-   - Display all uploaded photos
-   - Bare-bones UI for backend testing
+   - In-app camera viewfinder (`getUserMedia`, rear camera)
+   - Shutter, preview, retake/use-photo flow
+   - Geolocation tagging at capture (browser Geolocation API, `enableHighAccuracy`)
+   - Server-side reverse geocoding (Google Geocoding API) → human-readable `location_name`
+   - Upload to Supabase Storage + insert into `photos` table with location
+   - Photo grid displays location (address, coords fallback, or "unavailable")
 
 ### To Be Implemented
 1. **Lobby**: Create/join game with code
