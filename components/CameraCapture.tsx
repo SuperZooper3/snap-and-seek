@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type CameraState =
   | { status: "idle" }
-  | { status: "loading" }
+  | { status: "loading"; attempt?: number }
   | { status: "streaming" }
   | { status: "error"; message: string };
 
@@ -40,6 +40,9 @@ export function CameraCapture({
     }
   }, []);
 
+  const MAX_CAMERA_RETRIES = 3;
+  const RETRY_DELAY_MS = 1000;
+
   const startCamera = useCallback(async () => {
     setCameraState({ status: "loading" });
     setPreviewUrl(null);
@@ -56,33 +59,47 @@ export function CameraCapture({
       return;
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
-      streamRef.current = stream;
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= MAX_CAMERA_RETRIES; attempt++) {
+      setCameraState(
+        attempt === 1
+          ? { status: "loading" }
+          : { status: "loading", attempt }
+      );
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        streamRef.current = stream;
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
 
-      setCameraState({ status: "streaming" });
-    } catch (err) {
-      let message = "Failed to access camera.";
-      if (err instanceof DOMException) {
-        if (err.name === "NotAllowedError") {
-          message =
-            "Camera permission denied. Allow camera access to take photos.";
-        } else if (err.name === "NotFoundError") {
-          message = "No camera found on this device.";
-        } else if (err.name === "NotReadableError") {
-          message = "Camera is already in use by another application.";
+        setCameraState({ status: "streaming" });
+        return;
+      } catch (err) {
+        lastError = err;
+        if (attempt < MAX_CAMERA_RETRIES) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
         }
       }
-      setCameraState({ status: "error", message });
     }
+
+    let message = "Failed to access camera.";
+    if (lastError instanceof DOMException) {
+      if (lastError.name === "NotAllowedError") {
+        message =
+          "Camera permission denied. Allow camera access to take photos.";
+      } else if (lastError.name === "NotFoundError") {
+        message = "No camera found on this device.";
+      } else if (lastError.name === "NotReadableError") {
+        message = "Camera is already in use by another application.";
+      }
+    }
+    setCameraState({ status: "error", message });
   }, []);
 
   const takePhoto = useCallback(() => {
@@ -176,9 +193,14 @@ export function CameraCapture({
             {/* Loading overlay shown on top of the (invisible) video */}
             {cameraState.status === "loading" && (
               <div
-                className={`absolute inset-0 ${fullScreen ? "" : "rounded-lg"} bg-amber-100/80 dark:bg-zinc-700/80 flex items-center justify-center text-amber-800 dark:text-amber-200 text-sm`}
+                className={`absolute inset-0 ${fullScreen ? "" : "rounded-lg"} bg-amber-100/80 dark:bg-zinc-700/80 flex flex-col items-center justify-center gap-1 text-amber-800 dark:text-amber-200 text-sm`}
               >
-                Starting camera…
+                <span>Starting camera…</span>
+                {cameraState.attempt != null && cameraState.attempt > 1 && (
+                  <span className="text-xs opacity-80">
+                    Try {cameraState.attempt} of {MAX_CAMERA_RETRIES}
+                  </span>
+                )}
               </div>
             )}
           </div>
