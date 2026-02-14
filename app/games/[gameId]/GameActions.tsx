@@ -121,9 +121,20 @@ export function GameActions({ gameId, status, joinUrl, playerCount, zone, curren
 
       {!isLobby && status && (
         <div className="space-y-2">
-          <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
-            Status: <strong>{status}</strong>
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+              Status
+            </span>
+            <span
+              className={
+                status === "hiding"
+                  ? "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-emerald-200/90 dark:bg-emerald-800/50 text-emerald-900 dark:text-emerald-100"
+                  : "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-amber-200/90 dark:bg-amber-800/50 text-amber-900 dark:text-amber-100"
+              }
+            >
+              {status}
+            </span>
+          </div>
           {currentPlayer ? (
             <a
               href={`/games/${gameId}/zone`}

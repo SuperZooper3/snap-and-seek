@@ -48,9 +48,10 @@ export default async function GameZonePage({ params }: Props) {
       <header className="shrink-0 border-b border-amber-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top">
         <Link
           href={`/games/${gameId}`}
-          className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
         >
-          ← Back to game
+          <span aria-hidden>←</span>
+          Back to game
         </Link>
         <h1 className="mt-1.5 text-lg font-bold text-amber-900 dark:text-amber-100">
           Game zone

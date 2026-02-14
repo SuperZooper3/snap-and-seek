@@ -47,9 +47,10 @@ export default async function GodModePage({ params }: Props) {
       <header className="shrink-0 border-b border-white/10 bg-zinc-900 px-3 py-2 safe-area-inset-top">
         <Link
           href={`/games/${gameId}`}
-          className="text-sm text-amber-300 hover:text-amber-200 hover:underline"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-200 bg-white/10 hover:bg-white/15 transition-colors"
         >
-          ← Back to game
+          <span aria-hidden>←</span>
+          Back to game
         </Link>
         <p className="mt-0.5 text-xs text-white/80">
           God mode · {(game as { name: string | null }).name || "Unnamed game"}

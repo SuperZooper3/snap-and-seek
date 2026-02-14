@@ -61,9 +61,10 @@ export default async function GamePage({ params }: Props) {
         <header className="mb-10">
           <Link
             href="/"
-            className="text-sm text-amber-800/70 dark:text-amber-200/70 hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-900/30 hover:bg-amber-200/80 dark:hover:bg-amber-800/40 transition-colors"
           >
-            ← Create game
+            <span aria-hidden>←</span>
+            Create game
           </Link>
           <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">
             {(game as Game).name || "Unnamed game"}
