@@ -30,7 +30,7 @@ type Props = {
   playerCount: number;
   zone: GameZone;
   currentPlayer: PlayerIdentity;
-  /** Hiding phase duration in seconds (default 60). Only used in lobby. */
+  /** Hiding phase duration in seconds (see game-config). Only used in lobby. */
   hidingDurationSeconds: number;
 };
 

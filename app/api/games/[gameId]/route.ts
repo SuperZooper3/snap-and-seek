@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import {
+  MIN_HIDING_DURATION_SECONDS,
+  MAX_HIDING_DURATION_SECONDS,
+} from "@/lib/game-config";
 
 export async function PATCH(
   request: Request,
@@ -23,8 +27,8 @@ export async function PATCH(
   const isStartSeeking = status === "seeking";
   const isHidingDurationUpdate =
     typeof hidingDurationSeconds === "number" &&
-    hidingDurationSeconds >= 30 &&
-    hidingDurationSeconds <= 86400;
+    hidingDurationSeconds >= MIN_HIDING_DURATION_SECONDS &&
+    hidingDurationSeconds <= MAX_HIDING_DURATION_SECONDS;
 
   const validUpdate =
     isZoneUpdate ||
@@ -37,7 +41,7 @@ export async function PATCH(
       {
         error:
           "Send zone (zone_center_lat, zone_center_lng, zone_radius_meters), " +
-          "status: 'hiding' | 'seeking', or hiding_duration_seconds (30–86400)",
+          `status: 'hiding' | 'seeking', or hiding_duration_seconds (${MIN_HIDING_DURATION_SECONDS}–${MAX_HIDING_DURATION_SECONDS})`,
       },
       { status: 400 }
     );

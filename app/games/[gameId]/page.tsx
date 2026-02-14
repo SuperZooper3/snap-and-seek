@@ -4,6 +4,7 @@ import { headers, cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import type { Game, Player } from "@/lib/types";
+import { getHidingDurationSeconds } from "@/lib/game-config";
 import { GameActions } from "./GameActions";
 import { PlayerList } from "./PlayerList";
 
@@ -79,10 +80,9 @@ export default async function GamePage({ params }: Props) {
             playerCount={(players as Player[])?.length ?? 0}
             zone={zone}
             currentPlayer={currentPlayer}
-            hidingDurationSeconds={(() => {
-              const d = (game as Game).hiding_duration_seconds;
-              return d === null || d === undefined || d === 600 ? 60 : d;
-            })()}
+            hidingDurationSeconds={getHidingDurationSeconds(
+              (game as Game).hiding_duration_seconds
+            )}
           />
 
           {zone && !currentPlayer && (

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { DEFAULT_HIDING_DURATION_SECONDS } from "@/lib/game-config";
 
 export async function GET() {
   const { data: games, error } = await supabase
@@ -19,7 +20,11 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from("games")
-    .insert({ name: name || null, status: "lobby" })
+    .insert({
+      name: name || null,
+      status: "lobby",
+      hiding_duration_seconds: DEFAULT_HIDING_DURATION_SECONDS,
+    })
     .select("id, name, status, created_at")
     .single();
 
