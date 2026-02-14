@@ -27,6 +27,40 @@ export default async function SeekingPage({ params }: Props) {
     notFound();
   }
 
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, name, hiding_photo")
+    .eq("game_id", gameId)
+    .order("created_at", { ascending: true });
+
+  const otherPlayers = (players ?? []).filter((p) => p.id !== currentPlayer.id);
+  const photoIds = otherPlayers
+    .map((p) => (p as { hiding_photo: number | null }).hiding_photo)
+    .filter((id): id is number => id != null);
+  const photoIdSet = [...new Set(photoIds)];
+
+  let photoUrlById: Record<number, string> = {};
+  if (photoIdSet.length > 0) {
+    const { data: photos } = await supabase
+      .from("photos")
+      .select("id, url")
+      .in("id", photoIdSet);
+    if (photos) {
+      for (const p of photos) {
+        photoUrlById[p.id as number] = (p as { url: string }).url;
+      }
+    }
+  }
+
+  const targets = otherPlayers.map((p) => {
+    const hidingPhoto = (p as { hiding_photo: number | null }).hiding_photo;
+    return {
+      playerId: p.id,
+      name: (p as { name: string }).name,
+      photoUrl: hidingPhoto != null ? photoUrlById[hidingPhoto] ?? null : null,
+    };
+  });
+
   const zoneSet =
     game.zone_center_lat != null &&
     game.zone_center_lng != null &&
@@ -48,7 +82,9 @@ export default async function SeekingPage({ params }: Props) {
       gameName={(game as { name: string | null }).name || "Unnamed game"}
       zone={zone}
       playerId={currentPlayer.id}
+      playerName={currentPlayer.name}
       seekingStartedAt={(game as { seeking_started_at: string | null }).seeking_started_at}
+      targets={targets}
     />
   );
 }
