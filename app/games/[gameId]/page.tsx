@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import type { Game, Player } from "@/lib/types";
 import { GameActions } from "./GameActions";
 
@@ -37,6 +38,11 @@ export default async function GamePage({ params }: Props) {
 
   const joinUrl = `${await getBaseUrl()}/join/${gameId}`;
 
+  const cookieStore = await cookies();
+  const playersCookie = cookieStore.get(PLAYER_COOKIE_NAME)?.value;
+  const decoded = playersCookie ? decodeURIComponent(playersCookie) : undefined;
+  const currentPlayer = getPlayerForGame(decoded, gameId);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
       <main className="mx-auto max-w-2xl px-6 py-16">
@@ -47,6 +53,11 @@ export default async function GamePage({ params }: Props) {
           >
             ← Create game
           </Link>
+          {currentPlayer && (
+            <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
+              You are: <strong>{currentPlayer.name}</strong>
+            </p>
+          )}
           <h1 className="mt-4 text-3xl font-bold text-amber-900 dark:text-amber-100">
             {(game as Game).name || "Unnamed game"}
           </h1>
@@ -57,6 +68,7 @@ export default async function GamePage({ params }: Props) {
             gameId={gameId}
             status={(game as Game).status}
             joinUrl={joinUrl}
+            playerCount={(players as Player[])?.length ?? 0}
           />
 
           <div>
@@ -70,14 +82,26 @@ export default async function GamePage({ params }: Props) {
             )}
             {players && players.length > 0 && (
               <ul className="space-y-2">
-                {(players as Player[]).map((p) => (
-                  <li
-                    key={p.id}
-                    className="rounded-lg bg-amber-50/80 dark:bg-zinc-700/80 px-4 py-2 text-amber-900 dark:text-amber-100"
-                  >
-                    {p.name}
-                  </li>
-                ))}
+                {(players as Player[]).map((p) => {
+                  const isYou = currentPlayer?.id === p.id;
+                  return (
+                    <li
+                      key={p.id}
+                      className={`rounded-lg px-4 py-2 ${
+                        isYou
+                          ? "bg-amber-200/60 dark:bg-amber-600/30 text-amber-900 dark:text-amber-100 font-medium"
+                          : "bg-amber-50/80 dark:bg-zinc-700/80 text-amber-900 dark:text-amber-100"
+                      }`}
+                    >
+                      {p.name}
+                      {isYou && (
+                        <span className="ml-2 text-xs text-amber-700 dark:text-amber-300">
+                          (you)
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

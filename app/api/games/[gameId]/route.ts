@@ -17,6 +17,21 @@ export async function PATCH(
     );
   }
 
+  const { count, error: countError } = await supabase
+    .from("players")
+    .select("*", { count: "exact", head: true })
+    .eq("game_id", gameId);
+
+  if (countError) {
+    return NextResponse.json({ error: countError.message }, { status: 500 });
+  }
+  if ((count ?? 0) < 2) {
+    return NextResponse.json(
+      { error: "Need at least 2 players to start the game" },
+      { status: 400 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("games")
     .update({ status: "hiding" })

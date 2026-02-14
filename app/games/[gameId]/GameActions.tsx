@@ -7,13 +7,15 @@ type Props = {
   gameId: string;
   status: string | null;
   joinUrl: string;
+  playerCount: number;
 };
 
-export function GameActions({ gameId, status, joinUrl }: Props) {
+export function GameActions({ gameId, status, joinUrl, playerCount }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
   const isLobby = status === "lobby";
+  const canStart = playerCount >= 2;
 
   function copyLink() {
     navigator.clipboard.writeText(joinUrl);
@@ -63,14 +65,21 @@ export function GameActions({ gameId, status, joinUrl }: Props) {
       </div>
 
       {isLobby && (
-        <button
-          type="button"
-          onClick={startGame}
-          disabled={starting}
-          className="rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold px-6 py-3 transition-colors"
-        >
-          {starting ? "Starting…" : "Start game"}
-        </button>
+        <>
+          {!canStart && (
+            <p className="text-amber-800/80 dark:text-amber-200/80 text-sm">
+              Need at least 2 players to start.
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={startGame}
+            disabled={starting || !canStart}
+            className="rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold px-6 py-3 transition-colors"
+          >
+            {starting ? "Starting…" : "Start game"}
+          </button>
+        </>
       )}
 
       {!isLobby && status && (

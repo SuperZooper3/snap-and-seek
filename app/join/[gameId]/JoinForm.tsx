@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { setPlayerInCookie } from "@/lib/player-cookie";
 
 type Props = { gameId: string };
 
@@ -23,6 +24,7 @@ export function JoinForm({ gameId }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to join");
+      setPlayerInCookie(gameId, { id: data.id, name: data.name });
       router.push(`/games/${gameId}`);
       router.refresh();
     } catch (err) {
