@@ -24,26 +24,19 @@ export async function GET(
     .single();
 
   if (withWinner.error) {
-    const msg = withWinner.error.message ?? "";
-    if (msg.includes("winner_id") || msg.includes("does not exist")) {
-      const fallback = await supabase
-        .from("games")
-        .select("id, status")
-        .eq("id", gameId)
-        .single();
-      if (fallback.error || !fallback.data) {
-        return NextResponse.json(
-          { error: fallback.error?.message ?? "Game not found" },
-          { status: fallback.error ? 500 : 404 }
-        );
-      }
-      game = { ...fallback.data, winner_id: null, finished_at: null };
-    } else {
+    // Schema may lack winner_id/finished_at, or DB may be unreachable — try minimal select first
+    const fallback = await supabase
+      .from("games")
+      .select("id, status")
+      .eq("id", gameId)
+      .single();
+    if (fallback.error || !fallback.data) {
       return NextResponse.json(
-        { error: withWinner.error.message ?? "Game not found" },
-        { status: 500 }
+        { error: fallback.error?.message ?? "Game not found" },
+        { status: fallback.error ? 500 : 404 }
       );
     }
+    game = { ...fallback.data, winner_id: null, finished_at: null };
   } else if (withWinner.data) {
     game = withWinner.data as GameRow;
   }
