@@ -2,17 +2,24 @@
 
 ## What works
 - Home page: hero, games from Supabase, footer link to Location test.
-- Location test: "Get my location" → permission → first position; map loads in-app (Google Maps JS API); 10s polling; location history; numbered blue-dot pins; countdown on map ("Next ping in Xs"); points list at bottom (index, lat/lng, time). Map stays fixed (no auto-zoom). Styling: amber theme, mobile-friendly.
-- Supabase: `games` table, server client with service role, no RLS.
-- Docs: `docs/google-maps-in-app.md` (setup, billing, what counts as cost).
+- Location test: GPS, 10s polling, numbered blue-dot pins, countdown on map, points list, no auto-zoom. Amber theme, mobile-friendly.
+- Photo upload (`/test-upload`): in-app camera viewfinder (`getUserMedia`, rear camera), shutter/preview/retake flow, geolocation tagging at capture, reverse geocoding to human-readable address, photo grid with location display (pin icon + address or coords).
+- `photos` table: `id`, `url`, `storage_path`, `created_at`, `latitude`, `longitude`, `location_name`.
+- Upload API: file + lat/lng → Supabase Storage + reverse geocode → DB insert.
+- Photos API: returns all photos with location fields via `select("*")`.
+- Supabase: `games` table + `photos` table, server client with service role, no RLS.
 
 ## What's left
-- No outstanding location-test tasks from recent requests.
-- Broader product/game features as needed.
+- DB migration: `ALTER TABLE photos ADD COLUMN latitude/longitude/location_name` must be run manually in Supabase SQL Editor.
+- Google Geocoding API must be enabled in Cloud Console for reverse geocoding to work.
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` must be in `.env.local`.
+- Game lobby, teams, active play, results — not started.
 
 ## Known issues
-- None recorded.
+- Desktop front-facing webcam appears "flipped" — expected; rear camera on mobile is correct.
+- No EXIF GPS extraction (getUserMedia canvas blobs lack EXIF); relies entirely on browser geolocation.
 
 ## Evolution
-- Started with redirect to Google Maps for location; switched to in-app map per docs.
-- Added polling, history, pins, then countdown on map, numbered pins, points list; removed external link and notes; disabled fitBounds; blue-dot markers.
+- Started with redirect to Google Maps; switched to in-app map.
+- Location test: polling, history, pins, countdown, points list, blue-dot markers.
+- Photo upload: started as file-input picker → replaced with in-app camera viewfinder + geolocation tagging + reverse geocoding + location display in photo grid.

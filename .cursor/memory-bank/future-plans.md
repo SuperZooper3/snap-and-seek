@@ -2,25 +2,17 @@
 
 ## Immediate Next Steps
 
-### 1. Enhance Photos Table Schema
-When integrating photos into the actual game flow, add these fields to the `photos` table:
+### 1. ~~Enhance Photos Table Schema~~ (DONE)
+`latitude`, `longitude`, `location_name` columns added. Camera capture + geolocation tagging + reverse geocoding implemented.
 
+**Remaining fields to add when needed:**
 ```sql
 ALTER TABLE photos
 ADD COLUMN game_id UUID REFERENCES games(id),
 ADD COLUMN team_id UUID,
-ADD COLUMN latitude FLOAT,
-ADD COLUMN longitude FLOAT,
 ADD COLUMN hints TEXT,
 ADD COLUMN metadata JSONB;
 ```
-
-**Fields:**
-- `game_id` - Associate photo with specific game session
-- `team_id` - Which team uploaded this photo
-- `latitude`, `longitude` - GPS coordinates where photo was taken
-- `hints` - Optional text hints for seekers
-- `metadata` - Flexible JSON storage for game-specific data
 
 ### 2. Game Lobby System
 **Priority: HIGH**
@@ -94,18 +86,37 @@ CREATE TABLE player_positions (
 - `/api/position/update` - Update player position
 - `/api/position/[gameId]` - Get all positions for game
 
-**Libraries to consider:**
-- Leaflet or Mapbox for map display
+**Maps Implementation:**
+- Install: `npm install @react-google-maps/api`
+- Create client-only map component (e.g. `MapDisplay.tsx`)
+  - Takes `lat`, `lng` as props
+  - Uses `useJsApiLoader` + `GoogleMap` + `Marker`
+  - Container: `width: 100%` and `min-height: 300px` or `50vh`
+- Load with `next/dynamic(..., { ssr: false })` to avoid SSR issues
+- Component structure:
+  - `GoogleMap` with `center={{ lat, lng }}` and `zoom={15}`
+  - `Marker` at `position={{ lat, lng }}` for "you are here"
+  - Optional: Disable unnecessary UI (fullscreen, street view) for minimal in-app map
+
+**Mobile-Friendly Setup:**
+- Ensure viewport meta tag: `<meta name="viewport" content="width=device-width, initial-scale=1">`
+- Responsive container with min-height for mobile
+- Touch gestures (pan/zoom) work by default
+- Place map below location button for easy first tap
+
+**Implementation Steps:**
+1. Add `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` to `.env.local` and `.env.example`
+2. Create `MapDisplay.tsx` client component with map rendering logic
+3. Load component with `next/dynamic` from parent (e.g. `LocationDisplay.tsx`)
+4. When location is available, render map and pass coordinates
+5. Optional: Show "Loading map..." state while Google script loads
+
+**Libraries:**
+- `@react-google-maps/api` for Google Maps (already chosen)
 - Turf.js for distance calculations
 
-### 5. Camera Integration
-**Priority: MEDIUM**
-
-Replace file upload with direct camera access:
-- Use `<input type="file" accept="image/*" capture="environment">`
-- Or use browser MediaDevices API for more control
-- Automatically capture GPS coordinates when taking photo
-- Integrate with existing `/api/upload` endpoint
+### 5. ~~Camera Integration~~ (DONE)
+Implemented via `getUserMedia` with `facingMode: "environment"` (rear camera). `CameraCapture` component with viewfinder, shutter, preview, retake. Geolocation captured at time of photo. Reverse geocoding server-side.
 
 ### 6. Proximity Questions System
 **Priority: MEDIUM**

@@ -5,6 +5,32 @@ const BUCKET_NAME = "snap-and-seek-image";
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+/**
+ * Reverse geocode lat/lng into a human-readable address via Google Geocoding API.
+ * Returns null if the API key is missing or the request fails.
+ */
+async function reverseGeocode(
+  lat: number,
+  lng: number
+): Promise<string | null> {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (data.status === "OK" && data.results?.length > 0) {
+      return data.results[0].formatted_address;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -31,6 +57,23 @@ export async function POST(request: NextRequest) {
         { error: "File too large. Maximum size is 10MB." },
         { status: 400 }
       );
+    }
+
+    // Parse optional location fields
+    const latStr = formData.get("latitude") as string | null;
+    const lngStr = formData.get("longitude") as string | null;
+    const latitude = latStr ? parseFloat(latStr) : null;
+    const longitude = lngStr ? parseFloat(lngStr) : null;
+    const hasLocation =
+      latitude !== null &&
+      longitude !== null &&
+      !isNaN(latitude) &&
+      !isNaN(longitude);
+
+    // Reverse geocode if we have coordinates
+    let locationName: string | null = null;
+    if (hasLocation) {
+      locationName = await reverseGeocode(latitude!, longitude!);
     }
 
     // Generate unique filename with timestamp
@@ -65,12 +108,17 @@ export async function POST(request: NextRequest) {
 
     const publicUrl = urlData.publicUrl;
 
-    // Insert record into photos table
+    // Insert record into photos table (with location if available)
     const { data: photoRecord, error: dbError } = await supabase
       .from("photos")
       .insert({
         url: publicUrl,
         storage_path: fileName,
+        ...(hasLocation && {
+          latitude,
+          longitude,
+          location_name: locationName,
+        }),
       })
       .select()
       .single();

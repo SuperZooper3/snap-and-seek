@@ -6,4 +6,7 @@ export interface Photo {
   url: string;
   storage_path: string;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_name: string | null;
 }
