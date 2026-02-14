@@ -59,6 +59,7 @@ export function GameZoneModal({
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
 
   const { isLoaded, loadError } = useGoogleMapsLoader();
 
@@ -90,7 +91,12 @@ export function GameZoneModal({
       });
       return;
     }
-    setLocation({ status: "loading" });
+    const alreadyHaveLocation = location.status === "success";
+    if (!alreadyHaveLocation) {
+      setLocation({ status: "loading" });
+    } else {
+      setIsRefreshingLocation(true);
+    }
     setSaveError(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -102,6 +108,7 @@ export function GameZoneModal({
             accuracy: position.coords.accuracy ?? 30,
           },
         });
+        setIsRefreshingLocation(false);
       },
       (err) => {
         setLocation({
@@ -111,10 +118,11 @@ export function GameZoneModal({
               ? "Location permission denied."
               : "Could not get location.",
         });
+        setIsRefreshingLocation(false);
       },
       { enableHighAccuracy: true }
     );
-  }, []);
+  }, [location.status]);
 
   useEffect(() => {
     if (!initialZone && location.status === "idle") {
@@ -226,14 +234,18 @@ export function GameZoneModal({
                 Center: {location.coords.latitude.toFixed(5)},{" "}
                 {location.coords.longitude.toFixed(5)} · Accuracy ~
                 {Math.round(location.coords.accuracy)} m
+                {isRefreshingLocation && (
+                  <span className="ml-2 text-amber-600 dark:text-amber-400">· Updating…</span>
+                )}
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={getLocation}
-                  className="touch-manipulation shrink-0 rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-medium px-4 py-2 text-sm transition-colors"
+                  disabled={isRefreshingLocation}
+                  className="touch-manipulation shrink-0 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-amber-950 font-medium px-4 py-2 text-sm transition-colors"
                 >
-                  Refresh location
+                  {isRefreshingLocation ? "Updating…" : "Refresh location"}
                 </button>
                 <div className="flex-1 min-w-[120px]">
                   <label className="block text-xs font-medium text-amber-900 dark:text-amber-100 mb-1">
