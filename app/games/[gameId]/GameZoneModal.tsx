@@ -5,9 +5,13 @@ import { GoogleMap, Marker, Circle, Polygon } from "@react-google-maps/api";
 import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import { getLocation as resolveLocation } from "@/lib/get-location";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
+import { 
+  DEFAULT_POWERUP_CASTING_SECONDS,
+  MIN_POWERUP_CASTING_SECONDS,
+  MAX_POWERUP_CASTING_SECONDS 
+} from "@/lib/game-config";
 
 const ZONE_FIT_PADDING_PX = 16;
-
 
 const BLUE_DOT_ICON_URL =
   "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
@@ -15,6 +19,8 @@ const BLUE_DOT_ICON_URL =
 const RADIUS_MIN_M = 50;
 const RADIUS_MAX_M = 1000;
 const RADIUS_STEP_M = 25;
+
+const POWERUP_DURATION_OPTIONS = [10, 30, 60, 120, 180, 300];
 
 type LocationState =
   | { status: "idle" }
@@ -32,6 +38,7 @@ type Props = {
     center_lng: number;
     radius_meters: number;
   } | null;
+  initialPowerupCastingSeconds?: number;
   onSaved: () => void;
   onClose: () => void;
 };
@@ -39,6 +46,7 @@ type Props = {
 export function GameZoneModal({
   gameId,
   initialZone,
+  initialPowerupCastingSeconds,
   onSaved,
   onClose,
 }: Props) {
@@ -57,6 +65,9 @@ export function GameZoneModal({
   const [radiusMeters, setRadiusMeters] = useState(() => {
     const r = initialZone?.radius_meters ?? 500;
     return Math.min(RADIUS_MAX_M, Math.max(RADIUS_MIN_M, r));
+  });
+  const [powerupCastingSeconds, setPowerupCastingSeconds] = useState(() => {
+    return initialPowerupCastingSeconds ?? DEFAULT_POWERUP_CASTING_SECONDS;
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -155,6 +166,7 @@ export function GameZoneModal({
           zone_center_lat: location.coords.latitude,
           zone_center_lng: location.coords.longitude,
           zone_radius_meters: radiusMeters,
+          powerup_casting_duration_seconds: powerupCastingSeconds,
         }),
       });
       if (!res.ok) {
@@ -256,6 +268,36 @@ export function GameZoneModal({
                     <span>{RADIUS_MIN_M} m</span>
                     <span>{RADIUS_MAX_M} m</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Power-up casting duration setting */}
+              <div className="flex items-start gap-3 pt-2">
+                <div className="shrink-0 pt-1">
+                  <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    Time to Cast:
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-wrap gap-1.5">
+                    {POWERUP_DURATION_OPTIONS.map((duration) => (
+                      <button
+                        key={duration}
+                        type="button"
+                        onClick={() => setPowerupCastingSeconds(duration)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          powerupCastingSeconds === duration
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-amber-100 dark:bg-zinc-600 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-zinc-500'
+                        }`}
+                      >
+                        {duration < 60 ? `${duration}s` : `${duration / 60}m`}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    How long power-ups take to cast during gameplay
+                  </p>
                 </div>
               </div>
             </>

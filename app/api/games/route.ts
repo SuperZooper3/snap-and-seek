@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { DEFAULT_HIDING_DURATION_SECONDS } from "@/lib/game-config";
+import { DEFAULT_HIDING_DURATION_SECONDS, DEFAULT_POWERUP_CASTING_SECONDS } from "@/lib/game-config";
 
 export async function GET() {
   const { data: games, error } = await supabase
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       name: name || null,
       status: "lobby",
       hiding_duration_seconds: DEFAULT_HIDING_DURATION_SECONDS,
+      powerup_casting_duration_seconds: DEFAULT_POWERUP_CASTING_SECONDS,
     })
     .select("id, name, status, created_at")
     .single();

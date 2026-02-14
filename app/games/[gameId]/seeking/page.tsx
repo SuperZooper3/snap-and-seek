@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
+import { getPowerupCastingSeconds } from "@/lib/game-config";
 import type { Submission } from "@/lib/types";
 import { SeekingLayout } from "./SeekingLayout";
 
@@ -18,25 +19,25 @@ export default async function SeekingPage({ params }: Props) {
     redirect(`/games/${gameId}`);
   }
 
-  // Try with winner_id first; fall back to without if column doesn't exist yet
+  // Try with winner_id and powerup_casting_duration_seconds first; fall back to without if columns don't exist yet
   let game: Record<string, unknown> | null = null;
   {
     const { data, error } = await supabase
       .from("games")
-      .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id")
+      .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id, powerup_casting_duration_seconds")
       .eq("id", gameId)
       .single();
     if (!error && data) {
       game = data;
     } else {
-      // Fallback: winner_id column may not exist yet
+      // Fallback: new columns may not exist yet
       const { data: fallback, error: fallbackErr } = await supabase
         .from("games")
         .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at")
         .eq("id", gameId)
         .single();
       if (fallbackErr || !fallback) notFound();
-      game = { ...fallback, winner_id: null };
+      game = { ...fallback, winner_id: null, powerup_casting_duration_seconds: null };
     }
   }
 
@@ -132,6 +133,10 @@ export default async function SeekingPage({ params }: Props) {
     radius_meters: game.zone_radius_meters as number,
   };
 
+  const powerupCastingSeconds = getPowerupCastingSeconds(
+    (game as { powerup_casting_duration_seconds: number | null }).powerup_casting_duration_seconds
+  );
+
   return (
     <SeekingLayout
       gameId={gameId}
@@ -145,6 +150,7 @@ export default async function SeekingPage({ params }: Props) {
       initialSubmissionPhotoUrls={submissionPhotoUrlById}
       initialWinnerId={game.winner_id as number | null}
       initialWinnerName={winnerName}
+      powerupCastingSeconds={powerupCastingSeconds}
     />
   );
 }

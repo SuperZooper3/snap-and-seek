@@ -34,6 +34,12 @@
 - **God mode** (`/games/[gameId]/god`): Spectator-only view (redirects players). Map shows live player pings (color-coded circle markers with initials) + hiding photo locations (default markers with name labels). Draggable bottom photo tray shows all players' hiding photos. Color-coded legend. 5s auto-refresh for positions.
 - **Player pings:** POST/GET `/api/games/[gameId]/pings` + GET `/api/games/[gameId]/pings/latest`. `player_pings` table.
 
+### Power-ups (hints) system (implemented)
+- **Hints table:** `hints` with game_id, seeker_id, hider_id, type (radar/thermometer/photo), note (JSON), casting_duration_seconds, status (casting/completed/cancelled), created_at, completed_at. Partial unique index: only one row with status='casting' per (game_id, seeker_id, hider_id). Migrations: `docs/supabase-hints-table.sql`, fix script `docs/supabase-hints-table-fix.sql`.
+- **Games:** `powerup_casting_duration_seconds` (default 60). Configured in **Set game zone** modal (Time to Cast: radio buttons 10s–5m), not on game create. PATCH `/api/games/[gameId]` accepts `powerup_casting_duration_seconds`.
+- **Seeking power-ups:** Folder-style tabs (Radar, Thermometer, Photo). CastingTimer shows progress; only one active hint per target; other tabs disabled while casting. Completed state persists (optimistic add to completedHints on completion). Radar: distance stepper → cast → result. Thermometer: set start, move away, stop → hotter/colder. Photo: unlock tree/building/path hint photos; Supabase image URLs allowed via `next.config.ts` remotePatterns for `*.supabase.co`.
+- **APIs:** POST/GET hints, PATCH/GET hint by id; POST thermometer (hotter/colder); POST photo-unlock (list or get URL). Hint completion: add returned hint to local completedHints so "✓ Unlocked" doesn’t revert before poll.
+
 ### Debug mode (implemented)
 - **`/debug` page:** Start debug mode (uses current GPS), click map to set fake location, End debug mode (clears cookie). Link in home footer.
 - **`lib/debug-location-cookie.ts`:** Cookie `sas_debug_location` with lat/lng. `getDebugLocation`, `setDebugLocation`, `clearDebugLocation`.
@@ -41,7 +47,7 @@
 - **Vibration API:** When outside zone, `navigator.vibrate([200, 100, 200])` every 2.5s until back inside.
 
 ## What's left
-- **DB migration required:** Run `docs/supabase-submissions.sql` in Supabase SQL Editor to create submissions table and add winner columns to games.
+- **DB migrations:** Run `docs/supabase-submissions.sql` for submissions + winner columns. Run `docs/supabase-hints-table.sql` (or `docs/supabase-hints-table-fix.sql` if hints table already exists with wrong constraint) for hints table + games.powerup_casting_duration_seconds.
 - GPS proximity check for submissions (compare seeker GPS vs. hider photo GPS) — currently all submissions default to `'success'`.
 - Claude image recognition for visual similarity — deferred.
 - Google Geocoding API must be enabled in Cloud Console for reverse geocoding to work.
@@ -65,3 +71,4 @@
 - Setup page: wireframe-driven design (from hand-drawn mockups). Main photo + optional "visible from" items with per-item camera modal + upload callbacks. Grew from 2 items (Tree, Rock) to 3 (Tree, Building, Path).
 - Seeking phase: seeking page with map + elapsed timer, god mode for spectators, player pings for location tracking. Added radar proximity search (hand-built), submissions + win detection + summary page (AI-built).
 - God mode: started as simple map with pings → enhanced with photo location markers, color-coded player icons, draggable photo tray.
+- Power-ups: hints table with casting duration; Radar/Thermometer/Photo as three tabbed power-ups with CastingTimer. Casting duration moved from create form to Set game zone modal. Schema fix: partial unique index for one casting hint per pair (not full UNIQUE on status). Photo unlock state fixed by optimistically adding completed hint to completedHints on PATCH response. Next.js images config for Supabase storage URLs.

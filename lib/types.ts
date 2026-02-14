@@ -35,6 +35,8 @@ export interface Game {
   zone_radius_meters: number | null;
   /** Hiding phase duration in seconds. See lib/game-config for default and bounds. */
   hiding_duration_seconds: number | null;
+  /** Power-up casting duration in seconds. See lib/game-config for default and bounds. */
+  powerup_casting_duration_seconds: number | null;
   /** Set when status becomes 'hiding' */
   hiding_started_at: string | null;
   /** Set when status becomes 'seeking' */
@@ -74,4 +76,59 @@ export interface Player {
   building_photo: number | null;
   /** bigint FK to photos.id — optional path photo */
   path_photo: number | null;
+}
+
+/**
+ * Hint/Power-up record from the database
+ */
+export interface Hint {
+  id: string;
+  game_id: string;
+  seeker_id: number;
+  hider_id: number;
+  type: 'radar' | 'thermometer' | 'photo';
+  note: string | null;
+  casting_duration_seconds: number;
+  status: 'casting' | 'completed' | 'cancelled';
+  created_at: string;
+  completed_at: string | null;
+}
+
+/**
+ * Power-up casting state for UI management
+ */
+export interface PowerupCastingState {
+  activeHints: Hint[];
+  completedHints: Hint[];
+  selectedPowerupType: 'radar' | 'thermometer' | 'photo';
+}
+
+/**
+ * Radar hint result data stored in note field
+ */
+export interface RadarHintNote {
+  distanceMeters: number;
+  result?: {
+    withinDistance: boolean;
+    actualDistance: number;
+  };
+}
+
+/**
+ * Thermometer hint data stored in note field
+ */
+export interface ThermometerHintNote {
+  startLat: number;
+  startLng: number;
+  thresholdMeters: number;
+  result?: 'hotter' | 'colder' | 'same';
+}
+
+/**
+ * Photo hint data stored in note field
+ */
+export interface PhotoHintNote {
+  photoType: 'tree' | 'building' | 'path';
+  photoId: number;
+  unlocked: boolean;
 }

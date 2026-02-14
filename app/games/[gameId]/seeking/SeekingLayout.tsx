@@ -8,11 +8,11 @@ import { getLocation } from "@/lib/get-location";
 import { SeekingTimer } from "./SeekingTimer";
 import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { CameraModal } from "@/components/CameraModal";
-import type { Submission } from "@/lib/types";
+import { PowerupTabs } from "./PowerupTabs";
+import { HintHistory } from "./HintHistory";
+import type { Submission, Hint } from "@/lib/types";
 
 const TRAY_COLLAPSED_PX = 72;
-
-const RADAR_DISTANCES = [10, 25, 50, 100, 200, 500];
 
 function getExpandedHeightPx(): number {
   if (typeof window === "undefined") return 600;
@@ -44,6 +44,7 @@ type Props = {
   initialSubmissionPhotoUrls: Record<number, string>;
   initialWinnerId: number | null;
   initialWinnerName: string | null;
+  powerupCastingSeconds: number;
 };
 
 export function SeekingLayout({
@@ -58,6 +59,7 @@ export function SeekingLayout({
   initialSubmissionPhotoUrls,
   initialWinnerId,
   initialWinnerName,
+  powerupCastingSeconds,
 }: Props) {
   const [refreshCountdown, setRefreshCountdown] = useState(5);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -66,13 +68,8 @@ export function SeekingLayout({
   const [dragHeightPx, setDragHeightPx] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; height: number } | null>(null);
   const didDragRef = useRef(false);
-  const [radarDistanceIndex, setRadarDistanceIndex] = useState(2);
-  const [radarResult, setRadarResult] = useState<{
-    withinDistance: boolean;
-    distanceMeters: number | null;
-    error?: string;
-  } | null>(null);
-  const [radarLoading, setRadarLoading] = useState(false);
+  // Power-up and hint state
+  const [hintResults, setHintResults] = useState<Hint[]>([]);
 
   // Submission state
   const [submissions, setSubmissions] = useState<Submission[]>(initialSubmissions);
@@ -159,7 +156,6 @@ export function SeekingLayout({
   const handleSelectTarget = useCallback((index: number) => {
     setSelectedIndex(index);
     setTrayExpanded(true);
-    setRadarResult(null);
   }, []);
 
   // Game is frozen once a winner exists
@@ -312,40 +308,10 @@ export function SeekingLayout({
     else setTrayExpanded((prev) => !prev);
   }, []);
 
-  // Radar proximity search
-  const radarDistanceMeters = RADAR_DISTANCES[radarDistanceIndex];
-  const handleRadarSearch = useCallback(() => {
-    if (!selectedTarget) return;
-    setRadarLoading(true);
-    setRadarResult(null);
-    getLocation()
-      .then((pos) => {
-        return fetch(`/api/games/${gameId}/radar`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lat: pos.latitude,
-            lng: pos.longitude,
-            targetPlayerId: selectedTarget.playerId,
-            distanceMeters: radarDistanceMeters,
-          }),
-        });
-      })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error && !("withinDistance" in data)) {
-          setRadarResult({ withinDistance: false, distanceMeters: null, error: data.error });
-          return;
-        }
-        setRadarResult({
-          withinDistance: data.withinDistance ?? false,
-          distanceMeters: data.distanceMeters ?? null,
-          error: data.error,
-        });
-      })
-      .catch(() => setRadarResult({ withinDistance: false, distanceMeters: null, error: "Could not get your location" }))
-      .finally(() => setRadarLoading(false));
-  }, [gameId, selectedTarget, radarDistanceMeters]);
+  // Handle hint results from power-ups
+  const handleHintResult = useCallback((hint: Hint) => {
+    setHintResults(prev => [...prev, hint]);
+  }, []);
 
   // Submission-derived state for selected target
   const isTargetFound = selectedTarget ? foundHiderIds.has(selectedTarget.playerId) : false;
@@ -492,63 +458,15 @@ export function SeekingLayout({
               <p className="text-sm text-sky-600 dark:text-sky-400 py-4">No target photo</p>
             )}
 
-            {/* Radar: one compact line — icon, label, stepper, Search, Yes/No */}
-            <section className="mt-4 pt-3 border-t border-sky-200/60 dark:border-zinc-600 flex flex-wrap items-center gap-2" aria-label="Radar">
-              <span className="flex items-center gap-1.5 text-sm font-semibold text-sky-800 dark:text-sky-200 shrink-0">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50" aria-hidden>
-                  <svg className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </span>
-                Radar
-              </span>
-              <span className="text-xs text-sky-600 dark:text-sky-400 shrink-0">within</span>
-              <div className="inline-flex items-center rounded-lg bg-sky-50 dark:bg-zinc-700/80 border border-sky-200/60 dark:border-zinc-600 shrink-0">
-                <button
-                  type="button"
-                  disabled={radarDistanceIndex === 0 || radarLoading}
-                  onClick={() => setRadarDistanceIndex((i) => Math.max(0, i - 1))}
-                  className="flex h-8 w-8 items-center justify-center rounded-l-lg text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-zinc-600 disabled:opacity-40 disabled:pointer-events-none touch-manipulation font-medium"
-                  aria-label="Decrease distance"
-                >
-                  −
-                </button>
-                <span className="min-w-[2.25rem] text-center text-sm font-semibold tabular-nums text-sky-900 dark:text-sky-100">
-                  {radarDistanceMeters}
-                </span>
-                <span className="pr-1.5 text-xs text-sky-600 dark:text-sky-400">m</span>
-                <button
-                  type="button"
-                  disabled={radarDistanceIndex === RADAR_DISTANCES.length - 1 || radarLoading}
-                  onClick={() => setRadarDistanceIndex((i) => Math.min(RADAR_DISTANCES.length - 1, i + 1))}
-                  className="flex h-8 w-8 items-center justify-center rounded-r-lg text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-zinc-600 disabled:opacity-40 disabled:pointer-events-none touch-manipulation font-medium"
-                  aria-label="Increase distance"
-                >
-                  +
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={handleRadarSearch}
-                disabled={radarLoading}
-                className="inline-flex items-center gap-1 rounded-lg bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white font-medium px-3 py-1.5 text-sm touch-manipulation transition-colors shrink-0"
-              >
-                {radarLoading ? "…" : <>Search <span aria-hidden>→</span></>}
-              </button>
-              {radarResult && (
-                <span
-                  className={`inline-flex items-center rounded-lg px-2.5 py-1 text-sm font-medium shrink-0 ${
-                    radarResult.error && radarResult.distanceMeters == null
-                      ? "bg-amber-100/80 dark:bg-zinc-600/80 text-amber-800 dark:text-amber-200"
-                      : radarResult.withinDistance
-                        ? "bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200"
-                        : "bg-sky-100/80 dark:bg-zinc-600/80 text-sky-800 dark:text-sky-200"
-                  }`}
-                >
-                  {radarResult.error && radarResult.distanceMeters == null ? radarResult.error : radarResult.withinDistance ? "Yes" : "No"}
-                </span>
-              )}
+            {/* Power-ups section */}
+            <section className="mt-4 pt-3 border-t border-sky-200/60 dark:border-zinc-600" aria-label="Power-ups">
+              <PowerupTabs
+                gameId={gameId}
+                playerId={playerId}
+                selectedTarget={selectedTarget}
+                powerupCastingSeconds={powerupCastingSeconds}
+                onHintResult={handleHintResult}
+              />
             </section>
 
             {/* Matched photo — shown when found */}
@@ -604,6 +522,9 @@ export function SeekingLayout({
                 </button>
               )}
             </div>
+
+            {/* Hint History */}
+            <HintHistory gameId={gameId} playerId={playerId} />
           </div>
         </div>
       )}

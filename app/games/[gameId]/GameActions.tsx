@@ -32,6 +32,8 @@ type Props = {
   currentPlayer: PlayerIdentity;
   /** Hiding phase duration in seconds (see game-config). Only used in lobby. */
   hidingDurationSeconds: number;
+  /** Power-up casting duration in seconds */
+  powerupCastingSeconds: number;
 };
 
 export function GameActions({
@@ -42,6 +44,7 @@ export function GameActions({
   zone,
   currentPlayer,
   hidingDurationSeconds,
+  powerupCastingSeconds,
 }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -165,6 +168,7 @@ export function GameActions({
         <GameZoneModal
           gameId={gameId}
           initialZone={zone}
+          initialPowerupCastingSeconds={powerupCastingSeconds}
           onSaved={() => {
             setZoneModalOpen(false);
             router.refresh();
