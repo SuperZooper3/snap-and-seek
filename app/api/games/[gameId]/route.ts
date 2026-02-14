@@ -5,6 +5,8 @@ import {
   MAX_HIDING_DURATION_SECONDS,
   MIN_POWERUP_CASTING_SECONDS,
   MAX_POWERUP_CASTING_SECONDS,
+  MIN_THERMOMETER_THRESHOLD_METERS,
+  MAX_THERMOMETER_THRESHOLD_METERS,
 } from "@/lib/game-config";
 
 export async function PATCH(
@@ -20,6 +22,7 @@ export async function PATCH(
   const zoneRadiusMeters = body?.zone_radius_meters;
   const hidingDurationSeconds = body?.hiding_duration_seconds;
   const powerupCastingSeconds = body?.powerup_casting_duration_seconds;
+  const thermometerThresholdMeters = body?.thermometer_threshold_meters;
 
   const isZoneUpdate =
     typeof zoneCenterLat === "number" &&
@@ -38,12 +41,18 @@ export async function PATCH(
     powerupCastingSeconds >= MIN_POWERUP_CASTING_SECONDS &&
     powerupCastingSeconds <= MAX_POWERUP_CASTING_SECONDS;
 
+  const isThermometerThresholdUpdate =
+    typeof thermometerThresholdMeters === "number" &&
+    thermometerThresholdMeters >= MIN_THERMOMETER_THRESHOLD_METERS &&
+    thermometerThresholdMeters <= MAX_THERMOMETER_THRESHOLD_METERS;
+
   const validUpdate =
     isZoneUpdate ||
     isStartHiding ||
     isStartSeeking ||
     isHidingDurationUpdate ||
-    isPowerupCastingUpdate;
+    isPowerupCastingUpdate ||
+    isThermometerThresholdUpdate;
 
   if (!validUpdate) {
     return NextResponse.json(
@@ -51,7 +60,8 @@ export async function PATCH(
         error:
           "Send zone (zone_center_lat, zone_center_lng, zone_radius_meters), " +
           `status: 'hiding' | 'seeking', hiding_duration_seconds (${MIN_HIDING_DURATION_SECONDS}–${MAX_HIDING_DURATION_SECONDS}), ` +
-          `or powerup_casting_duration_seconds (${MIN_POWERUP_CASTING_SECONDS}–${MAX_POWERUP_CASTING_SECONDS})`,
+          `or powerup_casting_duration_seconds (${MIN_POWERUP_CASTING_SECONDS}–${MAX_POWERUP_CASTING_SECONDS}), ` +
+          `or thermometer_threshold_meters (${MIN_THERMOMETER_THRESHOLD_METERS}–${MAX_THERMOMETER_THRESHOLD_METERS})`,
       },
       { status: 400 }
     );
@@ -68,6 +78,9 @@ export async function PATCH(
   }
   if (isPowerupCastingUpdate) {
     updates.powerup_casting_duration_seconds = powerupCastingSeconds;
+  }
+  if (isThermometerThresholdUpdate) {
+    updates.thermometer_threshold_meters = thermometerThresholdMeters;
   }
   if (isStartHiding) {
     updates.status = "hiding";

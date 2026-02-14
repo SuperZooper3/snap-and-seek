@@ -12,7 +12,7 @@
 
 ### Power-ups (hints) system
 - **Hints table:** `docs/supabase-hints-table.sql` and fix script `docs/supabase-hints-table-fix.sql`. Columns: `id`, `game_id`, `seeker_id`, `hider_id`, `type` ('radar'|'thermometer'|'photo'), `note` (JSON), `casting_duration_seconds`, `status` ('casting'|'completed'|'cancelled'), `created_at`, `completed_at`. **Constraint:** Use partial unique index `one_casting_hint_per_pair` on `(game_id, seeker_id, hider_id) WHERE (status = 'casting')` — NOT a full UNIQUE on (..., status), which would allow only one completed hint per pair.
-- **Games:** `powerup_casting_duration_seconds` (default 60). Set on **lobby page** (GameActions) via dropdown "Time to Cast", alongside Hiding period and Edit game zone — **not** inside Set game zone modal. `lib/game-config.ts`: `DEFAULT/MIN/MAX_POWERUP_CASTING_SECONDS`, `getPowerupCastingSeconds()`.
+- **Games:** `powerup_casting_duration_seconds` (default 60), `thermometer_threshold_meters` (default 100). Set on **lobby page** (GameActions) via dropdowns "Time to Cast" and "Thermometer distance" (25/50/100/150/200m), alongside Hiding period and Edit game zone. `lib/game-config.ts`: power-up casting + `DEFAULT/MIN/MAX_THERMOMETER_THRESHOLD_METERS`, `getThermometerThresholdMeters()`.
 - **APIs:** POST/GET `/api/games/[gameId]/hints` (start hint, list by seeker/status). PATCH/GET `/api/games/[gameId]/hints/[hintId]` (complete/cancel, get one). POST `/api/games/[gameId]/thermometer` (hotter/colder). POST `/api/games/[gameId]/photo-unlock` (list available photos — incl. types with `unavailable: true` — or get photo URL by type). PATCH lock-in accepts `unavailable_photo_types` (array of 'tree'|'building'|'path').
 - **Seeking UI:** `PowerupTabs` with folder-style tabs (Radar, Thermometer, Photo). When one hint is casting, other tabs disabled. Per-target completed state: show "✓ Unlocked" / result and prevent re-cast. Components: `CastingTimer`, `RadarPowerup`, `ThermometerPowerup`, `PhotoPowerup`, `HintHistory`.
 - **Photo unlock / unavailable hints:** For types where hider chose "I don't have this option", photo-unlock returns `unavailable: true`. PhotoPowerup shows the absence message **upfront** (e.g. "This player has no tree or similar landmark near their spot") with **no Unlock button** — seekers don't spend cast time on non-existent hints.
@@ -46,6 +46,13 @@
 ### Radar (as power-up)
 - **Radar** is one of three power-up types. Same backend idea: `POST /api/games/[gameId]/radar` for instant check; hints flow uses POST hints → casting timer → PATCH complete with result. Radar UI in seeking: distance stepper, "Cast Radar", then result when completed. Legacy radar API still used for the actual distance check when completing the radar hint.
 
+### Thermometer power-up (recent)
+- **Configurable threshold:** `games.thermometer_threshold_meters` (default 100). Migration: `docs/supabase-thermometer-threshold.sql`. Lobby dropdown in GameActions.
+- **API fix:** Thermometer API uses `startLat`/`startLng` when `lastLat`/`lastLng` absent (first completion). Neutral = distance to target changed ≤10m.
+- **Reusable:** No one-use limit; `onHintCompleted` optimistically updates state so "Start Thermometer" appears immediately after Stop.
+- **getLocation:** ThermometerPowerup uses `getLocation()` for start point, distance polling (1s), and Stop — debug mode works.
+- **Flow:** Cast timer runs; when it hits 0, hint stays casting. Stop button appears only after cast complete; disabled until distance ≥ threshold. User clicks Stop → result at bottom (bold).
+
 ### God mode overhaul (hand-built)
 - **Photo locations API:** `GET /api/games/[gameId]/photo-locations` — returns lat/lng of each player's hiding photo.
 - **Photo markers on map:** `GodMapView` now shows both live player pings (colored circle with initial) and hiding photo locations (default markers with name labels).
@@ -72,7 +79,7 @@
 - **Location resolution:** Always use `getLocation()` from `lib/get-location.ts`. It checks debug cookie first, then falls back to `navigator.geolocation`.
 - **Submission flow:** Tap "I found [Name]!" → camera modal → capture → upload to `/api/upload` → POST `/api/games/[gameId]/submissions` → local state update → pill turns green.
 - **Power-ups flow:** Select target → choose tab (Radar/Thermometer/Photo) → start hint (POST `/api/games/[gameId]/hints`) → CastingTimer runs → on complete, PATCH hint with resultData → optimistically add to `completedHints` so UI doesn’t revert. Poll hints every 2s for active + completed.
-- **Radar (power-up):** Distance stepper → Cast Radar → timer → result stored in hint note. Thermometer: set start point, move away, stop when far enough → hotter/colder. Photo: Types with a photo show Unlock → casting → image. Types marked "I don't have this option" by hider show the absence message upfront (no Unlock, no casting).
+- **Radar (power-up):** Distance stepper → Cast Radar → timer → result stored in hint note. Thermometer: set start → Start (timer) → move ≥ threshold → when cast time done, click Stop (disabled until distance met) → hotter/colder/neutral. Uses `getLocation()` (debug-aware). Reusable. Result at bottom. Photo: Types with a photo show Unlock → casting → image. Types with "I don't have this option" show absence upfront.
 - **Polling flow:** Every 5s, fetch `/api/games/[gameId]/game-status` → update submissions state, check for winner → show win modal if winner detected.
 - **Game status flow:** `"lobby"` → `"hiding"` → `"seeking"` → `"completed"`.
 - **Draggable tray pattern:** Used in both SeekingLayout and GodPhotoTray — pointer events for drag, collapsed/expanded heights, snap-to-state on release.

@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
-import { getPowerupCastingSeconds } from "@/lib/game-config";
+import { getPowerupCastingSeconds, getThermometerThresholdMeters } from "@/lib/game-config";
 import type { Submission } from "@/lib/types";
 import { SeekingLayout } from "./SeekingLayout";
 
@@ -24,7 +24,7 @@ export default async function SeekingPage({ params }: Props) {
   {
     const { data, error } = await supabase
       .from("games")
-      .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id, powerup_casting_duration_seconds")
+      .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id, powerup_casting_duration_seconds, thermometer_threshold_meters")
       .eq("id", gameId)
       .single();
     if (!error && data) {
@@ -37,7 +37,7 @@ export default async function SeekingPage({ params }: Props) {
         .eq("id", gameId)
         .single();
       if (fallbackErr || !fallback) notFound();
-      game = { ...fallback, winner_id: null, powerup_casting_duration_seconds: null };
+      game = { ...fallback, winner_id: null, powerup_casting_duration_seconds: null, thermometer_threshold_meters: null };
     }
   }
 
@@ -137,6 +137,10 @@ export default async function SeekingPage({ params }: Props) {
     (game as { powerup_casting_duration_seconds: number | null }).powerup_casting_duration_seconds
   );
 
+  const thermometerThresholdMeters = getThermometerThresholdMeters(
+    (game as { thermometer_threshold_meters?: number | null }).thermometer_threshold_meters
+  );
+
   return (
     <SeekingLayout
       gameId={gameId}
@@ -151,6 +155,7 @@ export default async function SeekingPage({ params }: Props) {
       initialWinnerId={game.winner_id as number | null}
       initialWinnerName={winnerName}
       powerupCastingSeconds={powerupCastingSeconds}
+      thermometerThresholdMeters={thermometerThresholdMeters}
     />
   );
 }

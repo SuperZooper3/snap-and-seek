@@ -54,7 +54,7 @@ export function HintHistory({ gameId, playerId }: Props) {
         case 'thermometer': {
           const data = noteData as ThermometerHintNote;
           return data.result 
-            ? `🌡️ ${data.result.charAt(0).toUpperCase() + data.result.slice(1)}`
+            ? `🌡️ ${data.result === 'same' ? 'Neutral' : data.result.charAt(0).toUpperCase() + data.result.slice(1)}`
             : `Thermometer ${data.thresholdMeters}m`;
         }
         

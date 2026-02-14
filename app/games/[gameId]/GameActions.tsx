@@ -33,6 +33,14 @@ const POWERUP_CASTING_PRESETS = [
   { label: "5 minutes", value: 300 },
 ] as const;
 
+const THERMOMETER_THRESHOLD_PRESETS = [
+  { label: "25 m", value: 25 },
+  { label: "50 m", value: 50 },
+  { label: "100 m", value: 100 },
+  { label: "150 m", value: 150 },
+  { label: "200 m", value: 200 },
+] as const;
+
 type Props = {
   gameId: string;
   status: string | null;
@@ -44,6 +52,8 @@ type Props = {
   hidingDurationSeconds: number;
   /** Power-up casting duration in seconds */
   powerupCastingSeconds: number;
+  /** Thermometer distance threshold in meters */
+  thermometerThresholdMeters: number;
 };
 
 export function GameActions({
@@ -55,6 +65,7 @@ export function GameActions({
   currentPlayer,
   hidingDurationSeconds,
   powerupCastingSeconds,
+  thermometerThresholdMeters,
 }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -63,6 +74,7 @@ export function GameActions({
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [savingDuration, setSavingDuration] = useState(false);
   const [savingCasting, setSavingCasting] = useState(false);
+  const [savingThermometer, setSavingThermometer] = useState(false);
   const isLobby = status === "lobby";
   const hasZone = zone != null;
   const canStart = playerCount >= 2 && hasZone;
@@ -118,6 +130,21 @@ export function GameActions({
       router.refresh();
     } finally {
       setSavingCasting(false);
+    }
+  }
+
+  async function setThermometerThreshold(meters: number) {
+    setSavingThermometer(true);
+    try {
+      const res = await fetch(`/api/games/${gameId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ thermometer_threshold_meters: meters }),
+      });
+      if (!res.ok) throw new Error("Failed to update thermometer distance");
+      router.refresh();
+    } finally {
+      setSavingThermometer(false);
     }
   }
 
@@ -191,6 +218,26 @@ export function GameActions({
             </select>
             <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
               How long power-ups take to cast during seeking
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-amber-900 dark:text-amber-100 mb-1.5">
+              Thermometer distance
+            </label>
+            <select
+              value={THERMOMETER_THRESHOLD_PRESETS.some((p) => p.value === thermometerThresholdMeters) ? thermometerThresholdMeters : 100}
+              onChange={(e) => setThermometerThreshold(Number(e.target.value))}
+              disabled={savingThermometer}
+              className="w-full rounded-lg border border-amber-200 dark:border-zinc-600 bg-amber-50/50 dark:bg-zinc-700/50 px-3 py-2 text-sm text-amber-900 dark:text-amber-100"
+            >
+              {THERMOMETER_THRESHOLD_PRESETS.map(({ label, value }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+              Minimum distance to move from start to complete thermometer hint
             </p>
           </div>
           <button

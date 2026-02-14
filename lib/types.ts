@@ -37,6 +37,8 @@ export interface Game {
   hiding_duration_seconds: number | null;
   /** Power-up casting duration in seconds. See lib/game-config for default and bounds. */
   powerup_casting_duration_seconds: number | null;
+  /** Thermometer distance threshold in meters. See lib/game-config for default and bounds. */
+  thermometer_threshold_meters: number | null;
   /** Set when status becomes 'hiding' */
   hiding_started_at: string | null;
   /** Set when status becomes 'seeking' */

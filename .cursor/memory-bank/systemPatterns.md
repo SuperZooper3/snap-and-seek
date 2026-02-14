@@ -66,8 +66,8 @@
 ## Power-ups (hints) flow (`/games/[gameId]/seeking`)
 1. `PowerupTabs` receives `selectedTarget`, `powerupCastingSeconds`. Polls GET hints?seekerId&status=casting and status=completed every 2s; filters by `hider_id === selectedTarget.playerId`.
 2. User picks tab (Radar/Thermometer/Photo). If no active hint: can start one via POST `/api/games/[gameId]/hints` with type + initialData. Only one casting hint per (seeker, hider); partial unique index enforces this.
-3. `CastingTimer` runs; on expiry calls `onComplete(hintId)`. Parent `handleCompleteHint` PATCHes hint with status 'completed' (and optional resultData), then removes from activeHints and **adds to completedHints** (so Photo "✓ Unlocked" persists).
-4. Radar: initialData has distanceMeters; on complete, front-end can call radar API and PATCH with resultData. Thermometer: initialData has startLat/startLng, thresholdMeters; stop when far enough, call thermometer API, PATCH with result. Photo: initialData has photoType/photoId; on complete, note has photoType so `unlockedPhotoTypes` derives from completedHints; photo-unlock API returns URL. For types with `unavailable: true` (hider chose "I don't have this option"), PhotoPowerup shows the absence message **upfront** — no Unlock button, no casting.
+3. `CastingTimer` runs; on expiry calls `onComplete(hintId)`. For Thermometer, `handleCastingComplete` is a no-op (hint stays casting); for Radar/Photo, parent PATCHes with resultData and updates state.
+4. Radar: initialData has distanceMeters; on complete, call radar API and PATCH with resultData. Thermometer: initialData has startLat/startLng, thresholdMeters (from game config). Uses `getLocation()` for distance (1s poll) so debug mode works. Stop button appears only after cast time complete; disabled until distance ≥ threshold. User clicks "Stop Thermometer — Get Result" → thermometer API → PATCH with result → `onHintCompleted` optimistically updates state (reuse without poll delay). Result (hotter/colder/neutral) shown at bottom, bold. Neutral = distance to target changed ≤10m. Thermometer reusable (no one-use limit). Photo: initialData has photoType/photoId; on complete, note has photoType; photo-unlock returns URL. Types with `unavailable: true` show absence message upfront.
 5. `PhotoPowerup`: availablePhotos can have `unavailable: true`; those show message only. Others: Unlock → cast → show "✓ Unlocked" and image. Duplicate keys/guard in `handleRevealPhoto` for actual photos.
 
 ## Summary page (`/games/[gameId]/summary`)
@@ -77,7 +77,7 @@
 ## Data types
 - `LocationPoint`: `{ lat, lng, timestamp }`. Exported from `LocationDisplay.tsx`, used by `MapDisplay.tsx`.
 - `Photo`: `{ id, url, storage_path, created_at, latitude, longitude, location_name, game_id, player_id }`. Defined in `lib/types.ts`.
-- `Game`: `{ id, name, status, created_at, zone fields, hiding/seeking timestamps, winner_id, finished_at, powerup_casting_duration_seconds }`. Defined in `lib/types.ts`.
+- `Game`: `{ id, name, status, zone fields, hiding/seeking timestamps, winner_id, finished_at, powerup_casting_duration_seconds, thermometer_threshold_meters }`. Defined in `lib/types.ts`.
 - `GameZone`: `{ center_lat, center_lng, radius_meters }`. Defined in `lib/types.ts`.
 - `Player`: `{ id, created_at, name, game_id, hiding_photo, tree_photo, building_photo, path_photo, unavailable_hint_photo_types? }`. Defined in `lib/types.ts`.
 - `Submission`: `{ id, game_id, seeker_id, hider_id, photo_id, status, created_at }`. Defined in `lib/types.ts`.

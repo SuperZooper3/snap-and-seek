@@ -13,6 +13,7 @@ interface Props {
   playerId: number;
   selectedTarget: SeekingTarget | null;
   powerupCastingSeconds: number;
+  thermometerThresholdMeters: number;
   onHintResult: (hint: Hint) => void;
 }
 
@@ -21,6 +22,7 @@ export function PowerupTabs({
   playerId,
   selectedTarget,
   powerupCastingSeconds,
+  thermometerThresholdMeters,
   onHintResult,
 }: Props) {
   const [selectedPowerup, setSelectedPowerup] = useState<'radar' | 'thermometer' | 'photo'>('radar');
@@ -113,6 +115,13 @@ export function PowerupTabs({
     }
   };
 
+  // Thermometer: don't auto-complete when timer ends; user must move and click Stop
+  const handleCastingComplete = (hintId: string) => {
+    const hint = activeHints.find((h) => h.id === hintId);
+    if (hint?.type === "thermometer") return; // no-op: hint stays casting until user clicks Stop
+    handleCompleteHint(hintId);
+  };
+
   const handleCancelHint = async (hintId: string) => {
     try {
       const response = await fetch(`/api/games/${gameId}/hints/${hintId}`, {
@@ -151,7 +160,7 @@ export function PowerupTabs({
       {activeHint && (
         <CastingTimer
           hint={activeHint}
-          onComplete={handleCompleteHint}
+          onComplete={handleCastingComplete}
           onCancel={handleCancelHint}
         />
       )}
@@ -212,11 +221,16 @@ export function PowerupTabs({
             gameId={gameId}
             targetPlayer={selectedTarget}
             onStartHint={handleStartHint}
-            disabled={!!activeHint || loading || completedHintTypes.has('thermometer')}
+            disabled={!!activeHint || loading}
             activeHint={activeHint}
             powerupCastingSeconds={powerupCastingSeconds}
-            isCompleted={completedHintTypes.has('thermometer')}
-            completedHint={completedHints.find(h => h.type === 'thermometer')}
+            thermometerThresholdMeters={thermometerThresholdMeters}
+            lastCompletedHint={completedHints.filter(h => h.type === 'thermometer').sort((a, b) => (b.completed_at || b.created_at).localeCompare(a.completed_at || a.created_at))[0]}
+            onHintCompleted={(hint) => {
+              setActiveHints((prev) => prev.filter((h) => h.id !== hint.id));
+              setCompletedHints((prev) => [...prev, hint]);
+              onHintResult(hint);
+            }}
           />
         )}
         

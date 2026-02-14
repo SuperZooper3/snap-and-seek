@@ -5,7 +5,7 @@ import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
 import type { Game, Player } from "@/lib/types";
-import { getHidingDurationSeconds, getPowerupCastingSeconds } from "@/lib/game-config";
+import { getHidingDurationSeconds, getPowerupCastingSeconds, getThermometerThresholdMeters } from "@/lib/game-config";
 import { GameActions } from "./GameActions";
 import { PlayerList } from "./PlayerList";
 import { GamePageRefresh } from "./GamePageRefresh";
@@ -98,6 +98,9 @@ export default async function GamePage({ params, searchParams }: Props) {
             )}
             powerupCastingSeconds={getPowerupCastingSeconds(
               (game as Game).powerup_casting_duration_seconds
+            )}
+            thermometerThresholdMeters={getThermometerThresholdMeters(
+              (game as Game).thermometer_threshold_meters
             )}
           />
 

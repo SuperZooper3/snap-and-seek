@@ -45,6 +45,7 @@ type Props = {
   initialWinnerId: number | null;
   initialWinnerName: string | null;
   powerupCastingSeconds: number;
+  thermometerThresholdMeters: number;
 };
 
 export function SeekingLayout({
@@ -60,6 +61,7 @@ export function SeekingLayout({
   initialWinnerId,
   initialWinnerName,
   powerupCastingSeconds,
+  thermometerThresholdMeters,
 }: Props) {
   const [refreshCountdown, setRefreshCountdown] = useState(5);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -465,6 +467,7 @@ export function SeekingLayout({
                 playerId={playerId}
                 selectedTarget={selectedTarget}
                 powerupCastingSeconds={powerupCastingSeconds}
+                thermometerThresholdMeters={thermometerThresholdMeters}
                 onHintResult={handleHintResult}
               />
             </section>

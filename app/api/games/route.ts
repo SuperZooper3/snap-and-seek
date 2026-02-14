@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { DEFAULT_HIDING_DURATION_SECONDS, DEFAULT_POWERUP_CASTING_SECONDS } from "@/lib/game-config";
+import { DEFAULT_HIDING_DURATION_SECONDS, DEFAULT_POWERUP_CASTING_SECONDS, DEFAULT_THERMOMETER_THRESHOLD_METERS } from "@/lib/game-config";
 
 export async function GET() {
   const { data: games, error } = await supabase
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       status: "lobby",
       hiding_duration_seconds: DEFAULT_HIDING_DURATION_SECONDS,
       powerup_casting_duration_seconds: DEFAULT_POWERUP_CASTING_SECONDS,
+      thermometer_threshold_meters: DEFAULT_THERMOMETER_THRESHOLD_METERS,
     })
     .select("id, name, status, created_at")
     .single();

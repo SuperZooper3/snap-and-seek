@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getLocation } from "@/lib/get-location";
+import { distanceMeters } from "@/lib/map-utils";
 import type { Hint } from "@/lib/types";
-
-const THERMOMETER_DISTANCES = [25, 50, 100, 150, 200];
 
 interface SeekingTarget {
   playerId: number;
@@ -18,8 +18,14 @@ interface Props {
   disabled: boolean;
   activeHint: Hint | undefined;
   powerupCastingSeconds: number;
-  isCompleted: boolean;
-  completedHint?: { note: string | null };
+  thermometerThresholdMeters: number;
+  lastCompletedHint?: { note: string | null } | null;
+  onHintCompleted?: (hint: Hint) => void;
+}
+
+function formatThermometerResult(result: string): string {
+  if (result === 'same') return 'Neutral';
+  return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
 export function ThermometerPowerup({ 
@@ -29,75 +35,54 @@ export function ThermometerPowerup({
   disabled,
   activeHint,
   powerupCastingSeconds,
-  isCompleted,
-  completedHint
+  thermometerThresholdMeters,
+  lastCompletedHint,
+  onHintCompleted,
 }: Props) {
-  const [distanceIndex, setDistanceIndex] = useState(2); // Default to 100m
   const [startPoint, setStartPoint] = useState<{lat: number, lng: number} | null>(null);
   const [currentDistance, setCurrentDistance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [thermometerResult, setThermometerResult] = useState<string | null>(null);
 
   // Track current location and distance from start when thermometer is active
+  // Uses getLocation() so debug mode (sas_debug_location cookie) affects the distance
   useEffect(() => {
     if (!activeHint || activeHint.type !== 'thermometer' || !startPoint) return;
 
     const updateLocation = () => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          // Calculate distance from start point using Haversine formula (simplified)
-          const R = 6371e3; // Earth's radius in meters
-          const φ1 = startPoint.lat * Math.PI/180;
-          const φ2 = latitude * Math.PI/180;
-          const Δφ = (latitude-startPoint.lat) * Math.PI/180;
-          const Δλ = (longitude-startPoint.lng) * Math.PI/180;
-
-          const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                   Math.cos(φ1) * Math.cos(φ2) *
-                   Math.sin(Δλ/2) * Math.sin(Δλ/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-          const distance = R * c;
-
+      getLocation()
+        .then(({ latitude, longitude }) => {
+          const distance = distanceMeters(startPoint.lat, startPoint.lng, latitude, longitude);
           setCurrentDistance(Math.round(distance));
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
+        })
+        .catch((err) => console.error('Location error:', err));
     };
 
     updateLocation();
-    const interval = setInterval(updateLocation, 3000); // Update every 3 seconds
+    const interval = setInterval(updateLocation, 1000); // Every 1s so debug mode changes reflect quickly
     return () => clearInterval(interval);
   }, [activeHint, startPoint]);
 
-  const handleSetStartPoint = () => {
+  const handleSetStartPoint = async () => {
     setLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude: lat, longitude: lng } = position.coords;
-        setStartPoint({ lat, lng });
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Failed to get location:', error);
-        setLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+    try {
+      const { latitude: lat, longitude: lng } = await getLocation();
+      setStartPoint({ lat, lng });
+    } catch (err) {
+      console.error('Failed to get location:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStartThermometer = async () => {
     if (!startPoint || disabled || loading) return;
 
-    const thresholdMeters = THERMOMETER_DISTANCES[distanceIndex];
-    
+    setThermometerResult(null); // Clear previous result for clean reuse
     await onStartHint('thermometer', {
       startLat: startPoint.lat,
       startLng: startPoint.lng,
-      thresholdMeters,
+      thresholdMeters: thermometerThresholdMeters,
     });
   };
 
@@ -106,15 +91,7 @@ export function ThermometerPowerup({
 
     setLoading(true);
     try {
-      // Get current location
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-        });
-      });
-
-      const { latitude, longitude } = position.coords;
+      const { latitude, longitude } = await getLocation();
 
       // Call thermometer API to get result
       const response = await fetch(`/api/games/${gameId}/thermometer`, {
@@ -129,13 +106,8 @@ export function ThermometerPowerup({
 
       const data = await response.json();
       if (response.ok && data.result) {
-        setThermometerResult(data.result);
-        // Complete the hint with the result
-        const hintNote = JSON.parse(activeHint.note || '{}');
-        hintNote.lastLat = latitude;
-        hintNote.lastLng = longitude;
-        
-        await fetch(`/api/games/${gameId}/hints/${activeHint.id}`, {
+        setThermometerResult(formatThermometerResult(data.result));
+        const patchRes = await fetch(`/api/games/${gameId}/hints/${activeHint.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -143,6 +115,10 @@ export function ThermometerPowerup({
             resultData: { result: data.result },
           }),
         });
+        const patchData = await patchRes.json();
+        if (patchRes.ok && patchData.hint) {
+          onHintCompleted?.(patchData.hint);
+        }
       }
     } catch (error) {
       console.error('Failed to stop thermometer:', error);
@@ -151,47 +127,36 @@ export function ThermometerPowerup({
     }
   };
 
-  const selectedThreshold = THERMOMETER_DISTANCES[distanceIndex];
   const canStart = startPoint && !activeHint && !disabled;
-  const canStop = activeHint && activeHint.type === 'thermometer' && currentDistance && currentDistance >= selectedThreshold;
 
-  // Show completed result if already used thermometer
-  if (isCompleted && completedHint) {
-    let resultData;
+  // Stop button: require BOTH cast time complete AND distance moved
+  const isCastingComplete = activeHint
+    ? Date.now() >= new Date(activeHint.created_at).getTime() + (activeHint.casting_duration_seconds || 0) * 1000
+    : false;
+  const canStop =
+    activeHint &&
+    activeHint.type === 'thermometer' &&
+    isCastingComplete &&
+    currentDistance != null &&
+    currentDistance >= thermometerThresholdMeters;
+
+  let lastResultDisplay: string | null = null;
+  if (lastCompletedHint?.note) {
     try {
-      resultData = JSON.parse(completedHint.note || '{}');
-    } catch {
-      resultData = {};
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="text-center p-4 bg-orange-100 border border-orange-200 rounded-lg">
-          <div className="text-lg font-bold text-orange-700 mb-2">
-            Thermometer Complete ✓
-          </div>
-          {resultData.result && (
-            <div className="text-lg font-semibold text-orange-600">
-              You&apos;re getting {resultData.result}! 🌡️
-            </div>
-          )}
-          {resultData.thresholdMeters && (
-            <div className="text-sm text-orange-600 mt-1">
-              Moved {resultData.thresholdMeters}m from starting point
-            </div>
-          )}
-        </div>
-        <div className="text-xs text-gray-500 text-center">
-          Thermometer power-up already used for {targetPlayer.name}
-        </div>
-      </div>
-    );
+      const d = JSON.parse(lastCompletedHint.note);
+      if (d.result) lastResultDisplay = formatThermometerResult(d.result);
+    } catch { /* ignore */ }
   }
 
   return (
     <div className="space-y-4">
+      {lastResultDisplay && (
+        <div className="text-center text-xs text-orange-600/70 dark:text-orange-400/70">
+          Last result: {lastResultDisplay}
+        </div>
+      )}
       <div className="text-sm text-gray-600 text-center">
-        Set a starting point, move away, then get &quot;hotter/colder&quot; feedback
+        Set a starting point, move away, then get &quot;hotter/colder/neutral&quot; feedback
       </div>
 
       {/* Step 1: Set starting point */}
@@ -217,37 +182,13 @@ export function ThermometerPowerup({
         </div>
       )}
 
-      {/* Step 2: Distance threshold */}
       {startPoint && (
-        <div>
-          <div className="text-sm text-gray-600 text-center mb-2">
-            Minimum distance to move:
-          </div>
-          <div className="flex items-center justify-center space-x-3">
-            <button
-              onClick={() => setDistanceIndex(Math.max(0, distanceIndex - 1))}
-              disabled={distanceIndex === 0 || disabled}
-              className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-lg"
-            >
-              −
-            </button>
-            
-            <div className="text-center min-w-[80px]">
-              <div className="text-lg font-semibold">{selectedThreshold}m</div>
-            </div>
-            
-            <button
-              onClick={() => setDistanceIndex(Math.min(THERMOMETER_DISTANCES.length - 1, distanceIndex + 1))}
-              disabled={distanceIndex === THERMOMETER_DISTANCES.length - 1 || disabled}
-              className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-lg"
-            >
-              +
-            </button>
-          </div>
+        <div className="text-sm text-gray-600 text-center">
+          Move at least {thermometerThresholdMeters}m away to complete
         </div>
       )}
 
-      {/* Step 3: Start thermometer or show status */}
+      {/* Step 2: Start thermometer or show status */}
       {startPoint && !activeHint && (
         <div className="text-center">
           <button
@@ -261,44 +202,57 @@ export function ThermometerPowerup({
       )}
 
       {/* Show current distance and stop button when active */}
-      {activeHint && activeHint.type === 'thermometer' && currentDistance !== null && (
+      {activeHint && activeHint.type === 'thermometer' && (
         <div className="space-y-3">
           <div className="text-center">
             <div className="text-sm text-gray-600">Distance from start:</div>
-            <div className="text-xl font-bold text-orange-600">{currentDistance}m</div>
-            {currentDistance < selectedThreshold && (
+            <div className="text-xl font-bold text-orange-600">
+              {currentDistance !== null ? `${currentDistance}m` : '—'}
+            </div>
+            {(currentDistance == null || currentDistance < thermometerThresholdMeters) && (
               <div className="text-xs text-orange-500">
-                Move at least {selectedThreshold}m away to stop
+                Move at least {thermometerThresholdMeters}m away to stop
+              </div>
+            )}
+            {!isCastingComplete && currentDistance != null && currentDistance >= thermometerThresholdMeters && (
+              <div className="text-xs text-orange-500">
+                Wait for cast time to finish, then click Stop
               </div>
             )}
           </div>
 
-          {canStop && (
+          {isCastingComplete && (
             <div className="text-center">
               <button
                 onClick={handleStopThermometer}
-                disabled={loading}
-                className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-medium rounded-lg"
+                disabled={loading || !canStop}
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg"
               >
-                {loading ? 'Getting result...' : 'Stop Thermometer'}
+                {loading
+                  ? 'Getting result...'
+                  : canStop
+                    ? 'Stop Thermometer — Get Result'
+                    : 'Stop Thermometer (move ' + thermometerThresholdMeters + 'm first)'}
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Show result */}
-      {thermometerResult && (
-        <div className="text-center p-3 bg-orange-100 border border-orange-200 rounded-lg">
-          <div className="text-lg font-bold text-orange-700">
-            You&apos;re getting {thermometerResult}! 🌡️
-          </div>
-        </div>
-      )}
-
       <div className="text-xs text-gray-500 text-center">
         Takes {powerupCastingSeconds} seconds to cast
       </div>
+
+      {/* Result at bottom — bold and prominent */}
+      {thermometerResult && (
+        <div className="text-center p-4 bg-orange-200/80 dark:bg-orange-900/40 border-2 border-orange-400 dark:border-orange-600 rounded-lg mt-4">
+          <div className="text-xl font-bold text-orange-900 dark:text-orange-100">
+            {thermometerResult === 'Neutral'
+              ? 'Neutral — distance hasn\'t changed much 🌡️'
+              : `You're getting ${thermometerResult}! 🌡️`}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

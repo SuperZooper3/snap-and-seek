@@ -117,14 +117,18 @@ export async function POST(
 
   let result: 'hotter' | 'colder' | 'same' | null = null;
   
-  if (typeof lastLat === 'number' && typeof lastLng === 'number' && canComplete) {
-    // Compare current distance to target vs last distance to target
-    const lastDistanceToTarget = distanceMeters(lastLat, lastLng, photoLat, photoLng);
-    const threshold = 2; // 2 meter threshold for "same"
+  // Use lastLat/lastLng if present (from prior thermometer API calls), otherwise use
+  // startLat/startLng as "previous" position: "Am I hotter or colder than when I started?"
+  const prevLat = typeof lastLat === 'number' ? lastLat : startLat;
+  const prevLng = typeof lastLng === 'number' ? lastLng : startLng;
+  
+  if (canComplete) {
+    const prevDistanceToTarget = distanceMeters(prevLat, prevLng, photoLat, photoLng);
+    const neutralThreshold = 10; // 10 meter threshold: if distance hasn't changed much, "neutral"
     
-    if (Math.abs(distanceToTarget - lastDistanceToTarget) <= threshold) {
+    if (Math.abs(distanceToTarget - prevDistanceToTarget) <= neutralThreshold) {
       result = 'same';
-    } else if (distanceToTarget < lastDistanceToTarget) {
+    } else if (distanceToTarget < prevDistanceToTarget) {
       result = 'hotter';
     } else {
       result = 'colder';

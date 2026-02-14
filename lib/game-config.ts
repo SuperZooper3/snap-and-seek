@@ -21,6 +21,15 @@ export const MIN_POWERUP_CASTING_SECONDS = 10;
 /** Maximum allowed power-up casting duration (seconds). */
 export const MAX_POWERUP_CASTING_SECONDS = 300;
 
+/** Default thermometer distance threshold in meters. */
+export const DEFAULT_THERMOMETER_THRESHOLD_METERS = 100;
+
+/** Minimum allowed thermometer threshold (meters). */
+export const MIN_THERMOMETER_THRESHOLD_METERS = 25;
+
+/** Maximum allowed thermometer threshold (meters). */
+export const MAX_THERMOMETER_THRESHOLD_METERS = 300;
+
 /**
  * Resolve hiding duration from game: use DB value if valid, otherwise default.
  */
@@ -51,6 +60,23 @@ export function getPowerupCastingSeconds(
     fromDb > MAX_POWERUP_CASTING_SECONDS
   ) {
     return DEFAULT_POWERUP_CASTING_SECONDS;
+  }
+  return fromDb;
+}
+
+/**
+ * Resolve thermometer threshold from game: use DB value if valid, otherwise default.
+ */
+export function getThermometerThresholdMeters(
+  fromDb: number | null | undefined
+): number {
+  if (fromDb == null) return DEFAULT_THERMOMETER_THRESHOLD_METERS;
+  if (
+    typeof fromDb !== "number" ||
+    fromDb < MIN_THERMOMETER_THRESHOLD_METERS ||
+    fromDb > MAX_THERMOMETER_THRESHOLD_METERS
+  ) {
+    return DEFAULT_THERMOMETER_THRESHOLD_METERS;
   }
   return fromDb;
 }

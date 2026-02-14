@@ -36,8 +36,8 @@
 
 ### Power-ups (hints) system (implemented)
 - **Hints table:** `hints` with game_id, seeker_id, hider_id, type (radar/thermometer/photo), note (JSON), casting_duration_seconds, status (casting/completed/cancelled), created_at, completed_at. Partial unique index: only one row with status='casting' per (game_id, seeker_id, hider_id). Migrations: `docs/supabase-hints-table.sql`, fix script `docs/supabase-hints-table-fix.sql`.
-- **Games:** `powerup_casting_duration_seconds` (default 60). Configured on **lobby page** (GameActions): "Time to Cast" dropdown alongside Hiding period and Edit game zone (not inside Set game zone modal). PATCH `/api/games/[gameId]` accepts `powerup_casting_duration_seconds`.
-- **Seeking power-ups:** Folder-style tabs (Radar, Thermometer, Photo). CastingTimer shows progress; only one active hint per target; other tabs disabled while casting. Completed state persists (optimistic add to completedHints on completion). Radar: distance stepper → cast → result. Thermometer: set start, move away, stop → hotter/colder. Photo: unlock tree/building/path hint photos when available; types where hider chose "I don't have this option" show the absence message upfront (no Unlock button, no casting). Supabase image URLs via `next.config.ts` remotePatterns for `*.supabase.co`.
+- **Games:** `powerup_casting_duration_seconds` (default 60), `thermometer_threshold_meters` (default 100). Configured on **lobby page** (GameActions): "Time to Cast" and "Thermometer distance" (25/50/100/150/200m) dropdowns. PATCH `/api/games/[gameId]` accepts both. Migration: `docs/supabase-thermometer-threshold.sql`.
+- **Seeking power-ups:** Folder-style tabs (Radar, Thermometer, Photo). CastingTimer shows progress; only one active hint per target; other tabs disabled while casting. Radar: distance stepper → cast → result. Thermometer: set start → Start → cast timer runs → move ≥ threshold → when cast time done, click "Stop Thermometer — Get Result" (disabled until both cast time + distance met) → hotter/colder/neutral. Thermometer reusable (no one-use limit); uses `getLocation()` for debug mode; result at bottom (bold). Photo: unlock tree/building/path hint photos; types with "I don't have this option" show absence upfront. Supabase image URLs via `next.config.ts` remotePatterns.
 - **APIs:** POST/GET hints, PATCH/GET hint by id; POST thermometer (hotter/colder); POST photo-unlock (list or get URL; list includes types with `unavailable: true`). Lock-in PATCH accepts `unavailable_photo_types`. Hint completion: add returned hint to local completedHints so "✓ Unlocked" doesn’t revert before poll.
 
 ### Debug mode (implemented)
@@ -47,7 +47,7 @@
 - **Vibration API:** When outside zone, `navigator.vibrate([200, 100, 200])` every 2.5s until back inside.
 
 ## What's left
-- **DB migrations:** Run `docs/supabase-submissions.sql` for submissions + winner columns. Run `docs/supabase-hints-table.sql` (or `docs/supabase-hints-table-fix.sql` if hints table already exists with wrong constraint) for hints table + games.powerup_casting_duration_seconds. Run `docs/supabase-unavailable-hint-photos.sql` for `players.unavailable_hint_photo_types`.
+- **DB migrations:** Run `docs/supabase-submissions.sql` for submissions + winner. Run `docs/supabase-hints-table.sql` (or fix script) for hints + powerup_casting_duration_seconds. Run `docs/supabase-thermometer-threshold.sql` for `games.thermometer_threshold_meters`. Run `docs/supabase-unavailable-hint-photos.sql` for `players.unavailable_hint_photo_types`.
 - GPS proximity check for submissions (compare seeker GPS vs. hider photo GPS) — currently all submissions default to `'success'`.
 - Claude image recognition for visual similarity — deferred.
 - Google Geocoding API must be enabled in Cloud Console for reverse geocoding to work.
