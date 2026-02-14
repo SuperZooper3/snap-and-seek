@@ -1,0 +1,3 @@
+{"location":"secure-store.js:getApiKey:entry","message":"getApiKey called","data":{"isPackaged":true,"serviceName":"gpix","accountName":"gemini-api-key"},"timestamp":1768498214993,"sessionId":"debug-session","hypothesisId":"A,B,C"}
+{"location":"secure-store.js:getApiKey:keytarResult","message":"keytar.getPassword result","data":{"hasStoredKey":true,"storedKeyLength":39,"storedKeyTrimmedEmpty":false},"timestamp":1768498215047,"sessionId":"debug-session","hypothesisId":"B,C,D"}
+{"location":"secure-store.js:getApiKey:returnKeytar","message":"Returning key from keytar","data":{"keyLength":39},"timestamp":1768498215048,"sessionId":"debug-session","hypothesisId":"C,D"}
