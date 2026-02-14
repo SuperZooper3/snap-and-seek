@@ -33,11 +33,11 @@ export function SeekingLayout({
   }, []);
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col bg-gradient-to-b from-sky-50 to-sky-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
+    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] bg-gradient-to-b from-sky-50 to-sky-100 dark:from-zinc-950 dark:to-zinc-900 font-sans">
       {/* Single top bar: Back left, Refresh right */}
       <header className="shrink-0 flex items-center justify-between gap-3 border-b border-sky-200/50 dark:border-zinc-700 px-4 py-2.5 safe-area-inset-top bg-sky-50/95 dark:bg-zinc-900/95">
         <Link
-          href={`/games/${gameId}?manage=1`}
+          href={`/games/${gameId}`}
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-sky-800 dark:text-sky-200 bg-sky-100/80 dark:bg-sky-900/30 hover:bg-sky-200/80 dark:hover:bg-sky-800/40 transition-colors"
         >
           <span aria-hidden>←</span>
@@ -49,7 +49,7 @@ export function SeekingLayout({
       </header>
 
       {/* Map area with floating timer pill */}
-      <main className="relative flex min-h-0 flex-1 flex-col w-full">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col w-full overflow-hidden">
         <ZoneWithLocation
           zone={zone}
           gameId={gameId}

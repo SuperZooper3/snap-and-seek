@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { GoogleMap, useJsApiLoader, Circle, Polygon, Marker } from "@react-google-maps/api";
+import { GoogleMap, Circle, Polygon, Marker } from "@react-google-maps/api";
+import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
 const ZONE_FIT_PADDING_PX = 8;
@@ -30,11 +31,7 @@ type Props = {
 export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-zone-view",
-    googleMapsApiKey: apiKey,
-  });
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const center = useMemo(
     () => ({ lat: zone.center_lat, lng: zone.center_lng }),
@@ -140,8 +137,8 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
     <div
       className={
         fullSize
-          ? "absolute inset-0 h-full w-full"
-          : "w-full overflow-hidden rounded-xl border border-amber-200/50 dark:border-zinc-600"
+          ? "absolute inset-0 h-full w-full min-w-0 overflow-hidden"
+          : "w-full min-w-0 overflow-hidden rounded-xl border border-amber-200/50 dark:border-zinc-600"
       }
     >
       <GoogleMap
@@ -167,6 +164,7 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null }: Pro
           fullscreenControl: true,
           streetViewControl: false,
           gestureHandling: "cooperative",
+          minZoom: 12,
         }}
       >
         <Polygon

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef } from "react";
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
+import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import type { LocationPoint } from "./LocationDisplay";
 
 const mapContainerStyle = {
@@ -17,13 +18,8 @@ type MapDisplayProps = {
 };
 
 export function MapDisplay({ locations, countdownSeconds }: MapDisplayProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const mapRef = useRef<google.maps.Map | null>(null);
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: apiKey,
-  });
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const center = useMemo(() => {
     if (locations.length === 0) return { lat: 0, lng: 0 };
@@ -85,6 +81,7 @@ export function MapDisplay({ locations, countdownSeconds }: MapDisplayProps) {
           mapTypeControl: true,
           fullscreenControl: true,
           streetViewControl: false,
+          minZoom: 12,
         }}
       >
         {locations.map((point, i) => (

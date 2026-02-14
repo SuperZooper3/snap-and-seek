@@ -136,7 +136,7 @@ export function ZoneWithLocation({
         </div>
       )}
 
-      <div className="relative min-h-[50vh] flex-1 w-full">
+      <div className="relative min-h-0 min-w-0 flex-1 w-full overflow-hidden">
         <ZoneMapView zone={zone} fullSize userPosition={userPosition} />
       </div>
     </>
