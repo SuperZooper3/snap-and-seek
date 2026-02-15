@@ -13,6 +13,7 @@
   --pastel-sky: #c9e2ff;
   --pastel-butter: #f0ead6;
   --pastel-rose: #ffd6e0;
+  --pastel-orange: #ffd4b8;
   --pastel-paper: #fffef9;
   --pastel-border: #111111;
   --pastel-border-subtle: rgba(17, 17, 17, 0.2);
@@ -224,11 +225,37 @@ body.sas-debug-mode {
   box-shadow: 5px 5px 0 var(--pastel-border-subtle);
 }
 
+.btn-pastel-orange {
+  background: var(--pastel-orange);
+  color: var(--pastel-ink);
+  border: 3px solid var(--pastel-border);
+  border-radius: 1rem;
+  box-shadow: 4px 4px 0 var(--pastel-border-subtle);
+  min-height: 3.25rem;
+  padding: 0.875rem 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-family: inherit;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  cursor: pointer;
+}
+
+.btn-pastel-orange:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--pastel-border-subtle);
+}
+
+.btn-pastel-orange:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--pastel-border-subtle);
+}
+
 .btn-pastel-mint:disabled,
 .btn-pastel-sky:disabled,
 .btn-pastel-peach:disabled,
 .btn-pastel-lavender:disabled,
-.btn-pastel-rose:disabled {
+.btn-pastel-rose:disabled,
+.btn-pastel-orange:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;

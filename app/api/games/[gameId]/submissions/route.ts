@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { distanceMeters } from "@/lib/geo";
-
-const VALIDATION_RADIUS_METERS = 15;
+import { circlesOverlap, LOCATION_CIRCLE_MIN_RADIUS_M } from "@/lib/map-utils";
 
 /**
  * GET /api/games/[gameId]/submissions
@@ -110,13 +108,13 @@ export async function POST(
     );
   }
 
-  // Resolve status from coordinates: submission photo vs hider's hiding spot photo
-  // Designed so this can be moved to async (e.g. AI) later; for now we do it inline for fast UI
+  // Resolve status from circle overlap: seeker's photo circle vs hider's hiding spot photo circle.
+  // Each circle: center = photo lat/lng, radius = max(5m, photo accuracy). Hit if circles overlap.
   let resolvedStatus: "success" | "fail" = "fail";
   if (photoId) {
     const { data: submissionPhoto } = await supabase
       .from("photos")
-      .select("latitude, longitude")
+      .select("latitude, longitude, accuracy")
       .eq("id", photoId)
       .single();
 
@@ -130,14 +128,16 @@ export async function POST(
     if (hidingPhotoId != null) {
       const { data: targetPhoto } = await supabase
         .from("photos")
-        .select("latitude, longitude")
+        .select("latitude, longitude, accuracy")
         .eq("id", hidingPhotoId)
         .single();
 
       const subLat = (submissionPhoto as { latitude: number | null } | null)?.latitude;
       const subLng = (submissionPhoto as { longitude: number | null } | null)?.longitude;
+      const subAcc = (submissionPhoto as { accuracy: number | null } | null)?.accuracy;
       const tgtLat = (targetPhoto as { latitude: number | null } | null)?.latitude;
       const tgtLng = (targetPhoto as { longitude: number | null } | null)?.longitude;
+      const tgtAcc = (targetPhoto as { accuracy: number | null } | null)?.accuracy;
 
       if (
         subLat != null &&
@@ -149,8 +149,9 @@ export async function POST(
         !Number.isNaN(tgtLat) &&
         !Number.isNaN(tgtLng)
       ) {
-        const meters = distanceMeters(subLat, subLng, tgtLat, tgtLng);
-        resolvedStatus = meters <= VALIDATION_RADIUS_METERS ? "success" : "fail";
+        const subRadius = subAcc != null && !Number.isNaN(subAcc) && subAcc >= 0 ? subAcc : LOCATION_CIRCLE_MIN_RADIUS_M;
+        const tgtRadius = tgtAcc != null && !Number.isNaN(tgtAcc) && tgtAcc >= 0 ? tgtAcc : LOCATION_CIRCLE_MIN_RADIUS_M;
+        resolvedStatus = circlesOverlap(subLat, subLng, subRadius, tgtLat, tgtLng, tgtRadius) ? "success" : "fail";
       }
     }
   }

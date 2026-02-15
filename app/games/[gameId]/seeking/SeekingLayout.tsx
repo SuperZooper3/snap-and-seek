@@ -212,11 +212,12 @@ export function SeekingLayout({
         formData.append("game_id", gameId);
         formData.append("player_id", String(playerId));
 
-        // Get current location for the photo
+        // Get current location for the photo (accuracy stored for circle-overlap matching)
         try {
           const pos = await getLocation();
           formData.append("latitude", String(pos.latitude));
           formData.append("longitude", String(pos.longitude));
+          formData.append("accuracy", String(pos.accuracy));
         } catch {
           // Continue without location if geolocation fails
         }

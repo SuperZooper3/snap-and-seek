@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { Fragment, useCallback, useMemo, useRef } from "react";
 import { GoogleMap, Circle, Polygon, Marker } from "@react-google-maps/api";
 import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
-import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
+import { circleToPolygonPoints, outerBounds, getBoundsForCircle, LOCATION_CIRCLE_MIN_RADIUS_M } from "@/lib/map-utils";
 
 const ZONE_FIT_PADDING_PX = 80;
 
@@ -13,6 +13,8 @@ export type PlayerMarker = {
   lat: number;
   lng: number;
   color: string;
+  /** Optional: GPS accuracy in meters; used to draw radius circle on god map (photo pins only). */
+  accuracy_m?: number;
 };
 
 type Zone = {
@@ -130,17 +132,32 @@ export function GodMapView({ zone, playerMarkers, photoMarkers = [] }: Props) {
           }}
         />
         {photoMarkers.map((p) => (
-          <Marker
-            key={`photo-${p.player_id}`}
-            position={{ lat: p.lat, lng: p.lng }}
-            label={{
-              text: p.name,
-              color: "#1f2937",
-              fontWeight: "600",
-              fontSize: "12px",
-            }}
-            title={`${p.name}'s photo`}
-          />
+          <Fragment key={`photo-${p.player_id}`}>
+            {/* Accuracy circle for hidden image (min 5m radius) */}
+            {(p.accuracy_m != null && p.accuracy_m >= 0) && (
+              <Circle
+                center={{ lat: p.lat, lng: p.lng }}
+                radius={Math.max(LOCATION_CIRCLE_MIN_RADIUS_M, p.accuracy_m)}
+                options={{
+                  strokeColor: p.color,
+                  strokeWeight: 2,
+                  fillColor: p.color,
+                  fillOpacity: 0.15,
+                  clickable: false,
+                }}
+              />
+            )}
+            <Marker
+              position={{ lat: p.lat, lng: p.lng }}
+              label={{
+                text: p.name,
+                color: "#1f2937",
+                fontWeight: "600",
+                fontSize: "12px",
+              }}
+              title={`${p.name}'s photo`}
+            />
+          </Fragment>
         ))}
         {playerMarkers.map((p) => (
           <Marker

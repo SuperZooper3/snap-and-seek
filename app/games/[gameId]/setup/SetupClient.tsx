@@ -14,12 +14,21 @@ const VISIBLE_FROM_ITEMS: { id: string; label: string }[] = [
   { id: "path", label: "Closest path" },
 ];
 
+/** Accuracy above this (meters) is considered poor for main photo. */
+const ACCURACY_THRESHOLD_M = 10;
+
 type PhotoSlot = {
   previewUrl?: string;
   uploadedUrl?: string;
   /** ID of the photo record in the database (bigint) */
   photoId?: number;
   uploading: boolean;
+  /** GPS accuracy in meters (for main photo). */
+  accuracyM?: number;
+  /** True when main photo was taken with poor accuracy (>10m). */
+  badAccuracy?: boolean;
+  /** Error message when location was required but failed (main photo). */
+  locationError?: string;
 };
 
 type Props = {
@@ -56,18 +65,31 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
   const allItemsSatisfied = VISIBLE_FROM_ITEMS.every((item) => isItemSatisfied(item.id));
 
   const uploadPhoto = useCallback(
-    async (blob: Blob): Promise<{ url: string; id: number } | null> => {
+    async (
+      blob: Blob,
+      coords?: { latitude: number; longitude: number; accuracy: number }
+    ): Promise<{ url: string; id: number; accuracy?: number } | null> => {
       const formData = new FormData();
       formData.append("file", blob, `capture-${Date.now()}.jpg`);
       formData.append("game_id", gameId);
       formData.append("player_id", String(playerId));
 
-      try {
-        const coords = await getLocation();
+      let accuracy: number | undefined;
+      if (coords) {
         formData.append("latitude", String(coords.latitude));
         formData.append("longitude", String(coords.longitude));
-      } catch {
-        // Proceed without location
+        formData.append("accuracy", String(coords.accuracy));
+        accuracy = coords.accuracy;
+      } else {
+        try {
+          const loc = await getLocation();
+          formData.append("latitude", String(loc.latitude));
+          formData.append("longitude", String(loc.longitude));
+          formData.append("accuracy", String(loc.accuracy));
+          accuracy = loc.accuracy;
+        } catch {
+          // Proceed without location for extra photos
+        }
       }
 
       try {
@@ -77,7 +99,11 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
         });
         const data = await res.json();
         if (data.success && data.photo?.url && data.photo?.id != null) {
-          return { url: data.photo.url as string, id: data.photo.id as number };
+          return {
+            url: data.photo.url as string,
+            id: data.photo.id as number,
+            ...(accuracy != null && { accuracy }),
+          };
         }
         console.error("Upload failed:", data.error);
         return null;
@@ -95,13 +121,31 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
       setMainPhoto({ previewUrl, uploading: true });
       setCameraTarget(null);
 
-      const result = await uploadPhoto(blob);
+      // Main photo requires a GPS fix with good accuracy; get it before upload
+      let coords: { latitude: number; longitude: number; accuracy: number } | undefined;
+      try {
+        coords = await getLocation();
+      } catch (err) {
+        setMainPhoto((prev) => ({
+          ...prev,
+          uploading: false,
+          locationError: err instanceof Error ? err.message : "Could not get location.",
+        }));
+        return;
+      }
+
+      const result = await uploadPhoto(blob, coords);
+      const accuracyM = result?.accuracy ?? coords.accuracy;
+      const badAccuracy = accuracyM > ACCURACY_THRESHOLD_M;
 
       setMainPhoto((prev) => ({
         ...prev,
         uploading: false,
         uploadedUrl: result?.url ?? undefined,
         photoId: result?.id ?? undefined,
+        accuracyM,
+        badAccuracy,
+        locationError: undefined,
       }));
     },
     [uploadPhoto]
@@ -247,6 +291,43 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
                       </svg>
                       Uploaded
                     </span>
+                  </div>
+                )}
+                {/* Accuracy readout and warnings for main photo */}
+                {mainPhoto.uploadedUrl && !mainPhoto.uploading && mainPhoto.accuracyM != null && (
+                  <div className="absolute top-3 left-3">
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border-2"
+                      style={{
+                        background: "var(--pastel-paper)",
+                        borderColor: "var(--pastel-border)",
+                        color: "var(--pastel-ink)",
+                      }}
+                    >
+                      ±{Math.round(mainPhoto.accuracyM)} m
+                    </span>
+                  </div>
+                )}
+                {mainPhoto.badAccuracy && (
+                  <div
+                    className="absolute inset-x-0 bottom-12 px-4 py-2 text-xs font-bold border-t-2"
+                    style={{
+                      background: "rgba(220,80,60,0.9)",
+                      color: "white",
+                      borderColor: "var(--pastel-error)",
+                    }}
+                  >
+                    Location accuracy is poor (&gt;10 m). Consider retaking for better gameplay.
+                  </div>
+                )}
+                {mainPhoto.locationError && (
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 py-3 font-bold text-sm text-center"
+                    style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
+                  >
+                    <span>Location required for main photo.</span>
+                    <span className="text-xs font-normal">{mainPhoto.locationError}</span>
+                    <span className="text-xs opacity-90">Tap to retake with location on.</span>
                   </div>
                 )}
                 <div

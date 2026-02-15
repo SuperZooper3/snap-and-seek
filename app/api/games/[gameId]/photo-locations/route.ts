@@ -37,7 +37,7 @@ export async function GET(
 
   const { data: photos, error: photosError } = await supabase
     .from("photos")
-    .select("id, latitude, longitude")
+    .select("id, latitude, longitude, accuracy")
     .in("id", photoIds);
 
   if (photosError) {
@@ -53,11 +53,12 @@ export async function GET(
       {
         lat: (p as { latitude: number | null }).latitude,
         lng: (p as { longitude: number | null }).longitude,
+        accuracy: (p as { accuracy: number | null }).accuracy,
       },
     ])
   );
 
-  const result: { player_id: number; name: string; lat: number; lng: number }[] = [];
+  const result: { player_id: number; name: string; lat: number; lng: number; accuracy_m?: number }[] = [];
   for (const p of withPhoto) {
     const photoId = (p as { hiding_photo: number | null }).hiding_photo as number;
     const loc = photoById.get(photoId);
@@ -67,6 +68,7 @@ export async function GET(
         name: (p as { name: string }).name ?? "Unknown",
         lat: loc.lat,
         lng: loc.lng,
+        ...(loc.accuracy != null && !Number.isNaN(loc.accuracy) && loc.accuracy >= 0 && { accuracy_m: loc.accuracy }),
       });
     }
   }

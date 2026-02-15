@@ -43,6 +43,7 @@ type PhotoLocationRow = {
   name: string;
   lat: number;
   lng: number;
+  accuracy_m?: number;
 };
 
 /** Stable color by player_id so it doesn't change on refresh. */
@@ -100,6 +101,7 @@ export function GodMapWithPings({ gameId, zone, playerPhotos = [] }: Props) {
     lat: p.lat,
     lng: p.lng,
     color: getColorForPlayerId(p.player_id),
+    accuracy_m: p.accuracy_m,
   }));
 
   return (

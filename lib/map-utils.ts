@@ -26,6 +26,29 @@ export function circleToPolygonPoints(
 }
 
 /**
+ * Minimum radius (meters) for location circles in matching; ensures we're at least as generous as point checks.
+ */
+export const LOCATION_CIRCLE_MIN_RADIUS_M = 5;
+
+/**
+ * True if two circles (center + radius in meters) overlap.
+ * Used for submission hit detection: seeker's photo circle vs hider's photo circle.
+ */
+export function circlesOverlap(
+  lat1: number,
+  lng1: number,
+  radius1Meters: number,
+  lat2: number,
+  lng2: number,
+  radius2Meters: number
+): boolean {
+  const r1 = Math.max(LOCATION_CIRCLE_MIN_RADIUS_M, radius1Meters);
+  const r2 = Math.max(LOCATION_CIRCLE_MIN_RADIUS_M, radius2Meters);
+  const d = distanceMeters(lat1, lng1, lat2, lng2);
+  return d <= r1 + r2;
+}
+
+/**
  * Distance between two points in meters (Haversine approximation).
  */
 export function distanceMeters(

@@ -62,8 +62,10 @@ export async function POST(request: NextRequest) {
     // Parse optional location fields
     const latStr = formData.get("latitude") as string | null;
     const lngStr = formData.get("longitude") as string | null;
+    const accStr = formData.get("accuracy") as string | null;
     const latitude = latStr ? parseFloat(latStr) : null;
     const longitude = lngStr ? parseFloat(lngStr) : null;
+    const accuracy = accStr != null ? parseFloat(accStr) : null;
     const hasLocation =
       latitude !== null &&
       longitude !== null &&
@@ -123,6 +125,7 @@ export async function POST(request: NextRequest) {
           latitude,
           longitude,
           location_name: locationName,
+          ...(accuracy != null && !isNaN(accuracy) && accuracy >= 0 && { accuracy }),
         }),
         ...(gameId && { game_id: gameId }),
         ...(playerId && { player_id: playerId }),
