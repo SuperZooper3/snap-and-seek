@@ -419,7 +419,7 @@ export function SeekingLayout({
     : undefined;
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] flex-col overflow-x-hidden w-full max-w-[100vw] font-sans" style={{ background: "var(--background)" }}>
+    <div className="flex h-[100dvh] flex-col overflow-hidden overflow-x-hidden w-full max-w-[100vw] font-sans" style={{ background: "var(--background)" }}>
       <header
         className="shrink-0 flex items-center justify-between gap-3 border-b-[3px] px-4 py-2.5 safe-area-inset-top"
         style={{ borderColor: "var(--pastel-border)", background: "var(--pastel-paper)" }}
