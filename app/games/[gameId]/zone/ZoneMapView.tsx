@@ -236,12 +236,15 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
           const isMiss = circle.withinDistance === false;
           // Hit: highlight outside the circle (zone minus circle). Miss: highlight inside the circle.
           if (isHit) {
+            // Hole must be wound opposite to outer for Google Maps to cut it out correctly
             const radarHolePath = circleToPolygonPoints(
               circle.lat,
               circle.lng,
               circle.radiusMeters,
               64
-            ).map((p) => ({ lat: p.lat, lng: p.lng }));
+            )
+              .map((p) => ({ lat: p.lat, lng: p.lng }))
+              .reverse();
             return (
               <Polygon
                 key={`radar-hit-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
