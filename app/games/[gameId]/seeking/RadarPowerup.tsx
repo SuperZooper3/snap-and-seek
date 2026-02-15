@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getLocation } from "@/lib/get-location";
 
-const RADAR_DISTANCES = [10, 25, 50, 100, 200, 500];
+// Up to 200m: mixed steps; after 200m: every 50m until 1km
+const RADAR_DISTANCES = [
+  10, 25, 50, 75, 100, 150, 200,
+  ...Array.from({ length: 16 }, (_, i) => 250 + i * 50), // 250..1000
+];
 
 interface SeekingTarget {
   playerId: number;
@@ -18,18 +22,25 @@ interface Props {
   disabled: boolean;
   powerupCastingSeconds: number;
   lastResult?: { note: string | null };
+  /** Called when the selected distance changes so the map can show a dotted preview circle */
+  onSelectedDistanceChange?: (meters: number) => void;
 }
 
-export function RadarPowerup({ 
-  gameId, 
-  targetPlayer, 
-  onStartHint, 
+export function RadarPowerup({
+  gameId,
+  targetPlayer,
+  onStartHint,
   disabled,
   powerupCastingSeconds,
-  lastResult
+  lastResult,
+  onSelectedDistanceChange,
 }: Props) {
   const [distanceIndex, setDistanceIndex] = useState(2); // Default to 50m
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    onSelectedDistanceChange?.(RADAR_DISTANCES[distanceIndex]);
+  }, [distanceIndex, onSelectedDistanceChange]);
 
   const handleCastRadar = async () => {
     if (disabled || loading) return;
@@ -115,7 +126,7 @@ export function RadarPowerup({
           className="text-center text-lg font-bold"
           style={{ color: "var(--pastel-ink)" }}
         >
-          {lastYesNo ? "Yes — you're within range." : "No — you're not within range."}
+          {lastYesNo ? "Yes you're within range." : "No you're not within range."}
         </div>
       )}
 

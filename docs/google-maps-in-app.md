@@ -13,7 +13,7 @@ This guide explains how to show a Google Map **inside the app** on the location 
 
 **What counts toward cost?**
 
-- **Map load:** You are billed once per **map load** — i.e. when the map is first shown on the page. Refreshing the page or opening the location test page again = one more map load. The map does **not** reload when you poll location or add pins; we keep the same map instance and only add/update markers in the browser. So polling every 10 seconds and drawing a history of pins does **not** add any Google Maps API cost.
+- **Map load:** You are billed once per **map load** i.e. when the map is first shown on the page. Refreshing the page or opening the location test page again = one more map load. The map does **not** reload when you poll location or add pins; we keep the same map instance and only add/update markers in the browser. So polling every 10 seconds and drawing a history of pins does **not** add any Google Maps API cost.
 - **Location polling:** The browser’s Geolocation API (`navigator.geolocation`) is free; it does not use Google’s servers.
 - **How to see your usage:** In [Google Cloud Console](https://console.cloud.google.com/) go to **APIs & Services → Dashboard** (or **Billing → Reports**) to see usage and cost. Set a small budget (e.g. $1) with email alerts so you know if you ever exceed free usage.
 

@@ -16,6 +16,8 @@ interface Props {
   thermometerThresholdMeters: number;
   onHintResult: (hint: Hint) => void;
   onActiveThermometerHint?: (hint: Hint | null) => void;
+  /** When user selects a radar distance, pass meters to show dotted preview circle on map; pass null when not on radar tab */
+  onRadarPreviewRadiusChange?: (meters: number | null) => void;
 }
 
 export function PowerupTabs({
@@ -26,6 +28,7 @@ export function PowerupTabs({
   thermometerThresholdMeters,
   onHintResult,
   onActiveThermometerHint,
+  onRadarPreviewRadiusChange,
 }: Props) {
   const [selectedPowerup, setSelectedPowerup] = useState<'radar' | 'thermometer' | 'photo'>('radar');
   const [activeHints, setActiveHints] = useState<Hint[]>([]);
@@ -161,6 +164,13 @@ export function PowerupTabs({
       onActiveThermometerHint(null);
     }
   }, [activeHint?.id, activeHint?.type, onActiveThermometerHint]);
+
+  // Clear radar preview when switching away from radar tab
+  useEffect(() => {
+    if (selectedPowerup !== 'radar') {
+      onRadarPreviewRadiusChange?.(null);
+    }
+  }, [selectedPowerup, onRadarPreviewRadiusChange]);
   
   // Check which hints have been completed for this target
   const completedHintTypes = new Set(completedHints.map(h => h.type));
@@ -202,18 +212,18 @@ export function PowerupTabs({
         </button>
         <button
           onClick={() => setSelectedPowerup('photo')}
-          disabled={!!activeHint && activeHint.type !== 'photo'}
+          disabled={activeHint?.type === 'photo'}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
             selectedPowerup === 'photo'
               ? 'border-purple-500 text-purple-600 bg-purple-50'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          } ${!!activeHint && activeHint.type !== 'photo' ? 'opacity-50 cursor-not-allowed' : ''}`}
+          } ${activeHint?.type === 'photo' ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           📸 Photo
         </button>
       </div>
 
-      {/* Power-up specific content */}
+      {/* Power-up specific content - always render all so Photo tab can show historical photos while casting radar/thermometer */}
       <div className="min-h-[120px] bg-gray-50 rounded-lg p-4 border border-gray-200">
         {selectedPowerup === 'radar' && (
           <RadarPowerup
@@ -225,6 +235,7 @@ export function PowerupTabs({
             lastResult={completedHints
               .filter((h) => h.type === 'radar')
               .sort((a, b) => (b.completed_at || b.created_at).localeCompare(a.completed_at || a.created_at))[0]}
+            onSelectedDistanceChange={onRadarPreviewRadiusChange}
           />
         )}
         

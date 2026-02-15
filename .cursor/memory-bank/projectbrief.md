@@ -2,7 +2,7 @@
 
 ## Core identity
 - **Tagline:** Hide. Seek. Snap. Find them all.
-- **Type:** Hackathon project — landing + Supabase + location/map features.
+- **Type:** Hackathon project landing + Supabase + location/map features.
 
 ## Scope
 - Landing page with hero and list of games from Supabase.

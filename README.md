@@ -1,6 +1,6 @@
 # Snap and Seek
 
-Hide. Seek. Snap. Find them all. — Landing + Supabase for hackathon.
+Hide. Seek. Snap. Find them all. Landing + Supabase for hackathon.
 
 ## Quick start
 
@@ -62,19 +62,19 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-- `NEXT_PUBLIC_SUPABASE_URL` — your Supabase project URL (public is fine).
-- `SUPABASE_SERVICE_ROLE_KEY` — server-only; used in `lib/supabase.ts` to read from `games` with full access (no RLS).
+- `NEXT_PUBLIC_SUPABASE_URL` your Supabase project URL (public is fine).
+- `SUPABASE_SERVICE_ROLE_KEY` server-only; used in `lib/supabase.ts` to read from `games` with full access (no RLS).
 
 Restart the dev server after changing env vars.
 
 ## What’s in the repo
 
-- **Landing page:** `app/page.tsx` — Snap and Seek hero + list of games from Supabase.
-- **Supabase client:** `lib/supabase.ts` — server-side client using the service role key; reads from the `games` table.
+- **Landing page:** `app/page.tsx` Snap and Seek hero + list of games from Supabase.
+- **Supabase client:** `lib/supabase.ts` server-side client using the service role key; reads from the `games` table.
 - **No RLS:** We’re using the service role key so the app can read all rows in `games` without setting up RLS (hackathon shortcut).
 
 ## Scripts
 
-- `npm run dev` — dev server
-- `npm run build` — production build
-- `npm run start` — run production build
+- `npm run dev` dev server
+- `npm run build` production build
+- `npm run start` run production build

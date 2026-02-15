@@ -21,7 +21,7 @@ export default function TestUploadPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Geolocation state — mirrors patterns from LocationDisplay.tsx
+  // Geolocation state mirrors patterns from LocationDisplay.tsx
   const [location, setLocation] = useState<LocationState>({ status: "idle" });
   const locationRef = useRef<LocationState>({ status: "idle" });
 

@@ -24,7 +24,7 @@ export async function GET(
     .single();
 
   if (withWinner.error) {
-    // Schema may lack winner_id/finished_at, or DB may be unreachable — try minimal select first
+    // Schema may lack winner_id/finished_at, or DB may be unreachable try minimal select first
     const fallback = await supabase
       .from("games")
       .select("id, status")

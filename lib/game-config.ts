@@ -22,7 +22,7 @@ export const MIN_POWERUP_CASTING_SECONDS = 10;
 export const MAX_POWERUP_CASTING_SECONDS = 300;
 
 /** Default thermometer distance threshold in meters. */
-export const DEFAULT_THERMOMETER_THRESHOLD_METERS = 100;
+export const DEFAULT_THERMOMETER_THRESHOLD_METERS = 50;
 
 /** Minimum allowed thermometer threshold (meters). */
 export const MIN_THERMOMETER_THRESHOLD_METERS = 25;

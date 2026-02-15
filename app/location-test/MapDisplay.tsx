@@ -94,7 +94,7 @@ export function MapDisplay({ locations, countdownSeconds }: MapDisplayProps) {
               color: "white",
               fontWeight: "bold",
             }}
-            title={`#${i + 1} — ${new Date(point.timestamp).toLocaleTimeString()}`}
+            title={`#${i + 1} ${new Date(point.timestamp).toLocaleTimeString()}`}
           />
         ))}
       </GoogleMap>

@@ -1,4 +1,4 @@
-# Game Management Plan — Snap and Seek
+# Game Management Plan Snap and Seek
 
 This doc describes the game management flow: create game → share link → players join → lobby → start game (hiding mode). It covers Supabase setup, pages, routes, and the “magic” join links.
 
@@ -147,7 +147,7 @@ So:
    - List of **active players** (from `players` for this game).
 2. When ready: someone clicks **Start game**.
 3. **Backend**: PATCH (e.g. `PATCH /api/games/[gameId]`) setting `status = 'hiding'`.
-4. For now: just set status to `hiding`; no further UI change required in this phase (you can later show “Game started — hiding phase” or navigate to a hiding view).
+4. For now: just set status to `hiding`; no further UI change required in this phase (you can later show “Game started hiding phase” or navigate to a hiding view).
 
 ---
 
@@ -203,4 +203,4 @@ Lobby (/games/[gameId])
 - [ ] Add `PATCH /api/games/[gameId]`: set status to `hiding`.
 - [ ] (Optional) GET APIs or Server Component fetches for game + players.
 
-After this, the “magic link” is simply the join URL; no email or auth — just share the link and players can add themselves and see the lobby.
+After this, the “magic link” is simply the join URL; no email or auth just share the link and players can add themselves and see the lobby.

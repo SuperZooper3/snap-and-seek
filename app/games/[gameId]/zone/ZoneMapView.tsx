@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { GoogleMap, Circle, Polygon, Marker } from "@react-google-maps/api";
+import { GoogleMap, Circle, Polygon, Polyline, Marker } from "@react-google-maps/api";
 import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
@@ -38,11 +38,13 @@ type Props = {
   userPosition?: UserPosition;
   /** Pins for completed thermometer readings (1 = start, 2 = end) */
   thermometerPins?: ThermometerPin[];
-  /** Radar cast circles (center + radius per completed radar hint; blue = in range, red = not) */
+  /** Radar cast circles (center + radius per completed radar hint; withinDistance = hit → highlight outside, miss → highlight inside) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
+  /** Preview circle for radar (dotted) when user has selected a distance but not yet cast center + radius */
+  radarPreviewCircle?: { lat: number; lng: number; radiusMeters: number } | null;
 };
 
-export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], radarCircles = [] }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], radarCircles = [], radarPreviewCircle = null }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
   const { isLoaded, loadError } = useGoogleMapsLoader();
@@ -62,6 +64,16 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
     );
     return [outer, inner];
   }, [zone]);
+
+  /** Zone boundary as polygon (for radar "hit" = highlight outside circle) */
+  const zoneCirclePath = useMemo(
+    () =>
+      circleToPolygonPoints(zone.center_lat, zone.center_lng, zone.radius_meters, 64).map((p) => ({
+        lat: p.lat,
+        lng: p.lng,
+      })),
+    [zone.center_lat, zone.center_lng, zone.radius_meters]
+  );
 
   const updateUserCircle = useCallback((map: google.maps.Map) => {
     if (!userPosition) {
@@ -220,25 +232,81 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
           }}
         />
         {radarCircles.map((circle, i) => {
-          const inRange = circle.withinDistance === true;
-          const outOfRange = circle.withinDistance === false;
-          const strokeColor = inRange ? "#0ea5e9" : outOfRange ? "#b91c1c" : "#6b7280";
-          const fillColor = inRange ? "#0ea5e9" : outOfRange ? "#b91c1c" : "#6b7280";
+          const isHit = circle.withinDistance === true;
+          const isMiss = circle.withinDistance === false;
+          // Hit: highlight outside the circle (zone minus circle). Miss: highlight inside the circle.
+          if (isHit) {
+            // Hole must be wound opposite to outer for Google Maps to cut it out correctly
+            const radarHolePath = circleToPolygonPoints(
+              circle.lat,
+              circle.lng,
+              circle.radiusMeters,
+              64
+            )
+              .map((p) => ({ lat: p.lat, lng: p.lng }))
+              .reverse();
+            return (
+              <Polygon
+                key={`radar-hit-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
+                paths={[zoneCirclePath, radarHolePath]}
+                options={{
+                  strokeColor: "#0ea5e9",
+                  strokeWeight: 2,
+                  fillColor: "#0ea5e9",
+                  fillOpacity: 0.2,
+                  clickable: false,
+                }}
+              />
+            );
+          }
           return (
             <Circle
               key={`radar-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
               center={{ lat: circle.lat, lng: circle.lng }}
               radius={circle.radiusMeters}
               options={{
-                strokeColor,
+                strokeColor: "#0ea5e9",
                 strokeWeight: 2,
-                fillColor,
-                fillOpacity: 0.15,
+                fillColor: "#0ea5e9",
+                fillOpacity: isMiss ? 0.25 : 0.15,
                 clickable: false,
               }}
             />
           );
         })}
+        {radarPreviewCircle && isLoaded && typeof google !== "undefined" && (() => {
+          const points = circleToPolygonPoints(
+            radarPreviewCircle.lat,
+            radarPreviewCircle.lng,
+            radarPreviewCircle.radiusMeters,
+            64
+          );
+          const closedPath = points.length > 0 ? [...points, points[0]] : points;
+          return (
+          <Polyline
+            path={closedPath.map((p) => ({ lat: p.lat, lng: p.lng }))}
+            options={{
+              strokeColor: "#0ea5e9",
+              strokeWeight: 2,
+              strokeOpacity: 0.9,
+              icons: [
+                {
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 2,
+                    fillColor: "#0ea5e9",
+                    fillOpacity: 0.9,
+                    strokeColor: "#0ea5e9",
+                    strokeWeight: 1,
+                  },
+                  repeat: "12px",
+                },
+              ],
+              clickable: false,
+            }}
+          />
+          );
+        })()}
         {userPosition && (
           <Marker
             key="user-marker"

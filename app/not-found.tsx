@@ -15,8 +15,8 @@ export default function NotFound() {
           This page doesn’t exist or you don’t have access to it.
         </p>
         <ul className="text-sm text-left list-disc list-inside space-y-1" style={{ color: "var(--pastel-ink-muted)" }}>
-          <li>Check the URL — game pages look like <code className="sketch-input px-1.5 py-0.5 rounded">/games/...</code></li>
-          <li>If you started hiding and got here, the game zone may not be set — go back to the game and set the play area first.</li>
+          <li>Check the URL game pages look like <code className="sketch-input px-1.5 py-0.5 rounded">/games/...</code></li>
+          <li>If you started hiding and got here, the game zone may not be set go back to the game and set the play area first.</li>
           <li>The game may have been deleted or the link might be wrong.</li>
         </ul>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">

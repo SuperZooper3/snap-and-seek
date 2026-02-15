@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ——— Pastel design system: always light, black text for readability ——— */
+/* ——Pastel design system: always light, black text for readability ——*/
 /* No OS dark mode: white/cream background, black text everywhere */
 :root {
   color-scheme: light;
@@ -75,7 +75,7 @@ html.sas-debug-mode {
   box-shadow: 0 0 0 3px var(--pastel-sky);
 }
 
-/* Big clicky button — primary */
+/* Big clicky button primary */
 .btn-primary {
   display: inline-flex;
   align-items: center;

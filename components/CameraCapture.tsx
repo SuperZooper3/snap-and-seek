@@ -176,7 +176,7 @@ export function CameraCapture({
       {/* Viewfinder / Preview area */}
       <div className={`${viewfinderClass} ${fullScreen ? "flex-1 min-h-0 overflow-hidden" : ""}`}>
         {/*
-          Single video element — always mounted while loading or streaming so the
+          Single video element always mounted while loading or streaming so the
           ref stays stable and srcObject is never lost on re-render.
         */}
         {isVideoVisible && (
@@ -215,7 +215,7 @@ export function CameraCapture({
           />
         )}
 
-        {/* Idle state — no camera, no preview (only shown when NOT auto-starting) */}
+        {/* Idle state no camera, no preview (only shown when NOT auto-starting) */}
         {cameraState.status === "idle" && !previewUrl && !autoStart && (
           <div className="w-full aspect-[4/3] rounded-lg bg-amber-100/80 dark:bg-zinc-700/80 flex items-center justify-center text-amber-800 dark:text-amber-200 text-sm border border-amber-200 dark:border-zinc-600">
             Tap &ldquo;Open Camera&rdquo; to start
@@ -226,7 +226,7 @@ export function CameraCapture({
       {/* Hidden canvas for capture */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Controls — in fullScreen mode these are pinned at the bottom */}
+      {/* Controls in fullScreen mode these are pinned at the bottom */}
       <div className={`flex flex-col items-center gap-3 ${fullScreen ? "flex-shrink-0 py-4" : ""}`}>
         {/* Error message */}
         {cameraState.status === "error" && (
@@ -250,7 +250,7 @@ export function CameraCapture({
           </button>
         )}
 
-        {/* Error — retry button */}
+        {/* Error retry button */}
         {cameraState.status === "error" && (
           <button
             type="button"
@@ -265,7 +265,7 @@ export function CameraCapture({
           </button>
         )}
 
-        {/* Shutter button — while streaming */}
+        {/* Shutter button while streaming */}
         {cameraState.status === "streaming" && (
           <button
             type="button"
@@ -279,7 +279,7 @@ export function CameraCapture({
           />
         )}
 
-        {/* Retake / Use Photo — after capture */}
+        {/* Retake / Use Photo after capture */}
         {previewUrl && capturedBlob && (
           <div className="flex gap-3">
             <button

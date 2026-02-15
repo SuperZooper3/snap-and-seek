@@ -20,7 +20,7 @@ function fetchWithTimeout(
 
 /**
  * Server-side Supabase client using the service role key.
- * Bypasses RLS — use only for trusted server code (e.g. API routes, Server Components).
+ * Bypasses RLS use only for trusted server code (e.g. API routes, Server Components).
  * Uses a 12s fetch timeout so missing env or network issues fail fast instead of hanging.
  */
 function createSupabaseClient(): SupabaseClient {

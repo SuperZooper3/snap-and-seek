@@ -17,11 +17,11 @@ const HIDING_DURATION_PRESETS = [
   { label: "30 seconds", value: 30 },
   { label: "1 minute", value: 60 },
   { label: "2 minutes", value: 120 },
+  { label: "3 minutes", value: 180 },
+  { label: "4 minutes", value: 240 },
   { label: "5 minutes", value: 300 },
   { label: "10 minutes", value: 600 },
-  { label: "15 minutes", value: 900 },
   { label: "20 minutes", value: 1200 },
-  { label: "30 minutes", value: 1800 },
 ] as const;
 
 const POWERUP_CASTING_PRESETS = [
@@ -225,7 +225,7 @@ export function GameActions({
               Thermometer distance
             </label>
             <select
-              value={THERMOMETER_THRESHOLD_PRESETS.some((p) => p.value === thermometerThresholdMeters) ? thermometerThresholdMeters : 100}
+              value={THERMOMETER_THRESHOLD_PRESETS.some((p) => p.value === thermometerThresholdMeters) ? thermometerThresholdMeters : 50}
               onChange={(e) => setThermometerThreshold(Number(e.target.value))}
               disabled={savingThermometer}
               className="sketch-input w-full px-3 py-3 text-base min-h-[3rem] text-[var(--pastel-ink)]"
@@ -325,7 +325,7 @@ export function GameActions({
           ) : (
             <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
               {status === "seeking"
-                ? "Seeking in progress — join as a player to view the seeking map."
+                ? "Seeking in progress join as a player to view the seeking map."
                 : "Join as a player below (tap a name) to start hiding."}
             </p>
           )}

@@ -96,7 +96,7 @@ export function HidingLayout({
             }}
             aria-disabled="true"
           >
-            Go to photo capture — get inside the zone first
+            Go to photo capture get inside the zone first
           </span>
         ) : (
           <Link

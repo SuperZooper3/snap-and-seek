@@ -73,6 +73,8 @@ export function SeekingLayout({
   const didDragRef = useRef(false);
   // Power-up and hint state (thermometer hints with pin data for map; merged with session completions)
   const [hintResults, setHintResults] = useState<Hint[]>([]);
+  /** When radar tab is selected, show a dotted preview circle of this radius (meters) on the map */
+  const [radarPreviewRadiusMeters, setRadarPreviewRadiusMeters] = useState<number | null>(null);
 
   // Load completed hints (thermometer + radar) on mount so map pins and radar circles show after refresh
   useEffect(() => {
@@ -334,7 +336,7 @@ export function SeekingLayout({
     setHintResults(prev => [...prev, hint]);
   }, []);
 
-  // Active thermometer hint (casting) — so we can show start pin before they tap "Get result"
+  // Active thermometer hint (casting) so we can show start pin before they tap "Get result"
   const [activeThermometerHint, setActiveThermometerHint] = useState<Hint | null>(null);
 
   // Thermometer pins: completed hints (start + end) + active casting hint (start only)
@@ -385,19 +387,14 @@ export function SeekingLayout({
     return pins;
   }, [hintResults, activeThermometerHint]);
 
-  // Radar circles: completed radar hints for the selected target only (center = cast position, radius = distanceMeters; blue = in range, red = not)
+  // Radar circles: completed radar hints for the selected target only (center = cast position, radius = distanceMeters; withinDistance = hit/miss)
   const radarCircles = useMemo((): { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[] => {
     if (!selectedTarget) return [];
     const circles: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[] = [];
     for (const hint of hintResults) {
       if (hint.type !== "radar" || hint.hider_id !== selectedTarget.playerId || !hint.note) continue;
       try {
-        const note = JSON.parse(hint.note) as {
-          lat?: number;
-          lng?: number;
-          distanceMeters?: number;
-          result?: { withinDistance?: boolean };
-        };
+        const note = JSON.parse(hint.note) as { lat?: number; lng?: number; distanceMeters?: number; result?: { withinDistance?: boolean } };
         const { lat, lng, distanceMeters, result } = note;
         if (typeof lat === "number" && typeof lng === "number" && typeof distanceMeters === "number") {
           circles.push({
@@ -451,6 +448,7 @@ export function SeekingLayout({
           onCountdownChange={handleCountdownChange}
           thermometerPins={thermometerPins}
           radarCircles={radarCircles}
+          radarPreviewRadiusMeters={radarPreviewRadiusMeters}
         />
         {/* Dynamic island style pill on top of map */}
         <div
@@ -480,12 +478,22 @@ export function SeekingLayout({
             onPointerMove={handleTrayPointerMove}
             onPointerUp={handleTrayPointerUp}
             onPointerCancel={handleTrayPointerCancel}
-            className="shrink-0 flex flex-col items-center pt-2 pb-1 px-4 touch-manipulation cursor-grab active:cursor-grabbing touch-none"
+            className="shrink-0 flex flex-col items-center justify-center min-h-[48px] py-4 px-8 touch-manipulation cursor-grab active:cursor-grabbing touch-none -mb-1"
             style={{ touchAction: "none" }}
             aria-expanded={trayExpanded}
             aria-label={trayExpanded ? "Collapse target tray" : "Expand target tray"}
           >
-            <span className="w-10 h-1.5 rounded-full" style={{ background: "var(--pastel-border)" }} aria-hidden />
+            <span className="flex items-center justify-center w-8 h-8" style={{ color: "var(--pastel-ink-muted)" }} aria-hidden>
+              {trayExpanded ? (
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 15l-6-6-6 6" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              )}
+            </span>
           </button>
 
           {/* Tray content */}
@@ -563,6 +571,7 @@ export function SeekingLayout({
                 thermometerThresholdMeters={thermometerThresholdMeters}
                 onHintResult={handleHintResult}
                 onActiveThermometerHint={setActiveThermometerHint}
+                onRadarPreviewRadiusChange={setRadarPreviewRadiusMeters}
               />
             </section>
 
