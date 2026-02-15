@@ -121,6 +121,7 @@ export default async function GamePage({ params, searchParams }: Props) {
             gameId={gameId}
             players={(players as Player[]) ?? []}
             currentPlayer={currentPlayer}
+            gameStatus={(game as Game).status}
           />
         </section>
       </main>
