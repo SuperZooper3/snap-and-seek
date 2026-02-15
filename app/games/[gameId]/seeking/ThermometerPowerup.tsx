@@ -24,7 +24,6 @@ interface Props {
 }
 
 function formatResult(result: string): string {
-  if (result === 'same') return 'Neutral';
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
@@ -223,24 +222,18 @@ export function ThermometerPowerup({
             background:
               result === 'Hotter'
                 ? 'rgba(185, 28, 28, 0.2)'
-                : result === 'Colder'
-                  ? 'rgba(14, 165, 233, 0.2)'
-                  : 'var(--pastel-butter)',
+                : 'rgba(14, 165, 233, 0.2)',
             borderColor:
               result === 'Hotter'
                 ? 'var(--pastel-error, #b91c1c)'
-                : result === 'Colder'
-                  ? 'var(--pastel-sky, #0ea5e9)'
-                  : 'var(--pastel-border)',
+                : 'var(--pastel-sky, #0ea5e9)',
           }}
         >
           <div className="text-xl font-bold" style={{ color: 'var(--pastel-ink, #1a1a1a)' }}>
-            {result === 'Neutral'
-              ? 'Neutral distance hasn\'t changed much 🌡️'
-              : `You're getting ${result}! 🌡️`}
+            You&apos;re getting {result}! 🌡️
           </div>
           <p className="text-sm mt-1" style={{ color: 'var(--pastel-ink-muted)' }}>
-            Check the map for pins and history below.
+            Check the map for the cut line and shaded area.
           </p>
         </div>
       )}

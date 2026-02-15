@@ -39,16 +39,18 @@ type Props = {
   /** Pins for completed thermometer readings (1 = start, 2 = end) */
   thermometerPins?: ThermometerPin[];
   /** Completed thermometer hints: bisector line + shaded half-plane (per selected target) */
-  thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[];
+  thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" }[];
   /** While thermometer is casting: start position so we can draw a live dotted bisector (start → current user position) */
   thermometerPreviewStart?: { startLat: number; startLng: number } | null;
   /** Radar cast circles (center + radius per completed radar hint; withinDistance = hit → highlight outside, miss → highlight inside) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
+  /** Circle for the radar currently casting (dotted, at cast-time position) */
+  radarCastingCircle?: { lat: number; lng: number; radiusMeters: number } | null;
   /** Preview circle for radar (dotted) when user has selected a distance but not yet cast center + radius */
   radarPreviewCircle?: { lat: number; lng: number; radiusMeters: number } | null;
 };
 
-export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], thermometerBisectors = [], thermometerPreviewStart = null, radarCircles = [], radarPreviewCircle = null }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], thermometerBisectors = [], thermometerPreviewStart = null, radarCircles = [], radarCastingCircle = null, radarPreviewCircle = null }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
   const { isLoaded, loadError } = useGoogleMapsLoader();
@@ -237,19 +239,16 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
         />
         {thermometerBisectors.map((tb, i) => {
           const [lineP1, lineP2] = perpendicularBisector(tb.startLat, tb.startLng, tb.endLat, tb.endLng, 0.03);
-          const shadePolygon =
-            tb.result !== "same"
-              ? zoneHalfPlanePolygon(
-                  zone.center_lat,
-                  zone.center_lng,
-                  zone.radius_meters,
-                  lineP1,
-                  lineP2,
-                  tb.startLat,
-                  tb.startLng,
-                  tb.result === "hotter"
-                )
-              : null;
+          const shadePolygon = zoneHalfPlanePolygon(
+            zone.center_lat,
+            zone.center_lng,
+            zone.radius_meters,
+            lineP1,
+            lineP2,
+            tb.startLat,
+            tb.startLng,
+            tb.result === "hotter"
+          );
           return (
             <Fragment key={`thermo-bisector-${i}-${tb.startLat}-${tb.startLng}-${tb.endLat}-${tb.endLng}`}>
               <Polyline
@@ -261,7 +260,7 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
                   clickable: false,
                 }}
               />
-              {shadePolygon && shadePolygon.length >= 3 && (
+              {shadePolygon.length >= 3 && (
                 <Polygon
                   paths={shadePolygon}
                   options={{
@@ -353,6 +352,40 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
             />
           );
         })}
+        {radarCastingCircle && isLoaded && typeof google !== "undefined" && (() => {
+          const points = circleToPolygonPoints(
+            radarCastingCircle.lat,
+            radarCastingCircle.lng,
+            radarCastingCircle.radiusMeters,
+            64
+          );
+          const closedPath = points.length > 0 ? [...points, points[0]] : points;
+          return (
+            <Polyline
+              key="radar-casting-circle"
+              path={closedPath.map((p) => ({ lat: p.lat, lng: p.lng }))}
+              options={{
+                strokeColor: "#0ea5e9",
+                strokeWeight: 2,
+                strokeOpacity: 0.9,
+                icons: [
+                  {
+                    icon: {
+                      path: google.maps.SymbolPath.CIRCLE,
+                      scale: 2,
+                      fillColor: "#0ea5e9",
+                      fillOpacity: 0.9,
+                      strokeColor: "#0ea5e9",
+                      strokeWeight: 1,
+                    },
+                    repeat: "12px",
+                  },
+                ],
+                clickable: false,
+              }}
+            />
+          );
+        })()}
         {radarPreviewCircle && isLoaded && typeof google !== "undefined" && (() => {
           const points = circleToPolygonPoints(
             radarPreviewCircle.lat,

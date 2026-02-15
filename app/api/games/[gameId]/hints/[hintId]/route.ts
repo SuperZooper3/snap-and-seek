@@ -99,10 +99,10 @@ export async function PATCH(
       }
     } else if (hint.type === "thermometer" && resultData) {
       const { result, endLat, endLng } = resultData;
-      if (typeof result === 'string' && ['hotter', 'colder', 'same'].includes(result)) {
+      if (typeof result === 'string' && ['hotter', 'colder'].includes(result)) {
         const thermoNote: ThermometerHintNote = {
           ...noteData,
-          result: result as 'hotter' | 'colder' | 'same',
+          result: result as 'hotter' | 'colder',
           ...(typeof endLat === 'number' && typeof endLng === 'number' && { endLat, endLng }),
         } as ThermometerHintNote;
         updatedNote = JSON.stringify(thermoNote);

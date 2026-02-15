@@ -115,24 +115,16 @@ export async function POST(
   // Check if user is far enough from start to complete thermometer
   const canComplete = distanceFromStart >= thresholdMeters;
 
-  let result: 'hotter' | 'colder' | 'same' | null = null;
-  
+  let result: 'hotter' | 'colder' | null = null;
+
   // Use lastLat/lastLng if present (from prior thermometer API calls), otherwise use
   // startLat/startLng as "previous" position: "Am I hotter or colder than when I started?"
   const prevLat = typeof lastLat === 'number' ? lastLat : startLat;
   const prevLng = typeof lastLng === 'number' ? lastLng : startLng;
-  
+
   if (canComplete) {
     const prevDistanceToTarget = distanceMeters(prevLat, prevLng, photoLat, photoLng);
-    const neutralThreshold = 10; // 10 meter threshold: if distance hasn't changed much, "neutral"
-    
-    if (Math.abs(distanceToTarget - prevDistanceToTarget) <= neutralThreshold) {
-      result = 'same';
-    } else if (distanceToTarget < prevDistanceToTarget) {
-      result = 'hotter';
-    } else {
-      result = 'colder';
-    }
+    result = distanceToTarget < prevDistanceToTarget ? 'hotter' : 'colder';
   } else {
     // Require actual distance: reject completion so client must move
     return NextResponse.json(

@@ -74,6 +74,8 @@ export function SeekingLayout({
   const [hintResults, setHintResults] = useState<Hint[]>([]);
   /** When radar tab is selected, show a dotted preview circle of this radius (meters) on the map */
   const [radarPreviewRadiusMeters, setRadarPreviewRadiusMeters] = useState<number | null>(null);
+  /** When a radar is casting, this is the circle at cast-time position (so we show it instead of the "next" preview) */
+  const [radarCastingCircle, setRadarCastingCircle] = useState<{ lat: number; lng: number; radiusMeters: number } | null>(null);
 
   // Load completed hints (thermometer + radar) on mount so map pins and radar circles show after refresh
   useEffect(() => {
@@ -338,59 +340,13 @@ export function SeekingLayout({
   // Active thermometer hint (casting) so we can show start pin before they tap "Get result"
   const [activeThermometerHint, setActiveThermometerHint] = useState<Hint | null>(null);
 
-  // Thermometer pins: completed hints (start + end) + active casting hint (start only), for selected target only
-  const thermometerPins = useMemo((): ThermometerPin[] => {
-    if (!selectedTarget) return [];
-    const pins: ThermometerPin[] = [];
-
-    // Start pin from active (casting) thermometer hint only when it's for the selected target
-    if (activeThermometerHint?.hider_id === selectedTarget.playerId && activeThermometerHint?.note) {
-      try {
-        const note = JSON.parse(activeThermometerHint.note) as { startLat?: number; startLng?: number };
-        if (typeof note.startLat === "number" && typeof note.startLng === "number") {
-          pins.push({ lat: note.startLat, lng: note.startLng, number: 1, color: "gray" });
-        }
-      } catch {}
-    }
-
-    // Completed thermometer hints (start + end pins) for selected target only
-    for (const hint of hintResults) {
-      if (hint.type !== "thermometer" || hint.hider_id !== selectedTarget.playerId || !hint.note) continue;
-      try {
-        const note = JSON.parse(hint.note) as {
-          startLat?: number;
-          startLng?: number;
-          endLat?: number;
-          endLng?: number;
-          result?: "hotter" | "colder" | "same";
-        };
-        const { startLat, startLng, endLat, endLng, result } = note;
-        if (typeof startLat !== "number" || typeof startLng !== "number") continue;
-        pins.push({
-          lat: startLat,
-          lng: startLng,
-          number: 1,
-          color: "gray",
-        });
-        if (typeof endLat === "number" && typeof endLng === "number") {
-          pins.push({
-            lat: endLat,
-            lng: endLng,
-            number: 2,
-            color: result === "hotter" ? "red" : result === "colder" ? "blue" : "gray",
-          });
-        }
-      } catch {
-        // skip invalid note
-      }
-    }
-    return pins;
-  }, [hintResults, activeThermometerHint, selectedTarget]);
+  // Thermometer pins removed from map; bisector line + shaded half-plane show the same info
+  const thermometerPins = useMemo((): ThermometerPin[] => [], []);
 
   // Thermometer bisectors: bisecting line + shaded half-plane per completed thermometer (selected target only)
-  const thermometerBisectors = useMemo((): { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[] => {
+  const thermometerBisectors = useMemo((): { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" }[] => {
     if (!selectedTarget) return [];
-    const out: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[] = [];
+    const out: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" }[] = [];
     for (const hint of hintResults) {
       if (hint.type !== "thermometer" || hint.hider_id !== selectedTarget.playerId || !hint.note) continue;
       try {
@@ -399,7 +355,7 @@ export function SeekingLayout({
           startLng?: number;
           endLat?: number;
           endLng?: number;
-          result?: "hotter" | "colder" | "same";
+          result?: "hotter" | "colder";
         };
         const { startLat, startLng, endLat, endLng, result } = note;
         if (
@@ -408,7 +364,7 @@ export function SeekingLayout({
           typeof endLat !== "number" ||
           typeof endLng !== "number" ||
           !result ||
-          !["hotter", "colder", "same"].includes(result)
+          !["hotter", "colder"].includes(result)
         )
           continue;
         out.push({ startLat, startLng, endLat, endLng, result });
@@ -496,7 +452,8 @@ export function SeekingLayout({
           thermometerBisectors={thermometerBisectors}
           thermometerPreviewStart={thermometerPreviewStart}
           radarCircles={radarCircles}
-          radarPreviewRadiusMeters={radarPreviewRadiusMeters}
+          radarCastingCircle={radarCastingCircle}
+          radarPreviewRadiusMeters={radarCastingCircle ? null : radarPreviewRadiusMeters}
         />
         {/* Dynamic island style pill on top of map */}
         <div
@@ -639,6 +596,7 @@ export function SeekingLayout({
                 onHintResult={handleHintResult}
                 onActiveThermometerHint={setActiveThermometerHint}
                 onRadarPreviewRadiusChange={setRadarPreviewRadiusMeters}
+                onRadarCastingCircleChange={setRadarCastingCircle}
               />
             </section>
 

@@ -26,11 +26,13 @@ type Props = {
   /** Thermometer history pins (red=hotter, blue=colder, numbered 1 & 2) */
   thermometerPins?: ThermometerPin[];
   /** Completed thermometer bisectors (line + shaded half-plane) for the selected target */
-  thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[];
+  thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" }[];
   /** While thermometer is casting for selected target: start position for live dotted bisector preview */
   thermometerPreviewStart?: { startLat: number; startLng: number } | null;
   /** Radar cast circles for the selected target (center + radius per completed radar hint; withinDistance = hit/miss for highlight) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
+  /** When a radar is casting, show this circle at cast-time position (dotted) */
+  radarCastingCircle?: { lat: number; lng: number; radiusMeters: number } | null;
   /** When set, show a dotted preview circle on the map for radar (center = user position, radius = this value in meters) */
   radarPreviewRadiusMeters?: number | null;
 };
@@ -52,6 +54,7 @@ export function ZoneWithLocation({
   thermometerBisectors = [],
   thermometerPreviewStart = null,
   radarCircles = [],
+  radarCastingCircle = null,
   radarPreviewRadiusMeters = null,
 }: Props) {
   const [userPosition, setUserPosition] = useState<UserPosition>(null);
@@ -199,6 +202,7 @@ export function ZoneWithLocation({
           thermometerBisectors={thermometerBisectors}
           thermometerPreviewStart={thermometerPreviewStart}
           radarCircles={radarCircles}
+          radarCastingCircle={radarCastingCircle}
           radarPreviewCircle={
             userPosition && radarPreviewRadiusMeters != null && radarPreviewRadiusMeters > 0
               ? { lat: userPosition.lat, lng: userPosition.lng, radiusMeters: radarPreviewRadiusMeters }

@@ -18,6 +18,8 @@ interface Props {
   onActiveThermometerHint?: (hint: Hint | null) => void;
   /** When user selects a radar distance, pass meters to show dotted preview circle on map; pass null when not on radar tab */
   onRadarPreviewRadiusChange?: (meters: number | null) => void;
+  /** When a radar is casting, pass its circle (cast-time position + radius) so the map shows it; pass null when not casting radar */
+  onRadarCastingCircleChange?: (circle: { lat: number; lng: number; radiusMeters: number } | null) => void;
 }
 
 export function PowerupTabs({
@@ -29,6 +31,7 @@ export function PowerupTabs({
   onHintResult,
   onActiveThermometerHint,
   onRadarPreviewRadiusChange,
+  onRadarCastingCircleChange,
 }: Props) {
   const [selectedPowerup, setSelectedPowerup] = useState<'radar' | 'thermometer' | 'photo'>('radar');
   const [activeHints, setActiveHints] = useState<Hint[]>([]);
@@ -178,7 +181,32 @@ export function PowerupTabs({
       onRadarPreviewRadiusChange?.(null);
     }
   }, [activeHint?.id, onRadarPreviewRadiusChange]);
-  
+
+  // Report the currently casting radar circle (cast-time position + radius) so the map can show it
+  useEffect(() => {
+    if (!onRadarCastingCircleChange) return;
+    if (activeHint?.type === "radar" && activeHint.note) {
+      try {
+        const note = JSON.parse(activeHint.note) as { lat?: number; lng?: number; distanceMeters?: number };
+        if (
+          typeof note.lat === "number" &&
+          typeof note.lng === "number" &&
+          typeof note.distanceMeters === "number"
+        ) {
+          onRadarCastingCircleChange({
+            lat: note.lat,
+            lng: note.lng,
+            radiusMeters: note.distanceMeters,
+          });
+          return;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    onRadarCastingCircleChange(null);
+  }, [activeHint?.id, activeHint?.type, activeHint?.note, onRadarCastingCircleChange]);
+
   // Check which hints have been completed for this target
   const completedHintTypes = new Set(completedHints.map(h => h.type));
 
