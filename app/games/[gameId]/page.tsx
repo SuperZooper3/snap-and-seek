@@ -68,10 +68,15 @@ export default async function GamePage({ params, searchParams }: Props) {
       <GamePageRefresh />
       <main className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-16 pb-safe">
         <header className="mb-10">
-          <Link href="/" className="btn-ghost inline-flex items-center gap-1.5">
-            <BackArrowIcon />
-            Create game
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/" className="btn-ghost inline-flex items-center gap-1.5">
+              <BackArrowIcon />
+              Create game
+            </Link>
+            <Link href="/your-games" className="btn-ghost inline-flex">
+              Your games
+            </Link>
+          </div>
           <h1 className="mt-4 text-3xl font-bold" style={{ color: "var(--foreground)" }}>
             {(game as Game).name || "Unnamed game"}
           </h1>

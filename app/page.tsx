@@ -1,3 +1,4 @@
+import Link from "next/link";
 import CreateGameForm from "./CreateGameForm";
 
 export default function Home() {
@@ -17,6 +18,11 @@ export default function Home() {
           <CreateGameForm />
         </section>
 
+        <footer className="text-center">
+          <Link href="/your-games" className="btn-ghost inline-flex">
+            Your games
+          </Link>
+        </footer>
       </main>
     </div>
   );

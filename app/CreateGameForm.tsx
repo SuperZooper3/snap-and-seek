@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { addGameToYourGames } from "@/lib/your-games-cookie";
 
 export default function CreateGameForm() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function CreateGameForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create game");
+      addGameToYourGames(data.id);
       router.push(`/games/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
