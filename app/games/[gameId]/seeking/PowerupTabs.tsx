@@ -171,6 +171,13 @@ export function PowerupTabs({
       onRadarPreviewRadiusChange?.(null);
     }
   }, [selectedPowerup, onRadarPreviewRadiusChange]);
+
+  // Clear radar preview whenever any hint is casting (radar uses cast-time location, not current; don't show preview for other power-ups)
+  useEffect(() => {
+    if (activeHint) {
+      onRadarPreviewRadiusChange?.(null);
+    }
+  }, [activeHint?.id, onRadarPreviewRadiusChange]);
   
   // Check which hints have been completed for this target
   const completedHintTypes = new Set(completedHints.map(h => h.type));

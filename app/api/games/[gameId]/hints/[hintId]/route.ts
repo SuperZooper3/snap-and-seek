@@ -63,7 +63,7 @@ export async function PATCH(
     }
 
     if (hint.type === "radar") {
-      // Use resultData if provided, otherwise use initialData from note (stored when hint was created)
+      // Radar center must be cast-time position (stored in note when hint was created). Do not overwrite with current position.
       const fromResult = resultData as { lat?: number; lng?: number; distanceMeters?: number } | undefined;
       const lat = fromResult?.lat ?? noteData.lat;
       const lng = fromResult?.lng ?? noteData.lng;

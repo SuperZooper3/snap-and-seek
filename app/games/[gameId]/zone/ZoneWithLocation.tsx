@@ -27,6 +27,8 @@ type Props = {
   thermometerPins?: ThermometerPin[];
   /** Completed thermometer bisectors (line + shaded half-plane) for the selected target */
   thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[];
+  /** While thermometer is casting for selected target: start position for live dotted bisector preview */
+  thermometerPreviewStart?: { startLat: number; startLng: number } | null;
   /** Radar cast circles for the selected target (center + radius per completed radar hint; withinDistance = hit/miss for highlight) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
   /** When set, show a dotted preview circle on the map for radar (center = user position, radius = this value in meters) */
@@ -48,6 +50,7 @@ export function ZoneWithLocation({
   onOutsideZoneChange,
   thermometerPins = [],
   thermometerBisectors = [],
+  thermometerPreviewStart = null,
   radarCircles = [],
   radarPreviewRadiusMeters = null,
 }: Props) {
@@ -194,6 +197,7 @@ export function ZoneWithLocation({
           userPosition={userPosition}
           thermometerPins={thermometerPins}
           thermometerBisectors={thermometerBisectors}
+          thermometerPreviewStart={thermometerPreviewStart}
           radarCircles={radarCircles}
           radarPreviewCircle={
             userPosition && radarPreviewRadiusMeters != null && radarPreviewRadiusMeters > 0

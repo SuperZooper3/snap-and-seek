@@ -443,6 +443,18 @@ export function SeekingLayout({
     return circles;
   }, [hintResults, selectedTarget]);
 
+  // Live dotted bisector preview while thermometer is casting (start → current location)
+  const thermometerPreviewStart = useMemo((): { startLat: number; startLng: number } | null => {
+    if (!selectedTarget || !activeThermometerHint || activeThermometerHint.hider_id !== selectedTarget.playerId || !activeThermometerHint.note) return null;
+    try {
+      const note = JSON.parse(activeThermometerHint.note) as { startLat?: number; startLng?: number };
+      if (typeof note.startLat === "number" && typeof note.startLng === "number") {
+        return { startLat: note.startLat, startLng: note.startLng };
+      }
+    } catch {}
+    return null;
+  }, [activeThermometerHint, selectedTarget]);
+
   // Submission-derived state for selected target
   const isTargetFound = selectedTarget ? foundHiderIds.has(selectedTarget.playerId) : false;
   const selectedSubmission = selectedTarget ? getMySubmissionForHider(selectedTarget.playerId) : undefined;
@@ -482,6 +494,7 @@ export function SeekingLayout({
           onCountdownChange={handleCountdownChange}
           thermometerPins={thermometerPins}
           thermometerBisectors={thermometerBisectors}
+          thermometerPreviewStart={thermometerPreviewStart}
           radarCircles={radarCircles}
           radarPreviewRadiusMeters={radarPreviewRadiusMeters}
         />

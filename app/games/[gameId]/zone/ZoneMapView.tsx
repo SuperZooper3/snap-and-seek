@@ -40,13 +40,15 @@ type Props = {
   thermometerPins?: ThermometerPin[];
   /** Completed thermometer hints: bisector line + shaded half-plane (per selected target) */
   thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[];
+  /** While thermometer is casting: start position so we can draw a live dotted bisector (start → current user position) */
+  thermometerPreviewStart?: { startLat: number; startLng: number } | null;
   /** Radar cast circles (center + radius per completed radar hint; withinDistance = hit → highlight outside, miss → highlight inside) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
   /** Preview circle for radar (dotted) when user has selected a distance but not yet cast center + radius */
   radarPreviewCircle?: { lat: number; lng: number; radiusMeters: number } | null;
 };
 
-export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], thermometerBisectors = [], radarCircles = [], radarPreviewCircle = null }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], thermometerBisectors = [], thermometerPreviewStart = null, radarCircles = [], radarPreviewCircle = null }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
   const { isLoaded, loadError } = useGoogleMapsLoader();
@@ -274,6 +276,40 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
             </Fragment>
           );
         })}
+        {thermometerPreviewStart && userPosition && isLoaded && typeof google !== "undefined" && (() => {
+          const [lineP1, lineP2] = perpendicularBisector(
+            thermometerPreviewStart.startLat,
+            thermometerPreviewStart.startLng,
+            userPosition.lat,
+            userPosition.lng,
+            0.03
+          );
+          return (
+            <Polyline
+              key="thermo-preview-bisector"
+              path={[lineP1, lineP2]}
+              options={{
+                strokeColor: "#ea580c",
+                strokeWeight: 2,
+                strokeOpacity: 0.9,
+                icons: [
+                  {
+                    icon: {
+                      path: google.maps.SymbolPath.CIRCLE,
+                      scale: 2,
+                      fillColor: "#ea580c",
+                      fillOpacity: 0.9,
+                      strokeColor: "#ea580c",
+                      strokeWeight: 1,
+                    },
+                    repeat: "12px",
+                  },
+                ],
+                clickable: false,
+              }}
+            />
+          );
+        })()}
         {radarCircles.map((circle, i) => {
           const isHit = circle.withinDistance === true;
           const isMiss = circle.withinDistance === false;
