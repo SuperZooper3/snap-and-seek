@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { getLocation } from "@/lib/get-location";
 
-const RADAR_DISTANCES = [10, 25, 50, 75, 100, 150, 200, 500];
+// Up to 200m: mixed steps; after 200m: every 50m until 1km
+const RADAR_DISTANCES = [
+  10, 25, 50, 75, 100, 150, 200,
+  ...Array.from({ length: 16 }, (_, i) => 250 + i * 50), // 250..1000
+];
 
 interface SeekingTarget {
   playerId: number;
@@ -122,7 +126,7 @@ export function RadarPowerup({
           className="text-center text-lg font-bold"
           style={{ color: "var(--pastel-ink)" }}
         >
-          {lastYesNo ? "Yes — you're within range." : "No — you're not within range."}
+          {lastYesNo ? "Yes you're within range." : "No you're not within range."}
         </div>
       )}
 

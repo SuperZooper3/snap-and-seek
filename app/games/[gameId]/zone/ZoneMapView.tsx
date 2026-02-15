@@ -38,9 +38,9 @@ type Props = {
   userPosition?: UserPosition;
   /** Pins for completed thermometer readings (1 = start, 2 = end) */
   thermometerPins?: ThermometerPin[];
-  /** Radar cast circles (center + radius per completed radar hint for selected target) */
-  radarCircles?: { lat: number; lng: number; radiusMeters: number }[];
-  /** Preview circle for radar (dotted) when user has selected a distance but not yet cast — center + radius */
+  /** Radar cast circles (center + radius per completed radar hint; withinDistance = hit → highlight outside, miss → highlight inside) */
+  radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
+  /** Preview circle for radar (dotted) when user has selected a distance but not yet cast center + radius */
   radarPreviewCircle?: { lat: number; lng: number; radiusMeters: number } | null;
 };
 
@@ -64,6 +64,16 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
     );
     return [outer, inner];
   }, [zone]);
+
+  /** Zone boundary as polygon (for radar "hit" = highlight outside circle) */
+  const zoneCirclePath = useMemo(
+    () =>
+      circleToPolygonPoints(zone.center_lat, zone.center_lng, zone.radius_meters, 64).map((p) => ({
+        lat: p.lat,
+        lng: p.lng,
+      })),
+    [zone.center_lat, zone.center_lng, zone.radius_meters]
+  );
 
   const updateUserCircle = useCallback((map: google.maps.Map) => {
     if (!userPosition) {
@@ -221,20 +231,46 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
             clickable: false,
           }}
         />
-        {radarCircles.map((circle, i) => (
-          <Circle
-            key={`radar-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
-            center={{ lat: circle.lat, lng: circle.lng }}
-            radius={circle.radiusMeters}
-            options={{
-              strokeColor: "#0ea5e9",
-              strokeWeight: 2,
-              fillColor: "#0ea5e9",
-              fillOpacity: 0.15,
-              clickable: false,
-            }}
-          />
-        ))}
+        {radarCircles.map((circle, i) => {
+          const isHit = circle.withinDistance === true;
+          const isMiss = circle.withinDistance === false;
+          // Hit: highlight outside the circle (zone minus circle). Miss: highlight inside the circle.
+          if (isHit) {
+            const radarHolePath = circleToPolygonPoints(
+              circle.lat,
+              circle.lng,
+              circle.radiusMeters,
+              64
+            ).map((p) => ({ lat: p.lat, lng: p.lng }));
+            return (
+              <Polygon
+                key={`radar-hit-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
+                paths={[zoneCirclePath, radarHolePath]}
+                options={{
+                  strokeColor: "#0ea5e9",
+                  strokeWeight: 2,
+                  fillColor: "#0ea5e9",
+                  fillOpacity: 0.2,
+                  clickable: false,
+                }}
+              />
+            );
+          }
+          return (
+            <Circle
+              key={`radar-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
+              center={{ lat: circle.lat, lng: circle.lng }}
+              radius={circle.radiusMeters}
+              options={{
+                strokeColor: "#0ea5e9",
+                strokeWeight: 2,
+                fillColor: "#0ea5e9",
+                fillOpacity: isMiss ? 0.25 : 0.15,
+                clickable: false,
+              }}
+            />
+          );
+        })}
         {radarPreviewCircle && isLoaded && typeof google !== "undefined" && (() => {
           const points = circleToPolygonPoints(
             radarPreviewCircle.lat,

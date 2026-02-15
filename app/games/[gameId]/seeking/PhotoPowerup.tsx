@@ -188,7 +188,7 @@ export function PhotoPowerup({
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-600 text-center">
-        Unlock hints about {targetPlayer.name}&apos;s spot — photos or that they have no such object nearby
+        Unlock hints about {targetPlayer.name}&apos;s spot photos or that they have no such object nearby
       </div>
 
       {/* Available photos to unlock, or upfront "no such object" hints */}
@@ -212,7 +212,7 @@ export function PhotoPowerup({
                   </div>
                 </div>
 
-                {/* Unavailable types: no Unlock button — message is shown below. */}
+                {/* Unavailable types: no Unlock button message is shown below. */}
                 {!isUnavailableUpfront && !isUnlocked && !isCurrentlyUnlocking && !alreadyCompleted && (
                   <button
                     onClick={() => handleUnlockPhoto(photo.type)}

@@ -221,7 +221,7 @@ export function ThermometerPowerup({
         >
           <div className="text-xl font-bold" style={{ color: 'var(--pastel-ink, #1a1a1a)' }}>
             {result === 'Neutral'
-              ? 'Neutral — distance hasn\'t changed much 🌡️'
+              ? 'Neutral distance hasn\'t changed much 🌡️'
               : `You're getting ${result}! 🌡️`}
           </div>
           <p className="text-sm mt-1" style={{ color: 'var(--pastel-ink-muted)' }}>

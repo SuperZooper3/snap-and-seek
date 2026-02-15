@@ -25,8 +25,8 @@ type Props = {
   onOutsideZoneChange?: (outside: boolean) => void;
   /** Thermometer history pins (red=hotter, blue=colder, numbered 1 & 2) */
   thermometerPins?: ThermometerPin[];
-  /** Radar cast circles for the selected target (center + radius per completed radar hint) */
-  radarCircles?: { lat: number; lng: number; radiusMeters: number }[];
+  /** Radar cast circles for the selected target (center + radius per completed radar hint; withinDistance = hit/miss for highlight) */
+  radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
   /** When set, show a dotted preview circle on the map for radar (center = user position, radius = this value in meters) */
   radarPreviewRadiusMeters?: number | null;
 };
@@ -167,7 +167,7 @@ export function ZoneWithLocation({
             color: "var(--pastel-ink)",
           }}
         >
-          You’re outside the zone — get back inside the play area.
+          You’re outside the zone get back inside the play area.
         </div>
       )}
 

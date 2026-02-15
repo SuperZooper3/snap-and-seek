@@ -112,7 +112,7 @@ export function LocationDisplay() {
             Location test
           </h1>
           <p className="mt-3 text-lg text-amber-800/80 dark:text-amber-200/80">
-            Browser GPS — get and display your current position
+            Browser GPS get and display your current position
           </p>
         </header>
 

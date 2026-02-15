@@ -113,7 +113,7 @@ export default async function GamePage({ params, searchParams }: Props) {
               href={`/games/${gameId}/god`}
               className="btn-pastel-lavender touch-manipulation block w-full text-center"
             >
-              God mode — view all positions on map
+              God mode view all positions on map
             </Link>
           )}
 

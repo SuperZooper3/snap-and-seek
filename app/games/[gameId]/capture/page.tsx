@@ -48,7 +48,7 @@ export default async function CapturePage({ params }: Props) {
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="rounded-2xl bg-white/80 dark:bg-zinc-800/80 border border-amber-200/50 dark:border-zinc-700 p-8 max-w-sm w-full text-center space-y-4">
           <p className="text-amber-800 dark:text-amber-200">
-            Photo capture screen — coming soon.
+            Photo capture screen coming soon.
           </p>
           <p className="text-sm text-amber-700 dark:text-amber-300">
             This is a placeholder. You’ll take photos here during the hiding phase.

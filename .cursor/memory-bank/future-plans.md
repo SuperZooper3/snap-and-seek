@@ -6,7 +6,7 @@
 `latitude`, `longitude`, `location_name` columns added. Camera capture + geolocation tagging + reverse geocoding implemented.
 `game_id`, `player_id`, `label`, `is_main` columns added for setup page. Migration SQL in `docs/supabase-schema-changes.sql`.
 
-**IMPORTANT — Photo labeling concern:**
+**IMPORTANT Photo labeling concern:**
 Currently non-main photos use a simple text `label` field (e.g., "Tree", "Rock") to distinguish categories. When the "Visible from" items become dynamic (not hardcoded), this system needs to be made more robust:
 - Consider a dedicated `item_id` foreign key referencing a new `game_items` or `setup_items` table.
 - Or add a unique constraint on `(game_id, player_id, label)` to prevent duplicates.
@@ -229,15 +229,15 @@ Currently using service role key (bypasses RLS). For production:
 For fastest path to playable demo:
 
 1. ✅ Photo upload/display (DONE)
-2. ✅ Lobby system (DONE — basic: create, join, player list)
-3. ✅ Photo setup phase (DONE — main photo + hardcoded items + camera modal)
-4. **Dynamic item selection** — Make "Visible from" items user-configurable
-5. **Teams** — Assign players to teams
-6. **GPS tracking** — Core mechanic
-7. **Map view** — Visualize game state
-8. **Active play phase** — Find targets
-9. **Basic proximity questions** — Help players search
-10. **Auto-discovery** — Detect when targets found
-11. **Results screen** — Declare winner
+2. ✅ Lobby system (DONE basic: create, join, player list)
+3. ✅ Photo setup phase (DONE main photo + hardcoded items + camera modal)
+4. **Dynamic item selection** Make "Visible from" items user-configurable
+5. **Teams** Assign players to teams
+6. **GPS tracking** Core mechanic
+7. **Map view** Visualize game state
+8. **Active play phase** Find targets
+9. **Basic proximity questions** Help players search
+10. **Auto-discovery** Detect when targets found
+11. **Results screen** Declare winner
 
 Everything else is polish!

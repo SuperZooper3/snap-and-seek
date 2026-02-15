@@ -38,7 +38,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
 
   const [cameraTarget, setCameraTarget] = useState<string | null>(null);
 
-  // "I don't have this option" per visible-from item — allows progressing without a photo
+  // "I don't have this option" per visible-from item allows progressing without a photo
   const [unavailableItems, setUnavailableItems] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(VISIBLE_FROM_ITEMS.map((item) => [item.id, false]))
   );

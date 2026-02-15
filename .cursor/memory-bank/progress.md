@@ -25,7 +25,7 @@
 
 ### Seeking phase (implemented)
 - **Seeking page** (`/games/[gameId]/seeking`): `SeekingLayout` with map (reuses `ZoneWithLocation`) + floating `SeekingTimer` pill showing elapsed time since `seeking_started_at`. Pull-up bottom tray with color-coded target pills (blue=unfound, green=found with checkmark). "I found [Name]!" button per target opens camera modal. Photo upload + submission flow. 5s polling for game status updates.
-- **Radar proximity search:** In seeking tray — compact UI with distance stepper (10/25/50/100/200/500m) and Search button. Backend: `POST /api/games/[gameId]/radar` compares seeker GPS vs. hider's hiding photo GPS using `distanceMeters()` from `map-utils`. Returns Yes/No with color-coded badge.
+- **Radar proximity search:** In seeking tray compact UI with distance stepper (10/25/50/100/200/500m) and Search button. Backend: `POST /api/games/[gameId]/radar` compares seeker GPS vs. hider's hiding photo GPS using `distanceMeters()` from `map-utils`. Returns Yes/No with color-coded badge.
 - **Submissions system:** `submissions` table with `game_id`, `seeker_id`, `hider_id`, `photo_id`, `status`. POST API creates submission and checks win condition. GET API returns all submissions. Game-status polling API returns game state + submissions.
 - **Win detection:** When a player has successful submissions for all other players, game status → `'completed'`, `winner_id` set, `finished_at` recorded. Win modal overlay on seeking page. First to complete wins (natural tiebreaker). Race condition protection: atomic `WHERE winner_id IS NULL` on DB update; frontend disables UI + stops polling once winner detected.
 - **Summary page** (`/games/[gameId]/summary`): 2D grid (seekers × hiders) with photo thumbnails. Winner banner with trophy. Column headers show hider's hiding photo. Diagonal cells marked "self". Scrollable on mobile.
@@ -37,26 +37,26 @@
 ### Power-ups (hints) system (implemented)
 - **Hints table:** `hints` with game_id, seeker_id, hider_id, type (radar/thermometer/photo), note (JSON), casting_duration_seconds, status (casting/completed/cancelled), created_at, completed_at. Partial unique index: only one row with status='casting' per (game_id, seeker_id, hider_id). Migrations: `docs/supabase-hints-table.sql`, fix script `docs/supabase-hints-table-fix.sql`.
 - **Games:** `powerup_casting_duration_seconds` (default 60), `thermometer_threshold_meters` (default 100). Configured on **lobby page** (GameActions): "Time to Cast" and "Thermometer distance" (25/50/100/150/200m) dropdowns. PATCH `/api/games/[gameId]` accepts both. Migration: `docs/supabase-thermometer-threshold.sql`.
-- **Seeking power-ups:** Folder-style tabs (Radar, Thermometer, Photo). CastingTimer shows progress; only one active hint per target; other tabs disabled while casting. Radar: distance stepper → cast → inline result ("Yes — you're within range." / "No — you're not within range."); reusable; uses `getLocation()` for debug mode. Thermometer: set start → Start → cast timer runs → move ≥ threshold → when cast time done, click "Stop Thermometer — Get Result" (disabled until both cast time + distance met) → hotter/colder/neutral. Thermometer reusable; uses `getLocation()` for debug mode; result at bottom (bold). Photo: unlock tree/building/path hint photos; types with "I don't have this option" show absence upfront. Supabase image URLs via `next.config.ts` remotePatterns.
+- **Seeking power-ups:** Folder-style tabs (Radar, Thermometer, Photo). CastingTimer shows progress; only one active hint per target; other tabs disabled while casting. Radar: distance stepper → cast → inline result ("Yes you're within range." / "No you're not within range."); reusable; uses `getLocation()` for debug mode. Thermometer: set start → Start → cast timer runs → move ≥ threshold → when cast time done, click "Stop Thermometer Get Result" (disabled until both cast time + distance met) → hotter/colder/neutral. Thermometer reusable; uses `getLocation()` for debug mode; result at bottom (bold). Photo: unlock tree/building/path hint photos; types with "I don't have this option" show absence upfront. Supabase image URLs via `next.config.ts` remotePatterns.
 - **APIs:** POST/GET hints, PATCH/GET hint by id; POST thermometer (hotter/colder); POST photo-unlock (list or get URL; list includes types with `unavailable: true`). Lock-in PATCH accepts `unavailable_photo_types`. Hint completion: add returned hint to local completedHints so "✓ Unlocked" doesn’t revert before poll.
 
 ### Debug mode (implemented)
 - **`/debug` page:** Start debug mode (uses current GPS), click map to set fake location, End debug mode (clears cookie). Link in home footer.
 - **`lib/debug-location-cookie.ts`:** Cookie `sas_debug_location` with lat/lng. `getDebugLocation`, `setDebugLocation`, `clearDebugLocation`.
-- **`lib/get-location.ts`:** `getLocation()` — cookie first, else navigator.geolocation. All location consumers use this.
+- **`lib/get-location.ts`:** `getLocation()` cookie first, else navigator.geolocation. All location consumers use this.
 - **Vibration API:** When outside zone, `navigator.vibrate([200, 100, 200])` every 2.5s until back inside.
 
 ## What's left
 - **DB migrations:** Run `docs/supabase-submissions.sql` for submissions + winner. Run `docs/supabase-hints-table.sql` (or fix script) for hints + powerup_casting_duration_seconds. Run `docs/supabase-thermometer-threshold.sql` for `games.thermometer_threshold_meters`. Run `docs/supabase-unavailable-hint-photos.sql` for `players.unavailable_hint_photo_types`.
-- GPS proximity check for submissions (compare seeker GPS vs. hider photo GPS) — currently all submissions default to `'success'`.
-- Claude image recognition for visual similarity — deferred.
+- GPS proximity check for submissions (compare seeker GPS vs. hider photo GPS) currently all submissions default to `'success'`.
+- Claude image recognition for visual similarity deferred.
 - Google Geocoding API must be enabled in Cloud Console for reverse geocoding to work.
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` must be in `.env.local`.
 - Make "Visible from" items dynamic (currently hardcoded to Tree, Building, Path).
-- Teams — not started.
+- Teams not started.
 
 ## Known issues
-- Desktop front-facing webcam appears "flipped" — expected; rear camera on mobile is correct.
+- Desktop front-facing webcam appears "flipped" expected; rear camera on mobile is correct.
 - No EXIF GPS extraction (getUserMedia canvas blobs lack EXIF); relies entirely on browser geolocation.
 - Orphaned photo rows accumulate (no cleanup when retaking).
 

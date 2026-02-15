@@ -23,7 +23,7 @@ Hide-and-seek meets scavenger hunt. Teams photograph hidden spots, then race to 
 - ✅ Game management: create game, join via link, players list
 - ✅ Game zone: Set zone modal (location + radius 50m–1km, map), required before start; zone stored on `games` table
 - ✅ Zone view: full-screen map, live location (10s refresh, countdown), blue pin + accuracy circle, outside-zone warning
-- ✅ Photo setup page (`/games/[gameId]/setup`) — main photo + optional items + full-screen camera modal
+- ✅ Photo setup page (`/games/[gameId]/setup`) main photo + optional items + full-screen camera modal
 - ✅ Shared components: `CameraCapture`, `CameraModal`, `ItemBar`
 - 📋 Dynamic "visible from" items (currently hardcoded) - TBD
 - 📋 GPS tracking in gameplay - TBD
@@ -36,7 +36,7 @@ Hide-and-seek meets scavenger hunt. Teams photograph hidden spots, then race to 
 - ✅ Database schema: `photos` table with location + game context fields
 - ✅ Storage bucket: `snap-and-seek-image` (public)
 - ✅ API routes: `/api/upload` (accepts file + coords + game context, reverse geocodes) and `/api/photos`
-- ✅ Test page: `/test-upload` — in-app camera, geolocation, photo grid with location
+- ✅ Test page: `/test-upload` in-app camera, geolocation, photo grid with location
 - ✅ TypeScript types: Photo, Game, GameZone, Player interfaces in `lib/types.ts`
 - ✅ Camera: `CameraCapture` shared component with `autoStart`/`fullScreen` props
 

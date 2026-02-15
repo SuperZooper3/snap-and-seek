@@ -321,7 +321,7 @@ export function GameActions({
           ) : (
             <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
               {status === "seeking"
-                ? "Seeking in progress — join as a player to view the seeking map."
+                ? "Seeking in progress join as a player to view the seeking map."
                 : "Join as a player below (tap a name) to start hiding."}
             </p>
           )}

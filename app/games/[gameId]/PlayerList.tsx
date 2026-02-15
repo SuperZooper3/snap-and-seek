@@ -90,7 +90,7 @@ export function PlayerList({ gameId, players, currentPlayer }: Props) {
                 )}
                 {!isYou && !currentPlayer && (
                   <span className="ml-2 text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
-                    — tap to join as this player
+                    tap to join as this player
                   </span>
                 )}
               </li>
