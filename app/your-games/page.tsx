@@ -5,6 +5,11 @@ import { supabase } from "@/lib/supabase";
 import { parseYourGamesCookie, YOUR_GAMES_COOKIE_NAME } from "@/lib/your-games-cookie";
 import type { Game } from "@/lib/types";
 
+export const metadata = {
+  title: "Your Games",
+  description: "View and continue your Snap and Seek games.",
+};
+
 export default async function YourGamesPage() {
   const cookieStore = await cookies();
   const raw = cookieStore.get(YOUR_GAMES_COOKIE_NAME)?.value;

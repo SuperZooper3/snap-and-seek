@@ -3,9 +3,35 @@ import Image from "next/image";
 import CreateGameForm from "./CreateGameForm";
 import { GameTutorial } from "@/components/GameTutorial";
 
+const baseUrl =
+  process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_APP_URL ?? "https://snapandseek.com";
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Snap and Seek",
+  description:
+    "A whimsical outdoor game with friends: a cross between hide and seek, scavenger hunt, and Jet Lag. Create a game, hide or seek, snap photos, and find everyone.",
+  url: baseUrl,
+  applicationCategory: "Game",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  featureList: [
+    "Create games and invite friends",
+    "Hide and seek with photo proof",
+    "Location-based play outdoors",
+    "Scavenger hunt style challenges",
+  ],
+};
+
 export default function Home() {
   return (
     <div className="min-h-screen font-sans" style={{ background: "var(--background)" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
         <header className="text-center mb-8">
           <div className="flex justify-center mb-4">

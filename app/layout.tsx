@@ -9,9 +9,61 @@ const patrickHand = Patrick_Hand({
   subsets: ["latin"],
 });
 
+const baseUrl =
+  process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_APP_URL ?? "https://snapandseek.com";
+
 export const metadata: Metadata = {
-  title: "Snap and Seek",
-  description: "Hide. Seek. Snap. Find them all.",
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "Snap and Seek — Hide. Seek. Snap. Find them all.",
+    template: "%s | Snap and Seek",
+  },
+  description:
+    "Snap and Seek is a whimsical outdoor game with friends: a cross between hide and seek, scavenger hunt, and Jet Lag. Create a game, hide or seek, snap photos, and find everyone.",
+  keywords: [
+    "Snap and Seek",
+    "outdoor game",
+    "hide and seek",
+    "scavenger hunt",
+    "party game",
+    "location-based game",
+    "photo game",
+    "Jet Lag game",
+    "play with friends",
+  ],
+  authors: [{ name: "Snap and Seek" }],
+  creator: "Snap and Seek",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "Snap and Seek",
+    title: "Snap and Seek — Hide. Seek. Snap. Find them all.",
+    description:
+      "A whimsical outdoor game with friends: hide and seek meets scavenger hunt. Create a game, snap photos, find everyone.",
+    images: [
+      {
+        url: "/favicon/android-chrome-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "Snap and Seek",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Snap and Seek — Hide. Seek. Snap. Find them all.",
+    description: "Outdoor game with friends: hide and seek meets scavenger hunt. Create a game, snap photos, find everyone.",
+    images: ["/favicon/android-chrome-512x512.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  alternates: { canonical: "./" },
   icons: {
     icon: [
       { url: "/favicon/favicon.ico", sizes: "any" },
