@@ -265,7 +265,9 @@ export function PowerupTabs({
             onStartHint={handleStartHint}
             disabled={!!activeHint || loading}
             powerupCastingSeconds={powerupCastingSeconds}
-            completedHints={completedHints.filter(h => h.type === 'photo')}
+            completedHints={completedHints.filter(
+              (h) => h.type === 'photo' && h.hider_id === selectedTarget.playerId
+            )}
             activeHint={activeHint?.type === 'photo' ? activeHint : undefined}
             onCancel={handleCancelHint}
           />
