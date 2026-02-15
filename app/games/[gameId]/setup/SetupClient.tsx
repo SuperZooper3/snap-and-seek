@@ -275,7 +275,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
 
         <section className="mb-8">
           <h2 className="text-sm font-bold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>
-            Visible from
+            Nearby Landmarks
           </h2>
           <p className="text-sm mb-3" style={{ color: "var(--pastel-ink-muted)" }}>
             These photos will be used as hints that seekers can unlock during the game.

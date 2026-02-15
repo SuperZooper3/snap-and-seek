@@ -187,9 +187,9 @@ export function PhotoPowerup({
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600 text-center">
-        Unlock hints about {targetPlayer.name}&apos;s spot in the form of nearby objects!
-      </div>
+      <p className="text-sm text-center" style={{ color: "var(--pastel-ink-muted)" }}>
+        Unlock photos of landmarks near {targetPlayer.name}&apos;s spot (tree, building, path).
+      </p>
 
       {/* Available photos to unlock, or upfront "no such object" hints */}
       <div className="space-y-3">

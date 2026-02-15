@@ -254,6 +254,7 @@ export function PowerupTabs({
               onHintResult(hint);
               onActiveThermometerHint?.(null);
             }}
+            onCancel={handleCancelHint}
           />
         )}
         
