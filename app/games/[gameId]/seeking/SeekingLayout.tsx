@@ -429,12 +429,14 @@ export function SeekingLayout({
             <BackArrowIcon />
             Back to game
           </Link>
-          <span className="text-sm shrink-0" style={{ color: "var(--pastel-ink-muted)" }}>
-            You are: <strong style={{ color: "var(--foreground)" }}>{playerName}</strong>
-          </span>
-        </div>
-        <div className="text-sm font-bold tabular-nums shrink-0" style={{ color: "var(--pastel-ink-muted)" }}>
-          Refresh in {refreshCountdown}s
+          <div className="flex flex-wrap items-center gap-2 gap-y-0 min-w-0">
+            <span className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
+              You are: <strong style={{ color: "var(--foreground)" }}>{playerName}</strong>
+            </span>
+            <span className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
+              Refresh in {refreshCountdown}s
+            </span>
+          </div>
         </div>
       </header>
 
