@@ -67,6 +67,8 @@ export function PhotoPowerup({
   const [unlockedPhotos, setUnlockedPhotos] = useState<UnlockedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingPhotoType, setLoadingPhotoType] = useState<string | null>(null);
+  /** Photo URL + label when user has opened the lightbox (null = closed) */
+  const [lightbox, setLightbox] = useState<{ photoUrl: string; label: string } | null>(null);
 
   // Get completed photo unlocks from hints
   const unlockedPhotoTypes = new Set(
@@ -84,7 +86,19 @@ export function PhotoPowerup({
   useEffect(() => {
     setUnlockedPhotos([]);
     setAvailablePhotos([]);
+    setLightbox(null);
   }, [targetPlayer.playerId]);
+
+  // Lock body scroll when lightbox is open
+  useEffect(() => {
+    if (lightbox) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [lightbox]);
 
   // Fetch available photos when target is set
   useEffect(() => {
@@ -204,6 +218,43 @@ export function PhotoPowerup({
 
   return (
     <div className="space-y-4">
+      {/* Lightbox: click photo to open, circle X or tap outside to close */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col"
+          style={{ background: "rgba(0,0,0,0.75)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Viewing ${lightbox.label}`}
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className="relative flex-1 min-h-0 w-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={lightbox.photoUrl}
+              alt={lightbox.label}
+              fill
+              className="object-contain"
+              sizes="100vw 100vh"
+              unoptimized
+            />
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              className="absolute top-3 right-3 w-11 h-11 rounded-full flex items-center justify-center touch-manipulation bg-[var(--pastel-paper)] border-[3px] border-[var(--pastel-border)]"
+              style={{ boxShadow: "4px 4px 0 var(--pastel-border-subtle)" }}
+              aria-label="Close"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ color: "var(--pastel-ink)" }}>
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <p className="text-sm text-center" style={{ color: "var(--pastel-ink-muted)" }}>
         Unlock photos of landmarks near {targetPlayer.name}&apos;s spot (tree, building, path).
       </p>
@@ -273,14 +324,19 @@ export function PhotoPowerup({
               {/* Show unlocked photo (only for types that had a photo to unlock). */}
               {!isUnavailableUpfront && isUnlocked && unlockedEntry && unlockedEntry.photoUrl && (
                 <div className="mt-3">
-                  <div className="relative h-48 w-full rounded-md overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ photoUrl: unlockedEntry.photoUrl!, label: PHOTO_TYPE_LABELS[photo.type] })}
+                    className="relative h-48 w-full rounded-md overflow-hidden block w-full text-left focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                    aria-label={`View ${PHOTO_TYPE_LABELS[photo.type]} full size`}
+                  >
                     <Image
                       src={unlockedEntry.photoUrl}
                       alt={`${photo.type} hint photo`}
                       fill
                       className="object-cover"
                     />
-                  </div>
+                  </button>
                 </div>
               )}
             </div>
