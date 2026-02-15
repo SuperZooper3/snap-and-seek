@@ -80,9 +80,9 @@ export function RadarPowerup({
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-center" style={{ color: "var(--pastel-ink-muted)" }}>
-        Check if you&apos;re within a certain distance of {targetPlayer.name}&apos;s hiding spot
-      </div>
+      <p className="text-sm text-center" style={{ color: "var(--pastel-ink-muted)" }}>
+        Check if you&apos;re within a chosen distance of {targetPlayer.name}&apos;s hiding spot.
+      </p>
 
       {/* Distance stepper */}
       <div className="flex items-center justify-center space-x-3">

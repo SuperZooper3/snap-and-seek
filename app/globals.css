@@ -45,6 +45,13 @@ body {
   min-height: 100vh;
 }
 
+/* Debug mode: pink background when location override cookie is set (creation, picture, seeking) */
+html.sas-debug-mode,
+body.sas-debug-mode {
+  background: var(--pastel-rose) !important;
+  --background: var(--pastel-rose);
+}
+
 /* Hand-drawn style: thick, rounded, no sharp shadows */
 .sketch-card {
   background: var(--pastel-paper);

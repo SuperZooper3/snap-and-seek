@@ -20,6 +20,7 @@ interface Props {
   powerupCastingSeconds: number;
   thermometerThresholdMeters: number;
   onHintCompleted?: (hint: Hint) => void;
+  onCancel?: (hintId: string) => void;
 }
 
 function formatResult(result: string): string {
@@ -36,6 +37,7 @@ export function ThermometerPowerup({
   powerupCastingSeconds,
   thermometerThresholdMeters,
   onHintCompleted,
+  onCancel,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [currentDistance, setCurrentDistance] = useState<number | null>(null);
@@ -158,8 +160,10 @@ export function ThermometerPowerup({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600 text-center">
-        1. Start (that’s your starting pin) → 2. Walk at least {thermometerThresholdMeters}m → 3. Tap Get result
+      <p className="text-sm text-center" style={{ color: "var(--pastel-ink-muted)" }}>
+        Get hotter/colder feedback after walking a certain distance from a starting point. 
+        <br/>
+        Cuts down the hider's possible locations.
       </p>
 
       {!activeHint ? (
@@ -189,7 +193,7 @@ export function ThermometerPowerup({
             </div>
           )}
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <button
               onClick={handleGetResult}
               disabled={loading || !canGetResult}
@@ -197,6 +201,17 @@ export function ThermometerPowerup({
             >
               {loading ? 'Getting result…' : canGetResult ? 'Get result' : `Walk ${thermometerThresholdMeters}m first`}
             </button>
+            {onCancel && activeHint && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => onCancel(activeHint.id)}
+                  className="text-gray-500 hover:text-gray-700 text-sm px-2 py-1 rounded"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

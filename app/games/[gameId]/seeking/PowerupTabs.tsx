@@ -254,6 +254,7 @@ export function PowerupTabs({
               onHintResult(hint);
               onActiveThermometerHint?.(null);
             }}
+            onCancel={handleCancelHint}
           />
         )}
         
@@ -265,6 +266,8 @@ export function PowerupTabs({
             disabled={!!activeHint || loading}
             powerupCastingSeconds={powerupCastingSeconds}
             completedHints={completedHints.filter(h => h.type === 'photo')}
+            activeHint={activeHint?.type === 'photo' ? activeHint : undefined}
+            onCancel={handleCancelHint}
           />
         )}
       </div>
