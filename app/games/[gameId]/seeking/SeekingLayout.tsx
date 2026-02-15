@@ -10,7 +10,6 @@ import { SeekingTimer } from "./SeekingTimer";
 import { BackArrowIcon } from "@/components/BackArrowIcon";
 import { CameraModal } from "@/components/CameraModal";
 import { PowerupTabs } from "./PowerupTabs";
-import { HintHistory } from "./HintHistory";
 import type { Submission, Hint } from "@/lib/types";
 
 const TRAY_COLLAPSED_PX = 72;
@@ -339,12 +338,13 @@ export function SeekingLayout({
   // Active thermometer hint (casting) so we can show start pin before they tap "Get result"
   const [activeThermometerHint, setActiveThermometerHint] = useState<Hint | null>(null);
 
-  // Thermometer pins: completed hints (start + end) + active casting hint (start only)
+  // Thermometer pins: completed hints (start + end) + active casting hint (start only), for selected target only
   const thermometerPins = useMemo((): ThermometerPin[] => {
+    if (!selectedTarget) return [];
     const pins: ThermometerPin[] = [];
 
-    // Start pin from active (casting) thermometer hint
-    if (activeThermometerHint?.note) {
+    // Start pin from active (casting) thermometer hint only when it's for the selected target
+    if (activeThermometerHint?.hider_id === selectedTarget.playerId && activeThermometerHint?.note) {
       try {
         const note = JSON.parse(activeThermometerHint.note) as { startLat?: number; startLng?: number };
         if (typeof note.startLat === "number" && typeof note.startLng === "number") {
@@ -353,9 +353,9 @@ export function SeekingLayout({
       } catch {}
     }
 
-    // Completed thermometer hints (start + end pins)
+    // Completed thermometer hints (start + end pins) for selected target only
     for (const hint of hintResults) {
-      if (hint.type !== "thermometer" || !hint.note) continue;
+      if (hint.type !== "thermometer" || hint.hider_id !== selectedTarget.playerId || !hint.note) continue;
       try {
         const note = JSON.parse(hint.note) as {
           startLat?: number;
@@ -385,7 +385,39 @@ export function SeekingLayout({
       }
     }
     return pins;
-  }, [hintResults, activeThermometerHint]);
+  }, [hintResults, activeThermometerHint, selectedTarget]);
+
+  // Thermometer bisectors: bisecting line + shaded half-plane per completed thermometer (selected target only)
+  const thermometerBisectors = useMemo((): { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[] => {
+    if (!selectedTarget) return [];
+    const out: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[] = [];
+    for (const hint of hintResults) {
+      if (hint.type !== "thermometer" || hint.hider_id !== selectedTarget.playerId || !hint.note) continue;
+      try {
+        const note = JSON.parse(hint.note) as {
+          startLat?: number;
+          startLng?: number;
+          endLat?: number;
+          endLng?: number;
+          result?: "hotter" | "colder" | "same";
+        };
+        const { startLat, startLng, endLat, endLng, result } = note;
+        if (
+          typeof startLat !== "number" ||
+          typeof startLng !== "number" ||
+          typeof endLat !== "number" ||
+          typeof endLng !== "number" ||
+          !result ||
+          !["hotter", "colder", "same"].includes(result)
+        )
+          continue;
+        out.push({ startLat, startLng, endLat, endLng, result });
+      } catch {
+        // skip invalid note
+      }
+    }
+    return out;
+  }, [hintResults, selectedTarget]);
 
   // Radar circles: completed radar hints for the selected target only (center = cast position, radius = distanceMeters; withinDistance = hit/miss)
   const radarCircles = useMemo((): { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[] => {
@@ -449,6 +481,7 @@ export function SeekingLayout({
           hideRefreshBar
           onCountdownChange={handleCountdownChange}
           thermometerPins={thermometerPins}
+          thermometerBisectors={thermometerBisectors}
           radarCircles={radarCircles}
           radarPreviewRadiusMeters={radarPreviewRadiusMeters}
         />
@@ -651,8 +684,6 @@ export function SeekingLayout({
               )}
             </div>
 
-            {/* Hint History */}
-            <HintHistory gameId={gameId} playerId={playerId} />
           </div>
         </div>
       )}

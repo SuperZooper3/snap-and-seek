@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, Fragment } from "react";
 import { GoogleMap, Circle, Polygon, Polyline, Marker } from "@react-google-maps/api";
 import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
-import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
+import { circleToPolygonPoints, outerBounds, getBoundsForCircle, perpendicularBisector, zoneHalfPlanePolygon } from "@/lib/map-utils";
 
 const ZONE_FIT_PADDING_PX = 8;
 const BLUE_DOT_ICON_URL = "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
@@ -38,13 +38,15 @@ type Props = {
   userPosition?: UserPosition;
   /** Pins for completed thermometer readings (1 = start, 2 = end) */
   thermometerPins?: ThermometerPin[];
+  /** Completed thermometer hints: bisector line + shaded half-plane (per selected target) */
+  thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[];
   /** Radar cast circles (center + radius per completed radar hint; withinDistance = hit → highlight outside, miss → highlight inside) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
   /** Preview circle for radar (dotted) when user has selected a distance but not yet cast center + radius */
   radarPreviewCircle?: { lat: number; lng: number; radiusMeters: number } | null;
 };
 
-export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], radarCircles = [], radarPreviewCircle = null }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], thermometerBisectors = [], radarCircles = [], radarPreviewCircle = null }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
   const { isLoaded, loadError } = useGoogleMapsLoader();
@@ -231,6 +233,47 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
             clickable: false,
           }}
         />
+        {thermometerBisectors.map((tb, i) => {
+          const [lineP1, lineP2] = perpendicularBisector(tb.startLat, tb.startLng, tb.endLat, tb.endLng, 0.03);
+          const shadePolygon =
+            tb.result !== "same"
+              ? zoneHalfPlanePolygon(
+                  zone.center_lat,
+                  zone.center_lng,
+                  zone.radius_meters,
+                  lineP1,
+                  lineP2,
+                  tb.startLat,
+                  tb.startLng,
+                  tb.result === "hotter"
+                )
+              : null;
+          return (
+            <Fragment key={`thermo-bisector-${i}-${tb.startLat}-${tb.startLng}-${tb.endLat}-${tb.endLng}`}>
+              <Polyline
+                path={[lineP1, lineP2]}
+                options={{
+                  strokeColor: "#0ea5e9",
+                  strokeWeight: 2,
+                  strokeOpacity: 0.9,
+                  clickable: false,
+                }}
+              />
+              {shadePolygon && shadePolygon.length >= 3 && (
+                <Polygon
+                  paths={shadePolygon}
+                  options={{
+                    strokeColor: "#0ea5e9",
+                    strokeWeight: 2,
+                    fillColor: "#0ea5e9",
+                    fillOpacity: 0.2,
+                    clickable: false,
+                  }}
+                />
+              )}
+            </Fragment>
+          );
+        })}
         {radarCircles.map((circle, i) => {
           const isHit = circle.withinDistance === true;
           const isMiss = circle.withinDistance === false;

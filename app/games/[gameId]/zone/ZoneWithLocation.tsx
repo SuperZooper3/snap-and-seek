@@ -25,6 +25,8 @@ type Props = {
   onOutsideZoneChange?: (outside: boolean) => void;
   /** Thermometer history pins (red=hotter, blue=colder, numbered 1 & 2) */
   thermometerPins?: ThermometerPin[];
+  /** Completed thermometer bisectors (line + shaded half-plane) for the selected target */
+  thermometerBisectors?: { startLat: number; startLng: number; endLat: number; endLng: number; result: "hotter" | "colder" | "same" }[];
   /** Radar cast circles for the selected target (center + radius per completed radar hint; withinDistance = hit/miss for highlight) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
   /** When set, show a dotted preview circle on the map for radar (center = user position, radius = this value in meters) */
@@ -45,6 +47,7 @@ export function ZoneWithLocation({
   onCountdownChange,
   onOutsideZoneChange,
   thermometerPins = [],
+  thermometerBisectors = [],
   radarCircles = [],
   radarPreviewRadiusMeters = null,
 }: Props) {
@@ -190,6 +193,7 @@ export function ZoneWithLocation({
           fullSize
           userPosition={userPosition}
           thermometerPins={thermometerPins}
+          thermometerBisectors={thermometerBisectors}
           radarCircles={radarCircles}
           radarPreviewCircle={
             userPosition && radarPreviewRadiusMeters != null && radarPreviewRadiusMeters > 0
