@@ -31,6 +31,9 @@ export function CastingTimer({ hint, onComplete, onCancel, className = "" }: Pro
 
       if (remaining === 0 && !isCompleted) {
         setIsCompleted(true);
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+          navigator.vibrate(100);
+        }
         onComplete(hint.id);
       }
     };
