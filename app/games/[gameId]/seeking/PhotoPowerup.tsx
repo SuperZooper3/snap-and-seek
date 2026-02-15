@@ -74,7 +74,13 @@ export function PhotoPowerup({
     }).filter(Boolean)
   );
 
-  // Fetch available photos on mount
+  // Reset state when switching to a different target so we don't show previous target's photos
+  useEffect(() => {
+    setUnlockedPhotos([]);
+    setAvailablePhotos([]);
+  }, [targetPlayer.playerId]);
+
+  // Fetch available photos when target is set
   useEffect(() => {
     const fetchAvailablePhotos = async () => {
       try {

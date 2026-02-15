@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import type { Hint, RadarHintNote, ThermometerHintNote, PhotoHintNote } from "@/lib/types";
 
 interface Props {
@@ -9,9 +10,10 @@ interface Props {
 }
 
 export function HintHistory({ gameId, playerId }: Props) {
-  const [hints, setHints] = useState<(Hint & { seeker: { name: string }, hider: { name: string } })[]>([]);
+  const [hints, setHints] = useState<(Hint & { seeker: { name: string }; hider: { name: string } })[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -27,7 +29,7 @@ export function HintHistory({ gameId, playerId }: Props) {
           setHints(data.hints);
         }
       } catch (error) {
-        console.error('Failed to fetch hint history:', error);
+        console.error("Failed to fetch hint history:", error);
       } finally {
         setLoading(false);
       }
@@ -35,6 +37,39 @@ export function HintHistory({ gameId, playerId }: Props) {
 
     fetchHints();
   }, [gameId, playerId, isExpanded]);
+
+  // Fetch photo URLs for completed photo hints when history is expanded
+  useEffect(() => {
+    if (!isExpanded || hints.length === 0) return;
+
+    const photoHints = hints.filter((h) => {
+      if (h.type !== "photo" || !h.note) return false;
+      try {
+        const data = JSON.parse(h.note) as PhotoHintNote;
+        return data.unlocked && data.photoType;
+      } catch {
+        return false;
+      }
+    });
+
+    photoHints.forEach((hint) => {
+      const noteData = JSON.parse(hint.note || "{}") as PhotoHintNote;
+      const { photoType } = noteData;
+
+      fetch(`/api/games/${gameId}/photo-unlock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hiderId: hint.hider_id, photoType }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.photoUrl) {
+            setPhotoUrls((prev) => (prev[hint.id] ? prev : { ...prev, [hint.id]: data.photoUrl }));
+          }
+        })
+        .catch(() => {});
+    });
+  }, [gameId, isExpanded, hints]);
 
   const formatHintResult = (hint: Hint): string => {
     try {
@@ -132,12 +167,13 @@ export function HintHistory({ gameId, playerId }: Props) {
                     else if (data.result === "colder") resultColor = "var(--pastel-sky, #0ea5e9)";
                   } catch { /* ignore */ }
                 }
+                const photoUrl = hint.type === "photo" ? photoUrls[hint.id] : undefined;
                 return (
                   <div
                     key={hint.id}
                     className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
                   >
-                    <div className="text-lg">{getHintIcon(hint.type)}</div>
+                    <div className="text-lg shrink-0">{getHintIcon(hint.type)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm">
                         <span className="font-medium">vs {hint.hider.name}</span>
@@ -151,6 +187,18 @@ export function HintHistory({ gameId, playerId }: Props) {
                       <div className="text-xs text-gray-500">
                         {formatTimeAgo(hint.completed_at || hint.created_at)}
                       </div>
+                      {hint.type === "photo" && photoUrl && (
+                        <div className="mt-2 relative h-20 w-full max-w-[140px] rounded overflow-hidden border border-gray-200">
+                          <Image
+                            src={photoUrl}
+                            alt="Hint photo"
+                            fill
+                            className="object-cover"
+                            sizes="140px"
+                            unoptimized
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

@@ -212,18 +212,18 @@ export function PowerupTabs({
         </button>
         <button
           onClick={() => setSelectedPowerup('photo')}
-          disabled={!!activeHint && activeHint.type !== 'photo'}
+          disabled={activeHint?.type === 'photo'}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
             selectedPowerup === 'photo'
               ? 'border-purple-500 text-purple-600 bg-purple-50'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          } ${!!activeHint && activeHint.type !== 'photo' ? 'opacity-50 cursor-not-allowed' : ''}`}
+          } ${activeHint?.type === 'photo' ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           📸 Photo
         </button>
       </div>
 
-      {/* Power-up specific content */}
+      {/* Power-up specific content - always render all so Photo tab can show historical photos while casting radar/thermometer */}
       <div className="min-h-[120px] bg-gray-50 rounded-lg p-4 border border-gray-200">
         {selectedPowerup === 'radar' && (
           <RadarPowerup
