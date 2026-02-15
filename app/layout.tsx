@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Patrick_Hand } from "next/font/google";
+import { DebugModeBanner } from "@/components/DebugModeBanner";
 import "./globals.css";
 
 const patrickHand = Patrick_Hand({
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body
         className={`${patrickHand.variable} font-sans antialiased overflow-x-hidden`}
       >
+        <DebugModeBanner />
         {children}
       </body>
     </html>

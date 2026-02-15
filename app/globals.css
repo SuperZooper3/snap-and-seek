@@ -45,6 +45,16 @@ body {
   min-height: 100vh;
 }
 
+/* Debug mode: pink background when location override cookie is set */
+html.sas-debug-mode,
+body.sas-debug-mode {
+  background: var(--pastel-rose) !important;
+}
+/* So page-level divs that use var(--background) also show pink */
+html.sas-debug-mode {
+  --background: var(--pastel-rose);
+}
+
 /* Hand-drawn style: thick, rounded, no sharp shadows */
 .sketch-card {
   background: var(--pastel-paper);

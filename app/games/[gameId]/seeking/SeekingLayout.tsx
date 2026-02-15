@@ -385,17 +385,27 @@ export function SeekingLayout({
     return pins;
   }, [hintResults, activeThermometerHint]);
 
-  // Radar circles: completed radar hints for the selected target only (center = cast position, radius = distanceMeters)
-  const radarCircles = useMemo((): { lat: number; lng: number; radiusMeters: number }[] => {
+  // Radar circles: completed radar hints for the selected target only (center = cast position, radius = distanceMeters; blue = in range, red = not)
+  const radarCircles = useMemo((): { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[] => {
     if (!selectedTarget) return [];
-    const circles: { lat: number; lng: number; radiusMeters: number }[] = [];
+    const circles: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[] = [];
     for (const hint of hintResults) {
       if (hint.type !== "radar" || hint.hider_id !== selectedTarget.playerId || !hint.note) continue;
       try {
-        const note = JSON.parse(hint.note) as { lat?: number; lng?: number; distanceMeters?: number };
-        const { lat, lng, distanceMeters } = note;
+        const note = JSON.parse(hint.note) as {
+          lat?: number;
+          lng?: number;
+          distanceMeters?: number;
+          result?: { withinDistance?: boolean };
+        };
+        const { lat, lng, distanceMeters, result } = note;
         if (typeof lat === "number" && typeof lng === "number" && typeof distanceMeters === "number") {
-          circles.push({ lat, lng, radiusMeters: distanceMeters });
+          circles.push({
+            lat,
+            lng,
+            radiusMeters: distanceMeters,
+            withinDistance: typeof result?.withinDistance === "boolean" ? result.withinDistance : undefined,
+          });
         }
       } catch {
         // skip invalid note

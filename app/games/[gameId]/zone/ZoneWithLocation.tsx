@@ -25,8 +25,8 @@ type Props = {
   onOutsideZoneChange?: (outside: boolean) => void;
   /** Thermometer history pins (red=hotter, blue=colder, numbered 1 & 2) */
   thermometerPins?: ThermometerPin[];
-  /** Radar cast circles for the selected target (center + radius per completed radar hint) */
-  radarCircles?: { lat: number; lng: number; radiusMeters: number }[];
+  /** Radar cast circles for the selected target (center + radius per completed radar hint; blue = in range, red = not) */
+  radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
 };
 
 type UserPosition = {

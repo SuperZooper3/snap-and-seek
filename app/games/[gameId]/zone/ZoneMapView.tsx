@@ -38,8 +38,8 @@ type Props = {
   userPosition?: UserPosition;
   /** Pins for completed thermometer readings (1 = start, 2 = end) */
   thermometerPins?: ThermometerPin[];
-  /** Radar cast circles (center + radius per completed radar hint for selected target) */
-  radarCircles?: { lat: number; lng: number; radiusMeters: number }[];
+  /** Radar cast circles (center + radius per completed radar hint; blue = in range, red = not) */
+  radarCircles?: { lat: number; lng: number; radiusMeters: number; withinDistance?: boolean }[];
 };
 
 export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], radarCircles = [] }: Props) {
@@ -219,20 +219,26 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
             clickable: false,
           }}
         />
-        {radarCircles.map((circle, i) => (
-          <Circle
-            key={`radar-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
-            center={{ lat: circle.lat, lng: circle.lng }}
-            radius={circle.radiusMeters}
-            options={{
-              strokeColor: "#0ea5e9",
-              strokeWeight: 2,
-              fillColor: "#0ea5e9",
-              fillOpacity: 0.15,
-              clickable: false,
-            }}
-          />
-        ))}
+        {radarCircles.map((circle, i) => {
+          const inRange = circle.withinDistance === true;
+          const outOfRange = circle.withinDistance === false;
+          const strokeColor = inRange ? "#0ea5e9" : outOfRange ? "#b91c1c" : "#6b7280";
+          const fillColor = inRange ? "#0ea5e9" : outOfRange ? "#b91c1c" : "#6b7280";
+          return (
+            <Circle
+              key={`radar-${i}-${circle.lat}-${circle.lng}-${circle.radiusMeters}`}
+              center={{ lat: circle.lat, lng: circle.lng }}
+              radius={circle.radiusMeters}
+              options={{
+                strokeColor,
+                strokeWeight: 2,
+                fillColor,
+                fillOpacity: 0.15,
+                clickable: false,
+              }}
+            />
+          );
+        })}
         {userPosition && (
           <Marker
             key="user-marker"
