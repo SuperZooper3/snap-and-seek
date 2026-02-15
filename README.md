@@ -22,9 +22,9 @@ Players split into teams and are tasked with choosing a hidden location. The goa
 
 ### See it in action
 
-[![Snap and Seek gameplay](https://img.youtube.com/vi/F_hVs6-mK4M/maxresdefault.jpg)](https://youtu.be/F_hVs6-mK4M)
+[![Snap and Seek hype short](https://img.youtube.com/vi/aRB67gLhyjE/maxresdefault.jpg)](https://youtu.be/aRB67gLhyjE)
 
-*Click to watch an example of the game being played.*
+*Click to watch the hype short — or check the [full game walkthrough](https://youtu.be/F_hVs6-mK4M) on the website.*
 
 ## Quick start
 
