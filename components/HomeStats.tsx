@@ -11,7 +11,7 @@ function formatCount(n: number): string {
 }
 
 export function HomeStats() {
-  const [stats, setStats] = useState<Stats>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     fetch("/api/stats")
