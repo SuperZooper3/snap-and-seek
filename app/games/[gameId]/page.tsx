@@ -73,9 +73,6 @@ export default async function GamePage({ params, searchParams }: Props) {
               <BackArrowIcon />
               Create game
             </Link>
-            <Link href="/your-games" className="btn-ghost inline-flex">
-              Your games
-            </Link>
           </div>
           <h1 className="mt-4 text-3xl font-bold" style={{ color: "var(--foreground)" }}>
             {(game as Game).name || "Unnamed game"}
