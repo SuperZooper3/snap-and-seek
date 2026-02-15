@@ -459,6 +459,25 @@ export function SeekingLayout({
         >
           <SeekingTimer seekingStartedAt={seekingStartedAt} variant="pill" />
         </div>
+        {/* Floating hint pill fixed just above the swipe bar */}
+        {targets.length > 0 && (
+          <div
+            className="fixed bottom-[88px] left-1/2 z-10 -translate-x-1/2 pointer-events-none"
+            aria-hidden
+          >
+            <div
+              className="rounded-full border-[3px] px-10 py-1 font-medium text-xs text-center min-w-[280px] whitespace-nowrap"
+              style={{
+                background: "var(--pastel-sky)",
+                borderColor: "var(--pastel-border)",
+                color: "var(--pastel-ink)",
+                boxShadow: "4px 4px 0 var(--pastel-border-subtle)",
+              }}
+            >
+              Solid blue = eliminated area
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Bottom pull-up tray */}
