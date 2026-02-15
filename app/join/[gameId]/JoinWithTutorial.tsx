@@ -5,21 +5,25 @@ import { getTutorialSkipCookie, setTutorialSkipCookie } from "@/lib/tutorial-coo
 import { GameTutorial } from "@/components/GameTutorial";
 import { JoinForm } from "./JoinForm";
 
-type Props = { gameId: string };
+type Props = { gameId: string; isRejoin?: boolean };
 
-export function JoinWithTutorial({ gameId }: Props) {
+export function JoinWithTutorial({ gameId, isRejoin = false }: Props) {
   const [skipTutorial, setSkipTutorial] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   /** 1 = tutorial only, 2 = name form only */
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(isRejoin ? 2 : 1);
 
   useEffect(() => {
+    if (isRejoin) {
+      setStep(2);
+      return;
+    }
     const skip = getTutorialSkipCookie();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync cookie to state on mount
     setSkipTutorial(skip);
     setDontShowAgain(skip);
     if (skip) setStep(2);
-  }, []);
+  }, [isRejoin]);
 
   function handleDontShowChange(checked: boolean) {
     setDontShowAgain(checked);
@@ -30,7 +34,7 @@ export function JoinWithTutorial({ gameId }: Props) {
   if (step === 2) {
     return (
       <section className="sketch-card p-6">
-        <JoinForm gameId={gameId} />
+        <JoinForm gameId={gameId} isRejoin={isRejoin} />
       </section>
     );
   }

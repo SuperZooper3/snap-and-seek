@@ -5,9 +5,9 @@ import { useState } from "react";
 import { setPlayerInCookie } from "@/lib/player-cookie";
 import { addGameToYourGames } from "@/lib/your-games-cookie";
 
-type Props = { gameId: string };
+type Props = { gameId: string; isRejoin?: boolean };
 
-export function JoinForm({ gameId }: Props) {
+export function JoinForm({ gameId, isRejoin = false }: Props) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,9 @@ export function JoinForm({ gameId }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       <label className="block text-sm font-bold mb-2" style={{ color: "var(--foreground)" }}>
-        Your name
+        {isRejoin
+          ? "Enter the name you used when you joined"
+          : "Your name"}
       </label>
       <input
         type="text"
@@ -59,7 +61,7 @@ export function JoinForm({ gameId }: Props) {
         disabled={loading}
         className="btn-primary mt-6 w-full sm:w-auto disabled:opacity-50"
       >
-        {loading ? "Adding…" : "Add me"}
+        {loading ? (isRejoin ? "Rejoining…" : "Adding…") : (isRejoin ? "Rejoin" : "Add me")}
       </button>
     </form>
   );

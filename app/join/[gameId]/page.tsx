@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
@@ -28,37 +27,26 @@ export default async function JoinPage({ params }: Props) {
     notFound();
   }
 
-  if (game.status !== "lobby") {
-    return (
-      <div className="min-h-screen font-sans" style={{ background: "var(--background)" }}>
-        <main className="mx-auto max-w-2xl px-6 py-16">
-          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-            This game has already started
-          </h1>
-          <p className="mt-2" style={{ color: "var(--pastel-ink-muted)" }}>
-            You can’t join once the game is in progress.
-          </p>
-          <Link href="/" className="mt-6 btn-ghost inline-flex">
-            Back to Snap and Seek
-          </Link>
-        </main>
-      </div>
-    );
-  }
+  const isRejoin = game.status !== "lobby";
 
   return (
     <div className="min-h-screen font-sans" style={{ background: "var(--background)" }}>
       <main className="mx-auto max-w-2xl px-6 py-16">
         <header className="mb-10 text-center">
           <h1 className="text-3xl font-bold" style={{ color: "var(--foreground)" }}>
-            Join game
+            {isRejoin ? "Rejoin game" : "Join game"}
           </h1>
           <p className="mt-2" style={{ color: "var(--pastel-ink-muted)" }}>
             {game.name || "Unnamed game"}
           </p>
+          {isRejoin && (
+            <p className="mt-1 text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
+              Enter the name you used when you joined to get back in.
+            </p>
+          )}
         </header>
 
-        <JoinWithTutorial gameId={gameId} />
+        <JoinWithTutorial gameId={gameId} isRejoin={isRejoin} />
       </main>
     </div>
   );
