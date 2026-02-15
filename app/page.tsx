@@ -63,6 +63,24 @@ export default function Home() {
         <section className="mb-8">
           <GameTutorial showTitle={true} />
         </section>
+
+        <section className="mb-8">
+          <h2 className="text-xl font-bold mb-4 text-center" style={{ color: "var(--foreground)" }}>
+            See it in action
+          </h2>
+          <div className="relative w-full rounded-xl overflow-hidden border-[3px] shadow-lg" style={{ borderColor: "var(--pastel-border)", aspectRatio: "16/9" }}>
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src="https://www.youtube.com/embed/F_hVs6-mK4M?rel=0"
+              title="Snap and Seek gameplay example"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+          <p className="text-center mt-2 text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
+            Example of the game being played
+          </p>
+        </section>
       </main>
     </div>
   );

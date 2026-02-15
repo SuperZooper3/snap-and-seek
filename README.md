@@ -20,6 +20,12 @@ Players split into teams and are tasked with choosing a hidden location. The goa
 - **Hot or Cold:** By comparing two of your positions, you can see if you're colder or hotter to the location.
 - **Landmark:** Unlock different photos taken at the hidden location to reveal more context—like the tallest visible tower or the nearest tree.
 
+### See it in action
+
+[![Snap and Seek gameplay](https://img.youtube.com/vi/F_hVs6-mK4M/maxresdefault.jpg)](https://youtu.be/F_hVs6-mK4M)
+
+*Click to watch an example of the game being played.*
+
 ## Quick start
 
 ```bash
