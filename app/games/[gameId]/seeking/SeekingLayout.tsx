@@ -73,6 +73,8 @@ export function SeekingLayout({
   const didDragRef = useRef(false);
   // Power-up and hint state (thermometer hints with pin data for map; merged with session completions)
   const [hintResults, setHintResults] = useState<Hint[]>([]);
+  /** When radar tab is selected, show a dotted preview circle of this radius (meters) on the map */
+  const [radarPreviewRadiusMeters, setRadarPreviewRadiusMeters] = useState<number | null>(null);
 
   // Load completed hints (thermometer + radar) on mount so map pins and radar circles show after refresh
   useEffect(() => {
@@ -441,6 +443,7 @@ export function SeekingLayout({
           onCountdownChange={handleCountdownChange}
           thermometerPins={thermometerPins}
           radarCircles={radarCircles}
+          radarPreviewRadiusMeters={radarPreviewRadiusMeters}
         />
         {/* Dynamic island style pill on top of map */}
         <div
@@ -553,6 +556,7 @@ export function SeekingLayout({
                 thermometerThresholdMeters={thermometerThresholdMeters}
                 onHintResult={handleHintResult}
                 onActiveThermometerHint={setActiveThermometerHint}
+                onRadarPreviewRadiusChange={setRadarPreviewRadiusMeters}
               />
             </section>
 

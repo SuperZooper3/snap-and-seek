@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { distanceMeters } from "@/lib/geo";
 
-const VALIDATION_RADIUS_METERS = 10;
+const VALIDATION_RADIUS_METERS = 15;
 
 /**
  * GET /api/games/[gameId]/submissions

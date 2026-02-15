@@ -16,6 +16,8 @@ interface Props {
   thermometerThresholdMeters: number;
   onHintResult: (hint: Hint) => void;
   onActiveThermometerHint?: (hint: Hint | null) => void;
+  /** When user selects a radar distance, pass meters to show dotted preview circle on map; pass null when not on radar tab */
+  onRadarPreviewRadiusChange?: (meters: number | null) => void;
 }
 
 export function PowerupTabs({
@@ -26,6 +28,7 @@ export function PowerupTabs({
   thermometerThresholdMeters,
   onHintResult,
   onActiveThermometerHint,
+  onRadarPreviewRadiusChange,
 }: Props) {
   const [selectedPowerup, setSelectedPowerup] = useState<'radar' | 'thermometer' | 'photo'>('radar');
   const [activeHints, setActiveHints] = useState<Hint[]>([]);
@@ -161,6 +164,13 @@ export function PowerupTabs({
       onActiveThermometerHint(null);
     }
   }, [activeHint?.id, activeHint?.type, onActiveThermometerHint]);
+
+  // Clear radar preview when switching away from radar tab
+  useEffect(() => {
+    if (selectedPowerup !== 'radar') {
+      onRadarPreviewRadiusChange?.(null);
+    }
+  }, [selectedPowerup, onRadarPreviewRadiusChange]);
   
   // Check which hints have been completed for this target
   const completedHintTypes = new Set(completedHints.map(h => h.type));
@@ -225,6 +235,7 @@ export function PowerupTabs({
             lastResult={completedHints
               .filter((h) => h.type === 'radar')
               .sort((a, b) => (b.completed_at || b.created_at).localeCompare(a.completed_at || a.created_at))[0]}
+            onSelectedDistanceChange={onRadarPreviewRadiusChange}
           />
         )}
         

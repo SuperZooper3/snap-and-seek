@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getLocation } from "@/lib/get-location";
 
-const RADAR_DISTANCES = [10, 25, 50, 100, 200, 500];
+const RADAR_DISTANCES = [10, 25, 50, 75, 100, 150, 200, 500];
 
 interface SeekingTarget {
   playerId: number;
@@ -18,18 +18,25 @@ interface Props {
   disabled: boolean;
   powerupCastingSeconds: number;
   lastResult?: { note: string | null };
+  /** Called when the selected distance changes so the map can show a dotted preview circle */
+  onSelectedDistanceChange?: (meters: number) => void;
 }
 
-export function RadarPowerup({ 
-  gameId, 
-  targetPlayer, 
-  onStartHint, 
+export function RadarPowerup({
+  gameId,
+  targetPlayer,
+  onStartHint,
   disabled,
   powerupCastingSeconds,
-  lastResult
+  lastResult,
+  onSelectedDistanceChange,
 }: Props) {
   const [distanceIndex, setDistanceIndex] = useState(2); // Default to 50m
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    onSelectedDistanceChange?.(RADAR_DISTANCES[distanceIndex]);
+  }, [distanceIndex, onSelectedDistanceChange]);
 
   const handleCastRadar = async () => {
     if (disabled || loading) return;

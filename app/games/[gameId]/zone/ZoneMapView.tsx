@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { GoogleMap, Circle, Polygon, Marker } from "@react-google-maps/api";
+import { GoogleMap, Circle, Polygon, Polyline, Marker } from "@react-google-maps/api";
 import { useGoogleMapsLoader } from "@/lib/google-maps-loader";
 import { circleToPolygonPoints, outerBounds, getBoundsForCircle } from "@/lib/map-utils";
 
@@ -40,9 +40,11 @@ type Props = {
   thermometerPins?: ThermometerPin[];
   /** Radar cast circles (center + radius per completed radar hint for selected target) */
   radarCircles?: { lat: number; lng: number; radiusMeters: number }[];
+  /** Preview circle for radar (dotted) when user has selected a distance but not yet cast — center + radius */
+  radarPreviewCircle?: { lat: number; lng: number; radiusMeters: number } | null;
 };
 
-export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], radarCircles = [] }: Props) {
+export function ZoneMapView({ zone, fullSize = false, userPosition = null, thermometerPins = [], radarCircles = [], radarPreviewCircle = null }: Props) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const userCircleRef = useRef<google.maps.Circle | null>(null);
   const { isLoaded, loadError } = useGoogleMapsLoader();
@@ -233,6 +235,39 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
             }}
           />
         ))}
+        {radarPreviewCircle && isLoaded && typeof google !== "undefined" && (() => {
+          const points = circleToPolygonPoints(
+            radarPreviewCircle.lat,
+            radarPreviewCircle.lng,
+            radarPreviewCircle.radiusMeters,
+            64
+          );
+          const closedPath = points.length > 0 ? [...points, points[0]] : points;
+          return (
+          <Polyline
+            path={closedPath.map((p) => ({ lat: p.lat, lng: p.lng }))}
+            options={{
+              strokeColor: "#0ea5e9",
+              strokeWeight: 2,
+              strokeOpacity: 0.9,
+              icons: [
+                {
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 2,
+                    fillColor: "#0ea5e9",
+                    fillOpacity: 0.9,
+                    strokeColor: "#0ea5e9",
+                    strokeWeight: 1,
+                  },
+                  repeat: "12px",
+                },
+              ],
+              clickable: false,
+            }}
+          />
+          );
+        })()}
         {userPosition && (
           <Marker
             key="user-marker"
