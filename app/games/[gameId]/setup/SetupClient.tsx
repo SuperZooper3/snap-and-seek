@@ -277,6 +277,9 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
           <h2 className="text-sm font-bold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>
             Visible from
           </h2>
+          <p className="text-sm mb-3" style={{ color: "var(--pastel-ink-muted)" }}>
+            These photos will be used as hints that seekers can unlock during the game.
+          </p>
           <div className="space-y-3">
             {VISIBLE_FROM_ITEMS.map((item) => {
               const slot = itemPhotos[item.id] ?? { uploading: false };

@@ -188,7 +188,7 @@ export function PhotoPowerup({
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-600 text-center">
-        Unlock hints about {targetPlayer.name}&apos;s spot photos or that they have no such object nearby
+        Unlock hints about {targetPlayer.name}&apos;s spot in the form of nearby objects!
       </div>
 
       {/* Available photos to unlock, or upfront "no such object" hints */}
@@ -205,11 +205,6 @@ export function PhotoPowerup({
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="font-medium">{PHOTO_TYPE_LABELS[photo.type]}</div>
-                  <div className="text-sm text-gray-600">
-                    {isUnavailableUpfront
-                      ? 'No such object near their spot'
-                      : PHOTO_TYPE_DESCRIPTIONS[photo.type]}
-                  </div>
                 </div>
 
                 {/* Unavailable types: no Unlock button message is shown below. */}
@@ -238,7 +233,7 @@ export function PhotoPowerup({
 
               {/* Unavailable upfront: show hint message immediately (no casting). */}
               {isUnavailableUpfront && (
-                <div className="mt-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-900 dark:text-amber-100">
+                <div className="mt-3 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 text-sm text-black">
                   {UNAVAILABLE_HINT_MESSAGE[photo.type]}
                 </div>
               )}
