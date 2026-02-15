@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import CreateGameForm from "./CreateGameForm";
 import { GameTutorial } from "@/components/GameTutorial";
+import { HomeStats } from "@/components/HomeStats";
 
 const baseUrl =
   process.env.VERCEL_URL
@@ -48,6 +49,7 @@ export default function Home() {
           <p className="text-lg sm:text-xl max-w-xl mx-auto leading-relaxed" style={{ color: "var(--pastel-ink-muted)" }}>
             A cross between hide and seek, a scavenger hunt, and Jet Lag The Game, &ldquo;Snap & Seek&rdquo; is a whimsical outdoor game with friends!
           </p>
+          <HomeStats />
         </header>
 
         <section className="mb-8">
