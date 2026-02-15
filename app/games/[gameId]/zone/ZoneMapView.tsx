@@ -208,10 +208,11 @@ export function ZoneMapView({ zone, fullSize = false, userPosition = null, therm
           mapRef.current = null;
         }}
         options={{
-          zoomControl: true,
-          mapTypeControl: true,
-          fullscreenControl: true,
+          zoomControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
           streetViewControl: false,
+          rotateControl: false,
           gestureHandling: "cooperative",
           minZoom: 12,
         }}
