@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CreateGameForm from "./CreateGameForm";
+import { GameTutorial } from "@/components/GameTutorial";
 
 export default function Home() {
   return (
@@ -18,11 +19,15 @@ export default function Home() {
           <CreateGameForm />
         </section>
 
-        <footer className="text-center">
+        <div className="mb-12 text-center">
           <Link href="/your-games" className="btn-ghost inline-flex">
             Your games
           </Link>
-        </footer>
+        </div>
+
+        <section className="mb-12">
+          <GameTutorial showTitle={true} />
+        </section>
       </main>
     </div>
   );

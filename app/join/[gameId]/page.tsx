@@ -2,7 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
+import type { Player } from "@/lib/types";
 import { JoinWithTutorial } from "./JoinWithTutorial";
+import { RejoinPlayerList } from "./RejoinPlayerList";
 
 type Props = { params: Promise<{ gameId: string }> };
 
@@ -29,6 +31,16 @@ export default async function JoinPage({ params }: Props) {
 
   const isRejoin = game.status !== "lobby";
 
+  let players: Player[] = [];
+  if (isRejoin) {
+    const { data: playersData } = await supabase
+      .from("players")
+      .select("id, name, game_id, created_at")
+      .eq("game_id", gameId)
+      .order("created_at", { ascending: true });
+    players = (playersData ?? []) as Player[];
+  }
+
   return (
     <div className="min-h-screen font-sans" style={{ background: "var(--background)" }}>
       <main className="mx-auto max-w-2xl px-6 py-16">
@@ -39,14 +51,21 @@ export default async function JoinPage({ params }: Props) {
           <p className="mt-2" style={{ color: "var(--pastel-ink-muted)" }}>
             {game.name || "Unnamed game"}
           </p>
-          {isRejoin && (
-            <p className="mt-1 text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
-              Enter the name you used when you joined to get back in.
-            </p>
-          )}
         </header>
 
-        <JoinWithTutorial gameId={gameId} isRejoin={isRejoin} />
+        {isRejoin ? (
+          players.length > 0 ? (
+            <RejoinPlayerList gameId={gameId} players={players} />
+          ) : (
+            <section className="sketch-card p-6">
+              <p style={{ color: "var(--pastel-ink-muted)" }}>
+                No players in this game. Use a join link from the game host to add yourself first.
+              </p>
+            </section>
+          )
+        ) : (
+          <JoinWithTutorial gameId={gameId} isRejoin={false} />
+        )}
       </main>
     </div>
   );
