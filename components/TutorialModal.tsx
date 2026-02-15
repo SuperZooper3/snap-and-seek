@@ -27,7 +27,7 @@ export function TutorialModal({ onClose }: Props) {
       <div className="sketch-card max-h-[90vh] w-full max-w-lg flex flex-col">
         <div className="flex items-center justify-between p-4 border-b-[3px]" style={{ borderColor: "var(--pastel-border)" }}>
           <h2 id="tutorial-title" className="text-lg font-bold" style={{ color: "var(--foreground)" }}>
-            How to play <strong>Snap and Seek</strong>!
+            How to play <strong>Snap and Seek</strong>?
           </h2>
           <button
             type="button"

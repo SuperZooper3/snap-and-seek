@@ -12,7 +12,7 @@ export function GameTutorial({ showTitle = true }: Props) {
     <div className="space-y-6 text-left">
       {showTitle && (
         <h2 className="text-xl font-bold" style={{ color: "var(--foreground)" }}>
-          How to play <strong>Snap and Seek</strong>!
+          How to play <strong>Snap and Seek</strong>?
         </h2>
       )}
 
@@ -127,6 +127,18 @@ export function GameTutorial({ showTitle = true }: Props) {
           </p>
         </div>
       </section>
+
+      <p className="text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
+        <a
+          href="https://youtu.be/F_hVs6-mK4M"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline font-medium hover:opacity-80"
+          style={{ color: "var(--pastel-ink)" }}
+        >
+          Full game walkthrough video
+        </a> to learn more.
+      </p>
     </div>
   );
 }

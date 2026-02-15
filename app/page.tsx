@@ -68,7 +68,7 @@ export default function Home() {
 
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-4 text-center" style={{ color: "var(--foreground)" }}>
-            See it in action
+            What is playing like?
           </h2>
           <div className="space-y-6">
             <div>
@@ -82,7 +82,7 @@ export default function Home() {
                 />
               </div>
               <p className="text-center mt-2 text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
-                Short hype — if you&apos;re too easily distracted 😄
+                Hype trailer video for the vibe!
               </p>
             </div>
             <div>
@@ -96,7 +96,7 @@ export default function Home() {
                 />
               </div>
               <p className="text-center mt-2 text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
-                Full game walkthrough
+                A 10 minute full game walkthrough to really understand how it's played!
               </p>
             </div>
           </div>
