@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import type { Hint } from "@/lib/types";
 
 interface SeekingTarget {
   playerId: number;
@@ -29,6 +30,9 @@ interface Props {
   disabled: boolean;
   powerupCastingSeconds: number;
   completedHints: { note: string | null }[];
+  /** When a photo hint is currently casting */
+  activeHint?: Hint | null;
+  onCancel?: (hintId: string) => void;
 }
 
 const PHOTO_TYPE_LABELS = {
@@ -55,7 +59,9 @@ export function PhotoPowerup({
   onStartHint, 
   disabled,
   powerupCastingSeconds,
-  completedHints
+  completedHints,
+  activeHint,
+  onCancel,
 }: Props) {
   const [availablePhotos, setAvailablePhotos] = useState<AvailablePhoto[]>([]);
   const [unlockedPhotos, setUnlockedPhotos] = useState<UnlockedPhoto[]>([]);
@@ -185,11 +191,37 @@ export function PhotoPowerup({
     );
   }
 
+  const activePhotoType = activeHint?.type === "photo" && activeHint?.note
+    ? (() => {
+        try {
+          const note = JSON.parse(activeHint.note) as { photoType?: string };
+          return note.photoType as 'tree' | 'building' | 'path' | undefined;
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-center" style={{ color: "var(--pastel-ink-muted)" }}>
         Unlock photos of landmarks near {targetPlayer.name}&apos;s spot (tree, building, path).
       </p>
+
+      {activeHint && onCancel && (
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-sm text-gray-600">
+            {activePhotoType ? `Unlocking ${PHOTO_TYPE_LABELS[activePhotoType]}…` : "Unlocking…"}
+          </span>
+          <button
+            type="button"
+            onClick={() => onCancel(activeHint.id)}
+            className="text-gray-500 hover:text-gray-700 text-sm px-2 py-1 rounded"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Available photos to unlock, or upfront "no such object" hints */}
       <div className="space-y-3">
