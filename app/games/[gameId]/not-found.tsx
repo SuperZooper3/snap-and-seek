@@ -16,11 +16,11 @@ export default function GameNotFound() {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
           <Link
-            href="/games"
+            href="/your-games"
             className="btn-primary inline-flex items-center justify-center gap-1.5"
           >
             <BackArrowIcon className="h-4 w-4" />
-            All games
+            Your games
           </Link>
           <Link href="/" className="btn-ghost inline-flex items-center justify-center">
             Home
