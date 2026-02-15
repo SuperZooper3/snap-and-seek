@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Patrick_Hand } from "next/font/google";
 import "./globals.css";
+import { SwRegistration } from "./SwRegistration";
 
 const patrickHand = Patrick_Hand({
   weight: "400",
@@ -20,6 +21,16 @@ export const metadata: Metadata = {
     apple: "/favicon/apple-touch-icon.png",
   },
   manifest: "/favicon/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Snap and Seek",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "Snap and Seek",
+  },
 };
 
 export const viewport = {
@@ -39,6 +50,7 @@ export default function RootLayout({
       <body
         className={`${patrickHand.variable} font-sans antialiased overflow-x-hidden`}
       >
+        <SwRegistration />
         {children}
       </body>
     </html>
