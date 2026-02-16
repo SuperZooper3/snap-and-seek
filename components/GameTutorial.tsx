@@ -141,7 +141,8 @@ export function GameTutorial({ showTitle = true }: Props) {
       </p>
 
       <p className="text-sm pt-2 border-t-2" style={{ color: "var(--pastel-ink-muted)", borderColor: "var(--pastel-border-subtle)" }}>
-        We encourage everyone to play in good faith with your friends: try to follow the rules, and don’t take aggressively strict images—hidden items should be generally visible in a reasonable way. Game time scales with the number of players. For bigger zones (over 200 m radius) we recommend ≤4 players; for a smaller area (e.g. 100 m) up to 10 players can work well.
+        We encourage everyone to play in good faith with your friends: try to follow the rules with a generous interpretation, and don’t take aggressively strict images that show the bare minimum of the hidden items (it's fun to leave a couple hints in). For example, when taking a photo of a tree, try to include it's base to the sky. Hidden items should be immovable, of a reasonable size, and generally visible. 
+        Game time scales with the number of players. For bigger zones (over 200m radius) we recommend ≤4 players; for a smaller area (e.g. 100m) up to 10 players can be a fun chaotic mix!
       </p>
     </div>
   );
