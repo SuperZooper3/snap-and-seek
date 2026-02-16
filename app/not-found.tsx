@@ -20,9 +20,9 @@ export default function NotFound() {
           <li>The game may have been deleted or the link might be wrong.</li>
         </ul>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-          <Link href="/games" className="btn-primary inline-flex items-center justify-center gap-1.5">
+          <Link href="/your-games" className="btn-primary inline-flex items-center justify-center gap-1.5">
             <BackArrowIcon className="h-4 w-4" />
-            All games
+            Your games
           </Link>
           <Link href="/" className="btn-ghost inline-flex items-center justify-center">
             Home
