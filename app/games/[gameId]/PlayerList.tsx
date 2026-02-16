@@ -21,7 +21,9 @@ export function PlayerList({ gameId, players, currentPlayer, gameStatus }: Props
   const [editNameValue, setEditNameValue] = useState(currentPlayer?.name ?? "");
   const [savingName, setSavingName] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
   const isLobby = gameStatus === "lobby";
+  const gameStarted = gameStatus != null && gameStatus !== "lobby" && gameStatus !== "completed";
 
   function assumePlayer(player: Player) {
     setPlayerInCookie(gameId, { id: player.id, name: player.name });
@@ -70,6 +72,24 @@ export function PlayerList({ gameId, players, currentPlayer, gameStatus }: Props
       router.refresh();
     } finally {
       setLeaving(false);
+    }
+  }
+
+  async function withdrawPlayer(player: Player) {
+    if (!gameStarted || player.withdrawn_at) return;
+    if (!confirm(`Withdraw ${player.name}? They will no longer be a target; others won't need to find them.`)) return;
+    setWithdrawingId(player.id);
+    try {
+      const res = await fetch(`/api/games/${gameId}/players/${player.id}/withdraw`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to withdraw player");
+      }
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to withdraw");
+    } finally {
+      setWithdrawingId(null);
     }
   }
 
@@ -162,34 +182,52 @@ export function PlayerList({ gameId, players, currentPlayer, gameStatus }: Props
         <ul className="space-y-2">
           {players.map((p) => {
             const isYou = currentPlayer?.id === p.id;
+            const withdrawn = !!p.withdrawn_at;
+            const canAssume = !isYou && !currentPlayer && !withdrawn;
             return (
               <li
                 key={p.id}
-                className="rounded-xl border-[3px] px-4 py-2.5 transition-all"
+                className="rounded-xl border-[3px] px-4 py-2.5 transition-all flex flex-wrap items-center justify-between gap-2"
                 style={{
-                  background: isYou ? "var(--pastel-butter)" : "var(--pastel-paper)",
+                  background: isYou ? "var(--pastel-butter)" : withdrawn ? "var(--pastel-paper)" : "var(--pastel-paper)",
                   borderColor: "var(--pastel-border)",
                   color: "var(--pastel-ink)",
-                  cursor: !isYou && !currentPlayer ? "pointer" : undefined,
+                  cursor: canAssume ? "pointer" : undefined,
                   boxShadow: "3px 3px 0 var(--pastel-border-subtle)",
                 }}
-                onClick={
-                  !isYou && !currentPlayer
-                    ? () => assumePlayer(p)
-                    : undefined
-                }
-                role={!isYou && !currentPlayer ? "button" : undefined}
+                onClick={canAssume ? () => assumePlayer(p) : undefined}
+                role={canAssume ? "button" : undefined}
               >
-                {p.name}
-                {isYou && (
-                  <span className="ml-2 text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
-                    (you)
-                  </span>
-                )}
-                {!isYou && !currentPlayer && (
-                  <span className="ml-2 text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
-                    tap to join as this player
-                  </span>
+                <span>
+                  {p.name}
+                  {isYou && (
+                    <span className="ml-2 text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
+                      (you)
+                    </span>
+                  )}
+                  {withdrawn && (
+                    <span className="ml-2 text-xs font-medium" style={{ color: "var(--pastel-ink-muted)" }}>
+                      (withdrawn)
+                    </span>
+                  )}
+                  {canAssume && (
+                    <span className="ml-2 text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
+                      tap to join as this player
+                    </span>
+                  )}
+                </span>
+                {gameStarted && currentPlayer && !isYou && !withdrawn && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      withdrawPlayer(p);
+                    }}
+                    disabled={withdrawingId === p.id}
+                    className="btn-withdraw shrink-0"
+                  >
+                    {withdrawingId === p.id ? "Withdrawing…" : "Withdraw"}
+                  </button>
                 )}
               </li>
             );

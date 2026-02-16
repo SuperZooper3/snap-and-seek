@@ -80,6 +80,8 @@ export interface Player {
   path_photo: number | null;
   /** Hint photo types the player had no option for; shown to seekers as "No X near this spot" */
   unavailable_hint_photo_types?: ('tree' | 'building' | 'path')[];
+  /** When set, player is withdrawn from the current round (not a find target). */
+  withdrawn_at?: string | null;
 }
 
 /**

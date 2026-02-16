@@ -13,7 +13,7 @@ export async function GET(
 
   const { data: players, error: playersError } = await supabase
     .from("players")
-    .select("id, name, hiding_photo")
+    .select("id, name, hiding_photo, withdrawn_at")
     .eq("game_id", gameId)
     .order("created_at", { ascending: true });
 
@@ -25,7 +25,9 @@ export async function GET(
   }
 
   const withPhoto = (players ?? []).filter(
-    (p) => (p as { hiding_photo: number | null }).hiding_photo != null
+    (p) =>
+      (p as { hiding_photo: number | null }).hiding_photo != null &&
+      (p as { withdrawn_at: string | null }).withdrawn_at == null
   );
   const photoIds = withPhoto.map(
     (p) => (p as { hiding_photo: number | null }).hiding_photo as number

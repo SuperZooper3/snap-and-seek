@@ -47,11 +47,14 @@ export default async function SeekingPage({ params }: Props) {
 
   const { data: players } = await supabase
     .from("players")
-    .select("id, name, hiding_photo")
+    .select("id, name, hiding_photo, withdrawn_at")
     .eq("game_id", gameId)
     .order("created_at", { ascending: true });
 
-  const otherPlayers = (players ?? []).filter((p) => p.id !== currentPlayer.id);
+  // Exclude self and withdrawn players from targets
+  const otherPlayers = (players ?? []).filter(
+    (p) => p.id !== currentPlayer.id && (p as { withdrawn_at: string | null }).withdrawn_at == null
+  );
   const photoIds = otherPlayers
     .map((p) => (p as { hiding_photo: number | null }).hiding_photo)
     .filter((id): id is number => id != null);

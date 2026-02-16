@@ -71,6 +71,20 @@ export async function POST(
     );
   }
 
+  // Reject if hider has been withdrawn
+  const { data: hiderRow } = await supabase
+    .from("players")
+    .select("withdrawn_at")
+    .eq("id", hiderId)
+    .eq("game_id", gameId)
+    .single();
+  if (hiderRow && (hiderRow as { withdrawn_at: string | null }).withdrawn_at != null) {
+    return NextResponse.json(
+      { error: "That player has been withdrawn from the game" },
+      { status: 400 }
+    );
+  }
+
   // Check for existing successful submission for this (seeker, hider) pair
   const { data: existing } = await supabase
     .from("submissions")
@@ -180,13 +194,14 @@ export async function POST(
     (successfulSubmissions ?? []).map((s: { hider_id: number }) => s.hider_id)
   );
 
-  // Count total players in this game
-  const { count: totalPlayers } = await supabase
+  // Count active (non-withdrawn) players in this game; win = find everyone except yourself
+  const { count: activeCount } = await supabase
     .from("players")
     .select("*", { count: "exact", head: true })
-    .eq("game_id", gameId);
+    .eq("game_id", gameId)
+    .is("withdrawn_at", null);
 
-  const neededFinds = (totalPlayers ?? 0) - 1; // everyone except yourself
+  const neededFinds = Math.max(0, (activeCount ?? 0) - 1); // everyone except yourself
   const isWinner =
     resolvedStatus === "success" &&
     neededFinds > 0 &&
