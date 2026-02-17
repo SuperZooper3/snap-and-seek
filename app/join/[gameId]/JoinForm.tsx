@@ -6,14 +6,16 @@ import { getLocation, type LocationResult } from "@/lib/get-location";
 import { setPlayerInCookie } from "@/lib/player-cookie";
 import { addGameToYourGames } from "@/lib/your-games-cookie";
 
-const ACCURACY_THRESHOLD_M = 10;
+const ACCURACY_GOOD_M = 10;
+const ACCURACY_POOR_M = 30;
 
 type LocationState =
   | null
   | { status: "fetching" }
   | { status: "success"; data: LocationResult }
   | { status: "error"; message: string }
-  | { status: "bad_accuracy"; data: LocationResult };
+  | { status: "ok_accuracy"; data: LocationResult }
+  | { status: "poor_accuracy"; data: LocationResult };
 
 type Props = { gameId: string; isRejoin?: boolean };
 
@@ -26,20 +28,30 @@ export function JoinForm({ gameId, isRejoin = false }: Props) {
 
   const hasGoodLocation =
     locationState?.status === "success" &&
-    locationState.data.accuracy <= ACCURACY_THRESHOLD_M;
-  const hasBadAccuracy =
-    (locationState?.status === "success" || locationState?.status === "bad_accuracy") &&
-    locationState.data.accuracy > ACCURACY_THRESHOLD_M;
+    locationState.data.accuracy < ACCURACY_GOOD_M;
+  const hasOkAccuracy =
+    (locationState?.status === "success" || locationState?.status === "ok_accuracy") &&
+    locationState.data.accuracy >= ACCURACY_GOOD_M &&
+    locationState.data.accuracy <= ACCURACY_POOR_M;
+  const hasPoorAccuracy =
+    (locationState?.status === "success" || locationState?.status === "ok_accuracy" || locationState?.status === "poor_accuracy") &&
+    locationState.data.accuracy > ACCURACY_POOR_M;
+  const hasLocationChecked =
+    locationState?.status === "success" ||
+    locationState?.status === "ok_accuracy" ||
+    locationState?.status === "poor_accuracy";
 
   async function requestLocation() {
     setLocationState({ status: "fetching" });
     setError(null);
     try {
       const data = await getLocation();
-      if (data.accuracy > ACCURACY_THRESHOLD_M) {
-        setLocationState({ status: "bad_accuracy", data });
-      } else {
+      if (data.accuracy < ACCURACY_GOOD_M) {
         setLocationState({ status: "success", data });
+      } else if (data.accuracy <= ACCURACY_POOR_M) {
+        setLocationState({ status: "ok_accuracy", data });
+      } else {
+        setLocationState({ status: "poor_accuracy", data });
       }
     } catch (err) {
       setLocationState({
@@ -104,9 +116,9 @@ export function JoinForm({ gameId, isRejoin = false }: Props) {
               {locationState.message}
             </p>
           )}
-          {hasBadAccuracy && (
+          {hasPoorAccuracy && (
             <p className="text-sm mb-2" style={{ color: "var(--pastel-ink-muted)" }}>
-              Accuracy over 10 m. Try again for a better reading.
+              Accuracy over 30 m. Try again for a better reading.
             </p>
           )}
           <div className="flex flex-wrap items-center gap-3 mt-2">
@@ -117,7 +129,7 @@ export function JoinForm({ gameId, isRejoin = false }: Props) {
               className={`shrink-0 min-w-[10.5rem] disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation ${
                 hasGoodLocation
                   ? "btn-pastel-mint"
-                  : hasBadAccuracy
+                  : hasPoorAccuracy
                     ? "btn-pastel-orange"
                     : "btn-pastel-sky"
               }`}
@@ -126,15 +138,17 @@ export function JoinForm({ gameId, isRejoin = false }: Props) {
                 ? "Trying again…"
                 : locationState?.status === "success"
                   ? `Good (${Math.round(locationState.data.accuracy)} m)`
-                  : locationState?.status === "bad_accuracy"
-                    ? `Poor (${Math.round(locationState.data.accuracy)} m)`
-                    : locationState?.status === "error"
-                      ? "Try again"
-                      : "Enable location"}
+                  : locationState?.status === "ok_accuracy"
+                    ? `OK (${Math.round(locationState.data.accuracy)} m)`
+                    : locationState?.status === "poor_accuracy"
+                      ? `Poor (${Math.round(locationState.data.accuracy)} m)`
+                      : locationState?.status === "error"
+                        ? "Try again"
+                        : "Enable location"}
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !hasLocationChecked}
               className="btn-primary shrink-0 disabled:opacity-50"
             >
               {loading ? "Joining" : "Join"}

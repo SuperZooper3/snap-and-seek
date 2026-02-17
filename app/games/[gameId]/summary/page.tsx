@@ -36,11 +36,11 @@ export default async function SummaryPage({ params }: Props) {
 
   const { data: players } = await supabase
     .from("players")
-    .select("id, name, hiding_photo")
+    .select("id, name, hiding_photo, withdrawn_at")
     .eq("game_id", gameId)
     .order("created_at", { ascending: true });
 
-  const allPlayers = (players ?? []) as { id: number; name: string; hiding_photo: number | null }[];
+  const allPlayers = (players ?? []) as { id: number; name: string; hiding_photo: number | null; withdrawn_at: string | null }[];
 
   let allSubmissions: Submission[] = [];
   {

@@ -14,8 +14,8 @@ const VISIBLE_FROM_ITEMS: { id: string; label: string }[] = [
   { id: "path", label: "Closest path" },
 ];
 
-/** Accuracy above this (meters) is considered poor for main photo. */
-const ACCURACY_THRESHOLD_M = 10;
+/** Accuracy thresholds (meters) for main photo warnings. */
+const ACCURACY_POOR_M = 30;
 
 type PhotoSlot = {
   previewUrl?: string;
@@ -25,7 +25,7 @@ type PhotoSlot = {
   uploading: boolean;
   /** GPS accuracy in meters (for main photo). */
   accuracyM?: number;
-  /** True when main photo was taken with poor accuracy (>10m). */
+  /** True when main photo was taken with poor accuracy (>30m). */
   badAccuracy?: boolean;
   /** Error message when location was required but failed (main photo). */
   locationError?: string;
@@ -136,7 +136,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
 
       const result = await uploadPhoto(blob, coords);
       const accuracyM = result?.accuracy ?? coords.accuracy;
-      const badAccuracy = accuracyM > ACCURACY_THRESHOLD_M;
+      const badAccuracy = accuracyM > ACCURACY_POOR_M;
 
       setMainPhoto((prev) => ({
         ...prev,
@@ -317,7 +317,7 @@ export function SetupClient({ gameId, gameName, playerId, playerName }: Props) {
                       borderColor: "var(--pastel-error)",
                     }}
                   >
-                    Location accuracy is poor (&gt;10 m). Consider retaking for better gameplay.
+                    Location accuracy is poor (&gt;30 m). Consider retaking for better gameplay.
                   </div>
                 )}
                 {mainPhoto.locationError && (

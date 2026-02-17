@@ -7,6 +7,7 @@ type Player = {
   id: number;
   name: string;
   hiding_photo: number | null;
+  withdrawn_at?: string | null;
 };
 
 type Props = {
@@ -46,12 +47,26 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerIds }: P
             >
               Seeker \ Hider
             </th>
-            {players.map((hider) => (
-              <th key={hider.id} className="p-2 text-center min-w-[120px] border-b-2" style={{ borderColor: "var(--pastel-border)" }}>
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-sm font-bold truncate max-w-[100px]" style={{ color: "var(--pastel-ink)" }}>
-                    {hider.name}
-                  </span>
+            {players.map((hider) => {
+              const isWithdrawn = !!hider.withdrawn_at;
+              return (
+                <th
+                  key={hider.id}
+                  className="p-2 text-center min-w-[120px] border-b-2"
+                  style={{
+                    borderColor: "var(--pastel-border)",
+                    background: isWithdrawn ? "#fef3c7" : undefined,
+                  }}
+                >
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="text-sm font-bold truncate max-w-[100px]" style={{ color: "var(--pastel-ink)" }}>
+                      {hider.name}
+                      {isWithdrawn && (
+                        <span className="ml-1 text-xs font-normal" style={{ color: "var(--pastel-ink-muted)" }}>
+                          (withdrawn)
+                        </span>
+                      )}
+                    </span>
                   {hider.hiding_photo != null && photoUrlById[hider.hiding_photo] ? (
                     <div className="relative w-16 h-12 rounded-lg overflow-hidden border-2" style={{ background: "var(--pastel-mint)", borderColor: "var(--pastel-border)" }}>
                       <Image
@@ -70,7 +85,8 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerIds }: P
                   )}
                 </div>
               </th>
-            ))}
+            );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -99,6 +115,7 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerIds }: P
                 </td>
                 {players.map((hider) => {
                   const isDiagonal = seeker.id === hider.id;
+                  const isWithdrawn = !!hider.withdrawn_at;
                   const submission = submissionMap[seeker.id]?.[hider.id];
                   const submissionPhotoUrl = submission?.photo_id != null ? photoUrlById[submission.photo_id] : undefined;
 
@@ -127,7 +144,14 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerIds }: P
 
                   const isFail = submission?.status === "fail";
                   return (
-                    <td key={hider.id} className="p-2 text-center border-b-2" style={{ borderColor: "var(--pastel-border)" }}>
+                    <td
+                      key={hider.id}
+                      className="p-2 text-center border-b-2"
+                      style={{
+                        borderColor: "var(--pastel-border)",
+                        background: isWithdrawn ? "#fef3c7" : undefined,
+                      }}
+                    >
                       {submissionPhotoUrl ? (
                         <div
                           className={`relative w-16 h-12 mx-auto rounded-lg overflow-hidden border-[3px] ${

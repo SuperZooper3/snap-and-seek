@@ -106,6 +106,7 @@ export function SeekingLayout({
   const [submitTargetId, setSubmitTargetId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [lastSubmissionAccuracy, setLastSubmissionAccuracy] = useState<number | null>(null);
 
   useEffect(() => {
     setExpandedHeightPx(getExpandedHeightPx());
@@ -218,11 +219,13 @@ export function SeekingLayout({
         formData.append("player_id", String(playerId));
 
         // Get current location for the photo (accuracy stored for circle-overlap matching)
+        let capturedAccuracy: number | null = null;
         try {
           const pos = await getLocation();
           formData.append("latitude", String(pos.latitude));
           formData.append("longitude", String(pos.longitude));
           formData.append("accuracy", String(pos.accuracy));
+          capturedAccuracy = pos.accuracy;
         } catch {
           // Continue without location if geolocation fails
         }
@@ -236,6 +239,9 @@ export function SeekingLayout({
         const uploadData = await uploadRes.json();
         const photoId = uploadData.photo?.id;
         const photoUrl = uploadData.photo?.url;
+
+        // Store accuracy for UI feedback
+        setLastSubmissionAccuracy(capturedAccuracy);
 
         // Step 2: Create submission
         setSubmitStatus("Submitting...");
@@ -284,8 +290,11 @@ export function SeekingLayout({
         setSubmitStatus("Something went wrong!");
       } finally {
         setSubmitting(false);
-        // Clear status after 3 seconds
-        setTimeout(() => setSubmitStatus(null), 3000);
+        // Clear status and accuracy after 3 seconds
+        setTimeout(() => {
+          setSubmitStatus(null);
+          setLastSubmissionAccuracy(null);
+        }, 3000);
       }
     },
     [submitTargetId, gameId, playerId, playerName, winnerIds]
@@ -640,18 +649,32 @@ export function SeekingLayout({
                 </div>
               )}
               {!submitting && submitStatus && (
-                <div
-                  className="text-center py-3 font-bold"
-                  style={{
-                    color:
-                      submitStatus === "Found!" || submitStatus.includes("win")
-                        ? "var(--pastel-ink)"
-                        : submitStatus === "Not close enough."
-                          ? "var(--pastel-ink-muted)"
-                          : "var(--pastel-error)",
-                  }}
-                >
-                  {submitStatus}
+                <div className="space-y-2">
+                  <div
+                    className="text-center py-3 font-bold"
+                    style={{
+                      color:
+                        submitStatus === "Found!" || submitStatus.includes("win")
+                          ? "var(--pastel-ink)"
+                          : submitStatus === "Not close enough."
+                            ? "var(--pastel-ink-muted)"
+                            : "var(--pastel-error)",
+                    }}
+                  >
+                    {submitStatus}
+                  </div>
+                  {lastSubmissionAccuracy != null && (
+                    <div className="text-center space-y-1">
+                      <p className="text-xs" style={{ color: "var(--pastel-ink-muted)" }}>
+                        Location accuracy: ±{Math.round(lastSubmissionAccuracy)} m
+                      </p>
+                      {lastSubmissionAccuracy > 30 && (
+                        <p className="text-xs font-medium" style={{ color: "#991b1b" }}>
+                          Accuracy is poor (&gt;30 m). Consider retaking for better matching.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {!isTargetFound && !submitting && !gameOver && (
