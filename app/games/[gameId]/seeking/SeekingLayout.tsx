@@ -271,7 +271,7 @@ export function SeekingLayout({
             : [playerId];
           const names = Array.isArray(submitData.winner_names) && submitData.winner_names.length >= ids.length
             ? submitData.winner_names
-            : ids.map((id) => (id === playerId ? playerName : "Someone"));
+            : ids.map((id: number) => (id === playerId ? playerName : "Someone"));
           setWinnerIds(ids);
           setWinnerNames(names);
           setSubmitStatus(ids.length > 1 ? "You all found everyone! You win!" : "You found everyone! You win!");
