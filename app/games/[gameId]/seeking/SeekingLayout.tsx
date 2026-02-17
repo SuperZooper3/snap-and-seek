@@ -42,8 +42,8 @@ type Props = {
   targets: SeekingTarget[];
   initialSubmissions: Submission[];
   initialSubmissionPhotoUrls: Record<number, string>;
-  initialWinnerId: number | null;
-  initialWinnerName: string | null;
+  initialWinnerIds: number[];
+  initialWinnerNames: string[];
   powerupCastingSeconds: number;
   thermometerThresholdMeters: number;
 };
@@ -58,8 +58,8 @@ export function SeekingLayout({
   targets,
   initialSubmissions,
   initialSubmissionPhotoUrls,
-  initialWinnerId,
-  initialWinnerName,
+  initialWinnerIds,
+  initialWinnerNames,
   powerupCastingSeconds,
   thermometerThresholdMeters,
 }: Props) {
@@ -98,8 +98,8 @@ export function SeekingLayout({
   // Submission state
   const [submissions, setSubmissions] = useState<Submission[]>(initialSubmissions);
   const [submissionPhotoUrls, setSubmissionPhotoUrls] = useState<Record<number, string>>(initialSubmissionPhotoUrls);
-  const [winnerId, setWinnerId] = useState<number | null>(initialWinnerId);
-  const [winnerName, setWinnerName] = useState<string | null>(initialWinnerName);
+  const [winnerIds, setWinnerIds] = useState<number[]>(initialWinnerIds);
+  const [winnerNames, setWinnerNames] = useState<string[]>(initialWinnerNames);
 
   // Camera + submit flow state
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -119,9 +119,9 @@ export function SeekingLayout({
   }, []);
 
   // Poll game status regularly while seeking so everyone sees wins (and latest submissions).
-  // First poll after 1s, then every 3s. Stop once a winner is detected.
+  // First poll after 1s, then every 3s. Stop once winners are detected.
   useEffect(() => {
-    if (winnerId != null) return;
+    if (winnerIds.length > 0) return;
 
     const poll = async () => {
       try {
@@ -129,9 +129,14 @@ export function SeekingLayout({
         if (!res.ok) return;
         const data = await res.json();
         setSubmissions(data.submissions ?? []);
-        if (data.winner_id != null) {
-          setWinnerId(data.winner_id);
-          setWinnerName(data.winner_name ?? null);
+        const ids = Array.isArray(data.winner_ids) && data.winner_ids.length > 0
+          ? data.winner_ids
+          : data.winner_id != null
+            ? [data.winner_id]
+            : [];
+        if (ids.length > 0) {
+          setWinnerIds(ids);
+          setWinnerNames(Array.isArray(data.winner_names) ? data.winner_names : data.winner_name != null ? [data.winner_name] : []);
         }
       } catch {
         // Silently ignore polling errors
@@ -144,7 +149,7 @@ export function SeekingLayout({
       clearTimeout(t);
       clearInterval(interval);
     };
-  }, [gameId, winnerId]);
+  }, [gameId, winnerIds.length]);
 
   const handleCountdownChange = useCallback((countdown: number) => {
     setRefreshCountdown(countdown);
@@ -182,8 +187,8 @@ export function SeekingLayout({
     setTrayExpanded(true);
   }, []);
 
-  // Game is frozen once a winner exists
-  const gameOver = winnerId != null;
+  // Game is frozen once there are winners
+  const gameOver = winnerIds.length > 0;
 
   // --- Camera + Submission flow ---
   const handleOpenCamera = useCallback((targetPlayerId: number) => {
@@ -196,8 +201,8 @@ export function SeekingLayout({
   const handleCameraCapture = useCallback(
     async (blob: Blob) => {
       if (!submitTargetId) return;
-      // Double-check: if a winner was set while camera was open, abort
-      if (winnerId != null) {
+      // Double-check: if winners were set while camera was open, abort
+      if (winnerIds.length > 0) {
         setCameraOpen(false);
         return;
       }
@@ -261,9 +266,15 @@ export function SeekingLayout({
         }
 
         if (submitData.isWinner) {
-          setWinnerId(playerId);
-          setWinnerName(playerName);
-          setSubmitStatus("You found everyone! You win!");
+          const ids = Array.isArray(submitData.winner_ids) && submitData.winner_ids.length > 0
+            ? submitData.winner_ids
+            : [playerId];
+          const names = Array.isArray(submitData.winner_names) && submitData.winner_names.length >= ids.length
+            ? submitData.winner_names
+            : ids.map((id) => (id === playerId ? playerName : "Someone"));
+          setWinnerIds(ids);
+          setWinnerNames(names);
+          setSubmitStatus(ids.length > 1 ? "You all found everyone! You win!" : "You found everyone! You win!");
         } else if (sub.status === "success") {
           setSubmitStatus("Found!");
         } else {
@@ -277,7 +288,7 @@ export function SeekingLayout({
         setTimeout(() => setSubmitStatus(null), 3000);
       }
     },
-    [submitTargetId, gameId, playerId, playerName, winnerId]
+    [submitTargetId, gameId, playerId, playerName, winnerIds]
   );
 
   const handleCameraClose = useCallback(() => {
@@ -663,35 +674,50 @@ export function SeekingLayout({
       {/* Camera modal */}
       <CameraModal isOpen={cameraOpen} onClose={handleCameraClose} onCapture={handleCameraCapture} />
 
-      {winnerId != null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-          style={{ background: "rgba(0,0,0,0.5)" }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="win-modal-title"
-        >
-          <div className="sketch-card p-8 max-w-sm w-full text-center space-y-5">
-            <div className="text-5xl" aria-hidden>
-              {winnerId === playerId ? "🏆" : "🎉"}
+      {winnerIds.length > 0 && (() => {
+        const youWon = winnerIds.includes(playerId);
+        const names = winnerNames.length >= winnerIds.length
+          ? winnerNames
+          : winnerIds.map((id) => (id === playerId ? playerName : "Someone"));
+        const winnerDisplay =
+          names.length === 0
+            ? "Game over!"
+            : names.length === 1
+              ? `${names[0]} wins!`
+              : names.length === 2
+                ? `${names[0]} and ${names[1]} win!`
+                : `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]} win!`;
+        const detailText = youWon
+          ? "You found everyone's hiding spots!"
+          : `${names.length === 1 ? names[0] : "They"} found all the hiding spots.`;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            style={{ background: "rgba(0,0,0,0.5)" }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="win-modal-title"
+          >
+            <div className="sketch-card p-8 max-w-sm w-full text-center space-y-5">
+              <div className="text-5xl" aria-hidden>
+                {youWon ? "🏆" : "🎉"}
+              </div>
+              <h2 id="win-modal-title" className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+                {winnerDisplay}
+              </h2>
+              <p style={{ color: "var(--pastel-ink-muted)" }}>
+                {detailText}
+              </p>
+              <Link
+                href={`/games/${gameId}/summary`}
+                className="btn-pastel-mint touch-manipulation block w-full text-center"
+              >
+                View summary
+              </Link>
             </div>
-            <h2 id="win-modal-title" className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
-              {winnerId === playerId ? "You won!" : `${winnerName ?? "Someone"} won!`}
-            </h2>
-            <p style={{ color: "var(--pastel-ink-muted)" }}>
-              {winnerId === playerId
-                ? "You found everyone's hiding spots first!"
-                : `${winnerName ?? "Another player"} found all the hiding spots before anyone else.`}
-            </p>
-            <Link
-              href={`/games/${gameId}/summary`}
-              className="btn-pastel-mint touch-manipulation block w-full text-center"
-            >
-              View summary
-            </Link>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

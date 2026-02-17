@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { getPlayerForGame, PLAYER_COOKIE_NAME } from "@/lib/player-cookie";
+import { computeWinnerIds, setGameWinners } from "@/lib/game-win-check";
 
 type Params = { params: Promise<{ gameId: string; playerId: string }> };
 
@@ -69,5 +70,12 @@ export async function POST(_request: Request, { params }: Params) {
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
+
+  // Withdrawing may cause one or more seekers to have found everyone (win). Check and complete game.
+  const winnerIds = await computeWinnerIds(supabase, gameId);
+  if (winnerIds.length > 0) {
+    await setGameWinners(supabase, gameId, winnerIds);
+  }
+
   return NextResponse.json({ ok: true });
 }

@@ -14,7 +14,7 @@ export default async function SummaryPage({ params }: Props) {
   {
     const { data, error } = await supabase
       .from("games")
-      .select("id, name, status, winner_id, finished_at")
+      .select("id, name, status, winner_id, winner_ids, finished_at")
       .eq("id", gameId)
       .single();
     if (!error && data) {
@@ -22,11 +22,11 @@ export default async function SummaryPage({ params }: Props) {
     } else {
       const { data: fallback, error: fallbackErr } = await supabase
         .from("games")
-        .select("id, name, status")
+        .select("id, name, status, winner_id, finished_at")
         .eq("id", gameId)
         .single();
       if (fallbackErr || !fallback) notFound();
-      game = { ...fallback, winner_id: null, finished_at: null };
+      game = { ...fallback, winner_ids: null };
     }
   }
 
@@ -75,11 +75,23 @@ export default async function SummaryPage({ params }: Props) {
     }
   }
 
-  let winnerName: string | null = null;
-  if (game.winner_id != null) {
-    const winner = allPlayers.find((p) => p.id === game.winner_id);
-    winnerName = winner?.name ?? null;
-  }
+  const winnerIds: number[] =
+    Array.isArray(game.winner_ids) && game.winner_ids.length > 0
+      ? game.winner_ids
+      : game.winner_id != null
+        ? [game.winner_id as number]
+        : [];
+  const winnerNames = winnerIds
+    .map((id) => allPlayers.find((p) => p.id === id)?.name)
+    .filter((n): n is string => n != null);
+  const winnerDisplay =
+    winnerNames.length === 0
+      ? null
+      : winnerNames.length === 1
+        ? `${winnerNames[0]} wins!`
+        : winnerNames.length === 2
+          ? `${winnerNames[0]} and ${winnerNames[1]} win!`
+          : `${winnerNames.slice(0, -1).join(", ")}, and ${winnerNames[winnerNames.length - 1]} win!`;
 
   return (
     <div className="min-h-screen min-h-[100dvh] font-sans" style={{ background: "var(--background)" }}>
@@ -97,7 +109,7 @@ export default async function SummaryPage({ params }: Props) {
           </p>
         </header>
 
-        {winnerName && (
+        {winnerDisplay && (
           <div
             className="mb-8 sketch-card p-6 text-center"
             style={{
@@ -106,7 +118,7 @@ export default async function SummaryPage({ params }: Props) {
           >
             <div className="text-4xl mb-2" aria-hidden>🏆</div>
             <h2 className="text-2xl font-bold" style={{ color: "var(--pastel-ink)" }}>
-              {winnerName} wins!
+              {winnerDisplay}
             </h2>
             {game.finished_at ? (
               <p className="mt-1 text-sm" style={{ color: "var(--pastel-ink-muted)" }}>
@@ -120,7 +132,7 @@ export default async function SummaryPage({ params }: Props) {
           players={allPlayers}
           submissions={allSubmissions}
           photoUrlById={photoUrlById}
-          winnerId={game.winner_id as number | null}
+          winnerIds={winnerIds}
         />
       </main>
     </div>

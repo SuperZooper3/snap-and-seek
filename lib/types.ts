@@ -43,8 +43,10 @@ export interface Game {
   hiding_started_at: string | null;
   /** Set when status becomes 'seeking' */
   seeking_started_at: string | null;
-  /** FK to players.id the winner of the game */
+  /** FK to players.id the winner of the game (first winner when multiple) */
   winner_id: number | null;
+  /** All winner player IDs (e.g. ties or after withdraw). When set, winner_id is the first. */
+  winner_ids?: number[] | null;
   /** Set when game status becomes 'completed' */
   finished_at: string | null;
 }

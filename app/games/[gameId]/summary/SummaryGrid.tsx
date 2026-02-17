@@ -13,10 +13,10 @@ type Props = {
   players: Player[];
   submissions: Submission[];
   photoUrlById: Record<number, string>;
-  winnerId: number | null;
+  winnerIds: number[];
 };
 
-export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Props) {
+export function SummaryGrid({ players, submissions, photoUrlById, winnerIds }: Props) {
   const submissionMap: Record<number, Record<number, Submission>> = {};
   for (const s of submissions) {
     if (s.status !== "success" && s.status !== "fail") continue;
@@ -75,7 +75,7 @@ export function SummaryGrid({ players, submissions, photoUrlById, winnerId }: Pr
         </thead>
         <tbody>
           {players.map((seeker) => {
-            const isWinner = seeker.id === winnerId;
+            const isWinner = winnerIds.includes(seeker.id);
             return (
               <tr
                 key={seeker.id}

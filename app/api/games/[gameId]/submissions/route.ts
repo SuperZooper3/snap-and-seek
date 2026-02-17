@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { circlesOverlap, LOCATION_CIRCLE_MIN_RADIUS_M } from "@/lib/map-utils";
+import { computeWinnerIds, setGameWinners } from "@/lib/game-win-check";
 
 /**
  * GET /api/games/[gameId]/submissions
@@ -177,67 +178,26 @@ export async function POST(
 
   const submissionWithStatus = { ...submission, status: resolvedStatus };
 
-  // --- Win check: only when this submission is success and seeker has all success ---
-  // Count distinct hiders this seeker has successfully found
-  const { data: successfulSubmissions, error: countError } = await supabase
-    .from("submissions")
-    .select("hider_id")
-    .eq("game_id", gameId)
-    .eq("seeker_id", seekerId)
-    .eq("status", "success");
+  // --- Win check: when this submission is success, compute ALL current winners (may be tie)
+  const winnerIds = await computeWinnerIds(supabase, gameId);
+  const isWinner = resolvedStatus === "success" && winnerIds.includes(seekerId);
 
-  if (countError) {
-    return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
-  }
-
-  const distinctHiders = new Set(
-    (successfulSubmissions ?? []).map((s: { hider_id: number }) => s.hider_id)
-  );
-
-  // Count active (non-withdrawn) players in this game; win = find everyone except yourself
-  const { count: activeCount } = await supabase
-    .from("players")
-    .select("*", { count: "exact", head: true })
-    .eq("game_id", gameId)
-    .is("withdrawn_at", null);
-
-  const neededFinds = Math.max(0, (activeCount ?? 0) - 1); // everyone except yourself
-  const isWinner =
-    resolvedStatus === "success" &&
-    neededFinds > 0 &&
-    distinctHiders.size >= neededFinds;
-
-  if (isWinner) {
-    const finishedAt = new Date().toISOString();
-    // Atomic: only set winner if no winner already exists (WHERE winner_id IS NULL).
-    const updateResult = await supabase
-      .from("games")
-      .update({
-        winner_id: seekerId,
-        status: "completed",
-        finished_at: finishedAt,
-      })
-      .eq("id", gameId)
-      .is("winner_id", null)
-      .select("winner_id")
-      .single();
-
-    const updated = updateResult.data;
-    const updateError = updateResult.error;
-    if (updateError && (updateError.message?.includes("winner_id") || updateError.message?.includes("does not exist"))) {
-      return NextResponse.json({ submission: submissionWithStatus, isWinner: true });
-    }
-    if (updateError) {
-      return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
-    }
-    if (!updated || updated.winner_id !== seekerId) {
-      // Another request may have set winner first; ensure game status is completed so it doesn't stay "seeking"
-      await supabase
-        .from("games")
-        .update({ status: "completed", finished_at: finishedAt })
-        .eq("id", gameId);
-      return NextResponse.json({ submission: submissionWithStatus, isWinner: false });
-    }
+  if (winnerIds.length > 0) {
+    await setGameWinners(supabase, gameId, winnerIds);
+    const { data: winnerRows } = await supabase
+      .from("players")
+      .select("id, name")
+      .in("id", winnerIds);
+    const order = new Map(winnerIds.map((id, i) => [id, i]));
+    const winnerNames = (winnerRows ?? [])
+      .sort((a, b) => (order.get((a as { id: number }).id) ?? 99) - (order.get((b as { id: number }).id) ?? 99))
+      .map((r) => (r as { name: string }).name);
+    return NextResponse.json({
+      submission: submissionWithStatus,
+      isWinner: winnerIds.includes(seekerId),
+      winner_ids: winnerIds,
+      winner_names: winnerNames,
+    });
   }
 
   return NextResponse.json({ submission: submissionWithStatus, isWinner: false });

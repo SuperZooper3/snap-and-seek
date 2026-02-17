@@ -19,25 +19,24 @@ export default async function SeekingPage({ params }: Props) {
     redirect(`/games/${gameId}`);
   }
 
-  // Try with winner_id and powerup_casting_duration_seconds first; fall back to without if columns don't exist yet
+  // Try with winner_id, winner_ids, powerup_casting_duration_seconds; fall back if columns don't exist yet
   let game: Record<string, unknown> | null = null;
   {
     const { data, error } = await supabase
       .from("games")
-      .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id, powerup_casting_duration_seconds, thermometer_threshold_meters")
+      .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id, winner_ids, powerup_casting_duration_seconds, thermometer_threshold_meters")
       .eq("id", gameId)
       .single();
     if (!error && data) {
       game = data;
     } else {
-      // Fallback: new columns may not exist yet
       const { data: fallback, error: fallbackErr } = await supabase
         .from("games")
-        .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at")
+        .select("id, name, status, zone_center_lat, zone_center_lng, zone_radius_meters, seeking_started_at, winner_id")
         .eq("id", gameId)
         .single();
       if (fallbackErr || !fallback) notFound();
-      game = { ...fallback, winner_id: null, powerup_casting_duration_seconds: null, thermometer_threshold_meters: null };
+      game = { ...fallback, winner_ids: null, powerup_casting_duration_seconds: null, thermometer_threshold_meters: null };
     }
   }
 
@@ -114,12 +113,17 @@ export default async function SeekingPage({ params }: Props) {
     }
   }
 
-  // If there's a winner, resolve their name
-  let winnerName: string | null = null;
-  if (game.winner_id != null) {
-    const winner = (players ?? []).find((p) => p.id === game.winner_id);
-    winnerName = winner ? (winner as { name: string }).name : null;
-  }
+  // Resolve winner ids and names (support multiple winners)
+  const initialWinnerIds: number[] =
+    Array.isArray(game.winner_ids) && game.winner_ids.length > 0
+      ? game.winner_ids
+      : game.winner_id != null
+        ? [game.winner_id as number]
+        : [];
+  const initialWinnerNames = initialWinnerIds
+    .map((id) => (players ?? []).find((p) => p.id === id) as { name: string } | undefined)
+    .filter(Boolean)
+    .map((p) => p!.name);
 
   const zoneSet =
     game.zone_center_lat != null &&
@@ -155,8 +159,8 @@ export default async function SeekingPage({ params }: Props) {
       targets={targets}
       initialSubmissions={initialSubmissions}
       initialSubmissionPhotoUrls={submissionPhotoUrlById}
-      initialWinnerId={game.winner_id as number | null}
-      initialWinnerName={winnerName}
+      initialWinnerIds={initialWinnerIds}
+      initialWinnerNames={initialWinnerNames}
       powerupCastingSeconds={powerupCastingSeconds}
       thermometerThresholdMeters={thermometerThresholdMeters}
     />

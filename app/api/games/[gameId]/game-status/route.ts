@@ -13,21 +13,26 @@ export async function GET(
 ) {
   const { gameId } = await params;
 
-  // Fetch game status; include winner columns if they exist (migration may not be run yet)
-  type GameRow = { id: string; status: string; winner_id?: number | null; finished_at?: string | null };
+  // Fetch game status; include winner columns (winner_ids may be missing until migration)
+  type GameRow = {
+    id: string;
+    status: string;
+    winner_id?: number | null;
+    winner_ids?: number[] | null;
+    finished_at?: string | null;
+  };
   let game: GameRow | null = null;
 
   const withWinner = await supabase
     .from("games")
-    .select("id, status, winner_id, finished_at")
+    .select("id, status, winner_id, winner_ids, finished_at")
     .eq("id", gameId)
     .single();
 
   if (withWinner.error) {
-    // Schema may lack winner_id/finished_at, or DB may be unreachable try minimal select first
     const fallback = await supabase
       .from("games")
-      .select("id, status")
+      .select("id, status, winner_id, finished_at")
       .eq("id", gameId)
       .single();
     if (fallback.error || !fallback.data) {
@@ -36,7 +41,7 @@ export async function GET(
         { status: fallback.error ? 500 : 404 }
       );
     }
-    game = { ...fallback.data, winner_id: null, finished_at: null };
+    game = { ...fallback.data, winner_ids: null } as GameRow;
   } else if (withWinner.data) {
     game = withWinner.data as GameRow;
   }
@@ -45,8 +50,13 @@ export async function GET(
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 
-  // If there's a winner but status wasn't set to completed (e.g. older bug or race), repair it now
-  const winnerId = game.winner_id ?? null;
+  const winnerIds = Array.isArray(game.winner_ids) && game.winner_ids.length > 0
+    ? game.winner_ids
+    : game.winner_id != null
+      ? [game.winner_id]
+      : [];
+  const winnerId = winnerIds[0] ?? game.winner_id ?? null;
+
   if (winnerId != null && game.status !== "completed") {
     const finishedAt = game.finished_at ?? new Date().toISOString();
     await supabase
@@ -56,7 +66,6 @@ export async function GET(
     game = { ...game, status: "completed", finished_at: finishedAt };
   }
 
-  // Fetch all submissions for this game
   const { data: submissions, error: subError } = await supabase
     .from("submissions")
     .select("id, game_id, seeker_id, hider_id, photo_id, status, created_at")
@@ -68,19 +77,27 @@ export async function GET(
   }
 
   let winnerName: string | null = null;
-  if (winnerId != null) {
-    const { data: winner } = await supabase
+  let winnerNames: string[] = [];
+  if (winnerIds.length > 0) {
+    const { data: winnerRows } = await supabase
       .from("players")
-      .select("name")
-      .eq("id", winnerId)
-      .single();
-    winnerName = winner?.name ?? null;
+      .select("id, name")
+      .in("id", winnerIds);
+    if (winnerRows?.length) {
+      const order = new Map(winnerIds.map((id, i) => [id, i]));
+      winnerNames = winnerRows
+        .sort((a, b) => (order.get((a as { id: number }).id) ?? 99) - (order.get((b as { id: number }).id) ?? 99))
+        .map((r) => (r as { name: string }).name);
+      winnerName = winnerNames[0] ?? null;
+    }
   }
 
   return NextResponse.json({
     status: game.status,
     winner_id: winnerId,
     winner_name: winnerName,
+    winner_ids: winnerIds,
+    winner_names: winnerNames,
     finished_at: game.finished_at ?? null,
     submissions: submissions ?? [],
   });
